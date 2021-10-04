@@ -2,8 +2,8 @@
 This project is a personal way to discover and implement a 64 bit kernel written in C and Assembly. The kernel will have basic drivers and functionality, but other features may be added in the future. The currently implemented features are listed below.
 
 ## Features
-- [ ] **Limine bootloader** as the main boot-up solution for the moment
-    - [ ] **Stivale2 protocol compliant**
+- [x] **Limine bootloader** as the main boot-up solution for the moment
+    - [x] **Stivale2 protocol compliant**
 - [ ] **Basic kernel drivers**
     - [ ] **GDT** setup
     - [ ] **IDT** setup
@@ -23,7 +23,7 @@ This project is a personal way to discover and implement a 64 bit kernel written
 
 - [ ] **Userspace**
     - [ ] **System calls**
-    - [ ] *many apps*
+    - [ ] *And many apps*
 
 ## Source structure
 - **`kernel\`**
@@ -32,4 +32,5 @@ This project is a personal way to discover and implement a 64 bit kernel written
 - **`libs\`**
     - **`libc\`** _porting of useful C libraries_
 - **`limine\`** _limine bootloader binaries_
+- **`thirdparty\`** _implementations of thirdparty headers and libraries_
 - **`utils\`** _file stored as backup or utility_

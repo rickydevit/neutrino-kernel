@@ -21,19 +21,23 @@ OBJ = $(shell find $(BUILD_OUT) -type f -name '*.o')
 
 DEFINEFLAGS  := -D__$(ARCH:_=-)
 
-INCLUDEFLAGS := -I./kernel/common \
+INCLUDEFLAGS := -I. \
+				-I./kernel/common \
 				-I./kernel/$(ARCH) \
 				-I./thirdparty/ \
         		-I./libs/libc \
        			-I./libs/ 
 
 CC := x86_64-elf-gcc
-CFLAGS := 	-g -Wall -Wl,--oformat=binary -nostdlib -Wunknown-pragmas -ffreestanding -fpie -fstack-protector \
-			-mcmodel=large -mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
-			-fpie -O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
-LD := x86_64-elf-ld
+CFLAGS := 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
+			-mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
+			-O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
 
 LD_SCRIPT := $(ARCH).ld
+LD := x86_64-elf-ld
+LDFLAGS := 	-T $(LD_SCRIPT) -nostdlib -zmax-page-size=0x1000 -static -pie \
+			--no-dynamic-linker -ztext
+
 QEMU = /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
 
 EMU_MEMORY = 512M
@@ -57,27 +61,22 @@ $(ELF_TARGET): $(BUILD_OUT)/$(ELF_TARGET)
 
 .PHONY:$(BUILD_OUT)/$(ELF_TARGET)
 $(BUILD_OUT)/$(ELF_TARGET): $(COBJ) $(AMSOBJ)
-	${LD} $^ -T$(LD_SCRIPT) -o $@
+	${LD} $^ $(LDFLAGS) -o $@
 
 run: $(ISO_TARGET)
 	rm $(BUILD_OUT)/$(ELF_TARGET)
 	${QEMU} -cdrom $< ${RUN_FLAGS}
 
-runk: $(BUILD_OUT)/$(ELF_TARGET) 
-	${QEMU} -kernel $< ${RUN_FLAGS}
-
 debug: $(ISO_TARGET)
 	rm $(BUILD_OUT)/$(ELF_TARGET)
 	${QEMU} -cdrom	$< ${DEBUG_FLAGS} 
-
-debugk: $(BUILD_OUT)/$(ELF_TARGET)
-	${QEMU} -kernel $< ${DEBUG_FLAGS} 
 
 clear:
 	rm -f $(COBJ) $(AMSOBJ) $(HEADDEPS) $(BUILD_OUT)/$(ELF_TARGET) $(ISO_TARGET)
 
 .PHONY:$(ISO_TARGET)
 $(ISO_TARGET): $(ELF_TARGET)
+	@mkdir -p iso
 	@cp -v $(BUILD_OUT)/$< utils/limine.cfg limine/limine.sys \
     	limine/limine-cd.bin limine/limine-eltorito-efi.bin $(ISO_OUT)
 	@xorriso -as mkisofs -b limine-cd.bin \
