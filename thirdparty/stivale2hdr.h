@@ -25,7 +25,8 @@ static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
         .identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
         // Instead of 0, we now point to the previous header tag. The order in
         // which header tags are linked does not matter.
-        .next = (uint64_t)&terminal_hdr_tag
+        // .next = (uint64_t)&terminal_hdr_tag
+        .next = 0
     },
     // We set all the framebuffer specifics to 0 as we want the bootloader
     // to pick the best it can.

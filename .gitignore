@@ -1,4 +1,6 @@
 iso/
 build/
-neutrino.iso
-.vscode
+.vscode/
+
+*.iso
+serial.log
