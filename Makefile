@@ -1,48 +1,48 @@
 .DEFAULT_GOAL=$(ELF_TARGET)
 
-ARCH := x86_64
+ARCH 			:= x86_64
+BUILD_OUT 		:= ./build
+ISO_OUT 		:= ./iso
+ELF_TARGET 		:= neutrino.sys
+ISO_TARGET 		:= neutrino.iso
 DIRECTORY_GUARD = mkdir -p $(@D)
-BUILD_OUT := ./build
-ISO_OUT := ./iso
-ELF_TARGET := neutrino.sys
-ISO_TARGET := neutrino.iso
 
-END_PATH := kernel/common kernel/${ARCH} libs/libc
+END_PATH 		:= kernel/common kernel/${ARCH} libs/libc
 
-CFILES 		:= $(shell find $(END_PATH) -type f -name '*.c')
-CHEADS 		:= $(shell find $(END_PATH) -type f -name '*.h')
-COBJ 		:= $(patsubst %.c,$(BUILD_OUT)/%.o,$(CFILES))
-HEADDEPS 	:= $(CFILES:.c=.d)
+CFILES 			:= $(shell find $(END_PATH) -type f -name '*.c')
+CHEADS 			:= $(shell find $(END_PATH) -type f -name '*.h')
+COBJ 			:= $(patsubst %.c,$(BUILD_OUT)/%.o,$(CFILES))
+HEADDEPS 		:= $(CFILES:.c=.d)
 
-ASMFILES	:= $(shell find $(END_PATH) -type f -name '*.asm')
-AMSOBJ		:= $(patsubst %.asm,$(BUILD_OUT)/%.o,$(ASMFILES))
+ASMFILES		:= $(shell find $(END_PATH) -type f -name '*.asm')
+AMSOBJ			:= $(patsubst %.asm,$(BUILD_OUT)/%.o,$(ASMFILES))
 				
-OBJ = $(shell find $(BUILD_OUT) -type f -name '*.o')
+OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
 
-DEFINEFLAGS  := -D__$(ARCH:_=-)
+DEFINEFLAGS  	:= -D__$(ARCH:_=-)
 
-INCLUDEFLAGS := -I. \
-				-I./kernel/common \
-				-I./kernel/$(ARCH) \
-				-I./thirdparty/ \
-        		-I./libs/libc \
-       			-I./libs/ 
+INCLUDEFLAGS 	:= -I. \
+					-I./kernel/common \
+					-I./kernel/$(ARCH) \
+					-I./thirdparty/ \
+        			-I./libs/libc \
+       				-I./libs/ 
 
-CC := x86_64-elf-gcc
-CFLAGS := 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
-			-mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
-			-O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
+CC 				:= $(ARCH)-elf-gcc
+CFLAGS 			:= 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
+					-mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
+					-O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
 
-LD_SCRIPT := $(ARCH).ld
-LD := x86_64-elf-ld
-LDFLAGS := 	-T $(LD_SCRIPT) -nostdlib -zmax-page-size=0x1000 -static -pie \
-			--no-dynamic-linker -ztext
+LD_SCRIPT 		:= $(ARCH).ld
+LD 				:= $(ARCH)-elf-ld
+LDFLAGS 		:= 	-T $(LD_SCRIPT) -nostdlib -zmax-page-size=0x1000 -static -pie \
+					--no-dynamic-linker -ztext
 
-QEMU = /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
+QEMU 			= /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
 
-EMU_MEMORY = 512M
-RUN_FLAGS = -m ${EMU_MEMORY} -vga std
-DEBUG_FLAGS = ${RUN_FLAGS} -serial file:serial.log -monitor stdio -d guest_errors
+EMU_MEMORY 		= 1G
+RUN_FLAGS 		= -m ${EMU_MEMORY} -vga std
+DEBUG_FLAGS		= ${RUN_FLAGS} -serial file:serial.log -monitor stdio -d guest_errors
 
 # === COMMANDS AND BUILD ========================
 
@@ -73,6 +73,9 @@ debug: $(ISO_TARGET)
 
 clear:
 	rm -f $(COBJ) $(AMSOBJ) $(HEADDEPS) $(BUILD_OUT)/$(ELF_TARGET) $(ISO_TARGET)
+
+cd:	$(ISO_TARGET)
+	@echo "Preparing iso..."
 
 .PHONY:$(ISO_TARGET)
 $(ISO_TARGET): $(ELF_TARGET)
