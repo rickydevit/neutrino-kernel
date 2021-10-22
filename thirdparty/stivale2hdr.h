@@ -3,6 +3,10 @@
 #include "libs/libc/stdint.h"
 #include "stivale2.h"
 
+#define CHECKER_NEITHER_AVAILABLE       0
+#define CHECKER_FRAMEBUFFER_AVAILABLE   1
+#define CHECKER_TERMINAL_AVAILABLE      2
+
 // ?stack for the limine bootloader
 static uint8_t stack[8192];
 
@@ -35,6 +39,17 @@ static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
     .framebuffer_bpp    = 0
 };
 
+static struct stivale2_header_tag_any_video any_video_hdr_tag = {
+        // Same as above.
+    .tag = {
+        .identifier = STIVALE2_HEADER_TAG_ANY_VIDEO_ID,
+        // Instead of 0, we now point to the previous header tag. The order in
+        // which header tags are linked does not matter.
+        .next = (uint64_t)&framebuffer_hdr_tag
+    },
+    .preference = 0
+};
+
 __attribute__((section(".stivale2hdr"), used))
 static struct stivale2_header stivale_hdr = {
     // The entry_point member is used to specify an alternative entry
@@ -53,7 +68,7 @@ static struct stivale2_header stivale_hdr = {
     .flags = (1 << 1) | (1 << 2),
     // This header structure is the root of the linked list of header tags and
     // points to the first one in the linked list.
-    .tags = (uintptr_t)&framebuffer_hdr_tag
+    .tags = (uintptr_t)&any_video_hdr_tag
 };
 
 void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
@@ -72,4 +87,15 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
         // Get a pointer to the next tag in the linked list and repeat.
         current_tag = (void *)current_tag->next;
     }
+}
+
+// *Check if the limine loader returned either a valid framebuffer struct tag or a valid terminal struct tag
+// @param framebuffer_addr the linear framebuffer struct tag address
+// @param terminal_addr the terminal struct tag address
+// @return true if either one of the struct tags is valid, false otherwise
+uint32_t check_framebuffer_or_terminal(void* framebuffer_addr, void* terminal_addr) {
+    if (framebuffer_addr != NULL) return CHECKER_FRAMEBUFFER_AVAILABLE;
+    if (terminal_addr != NULL) return CHECKER_TERMINAL_AVAILABLE;
+
+    return CHECKER_NEITHER_AVAILABLE;
 }
