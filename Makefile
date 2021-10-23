@@ -5,20 +5,17 @@ BUILD_OUT 		:= ./build
 ISO_OUT 		:= ./iso
 ELF_TARGET 		:= neutrino.sys
 ISO_TARGET 		:= neutrino.iso
-DIRECTORY_GUARD = mkdir -p $(@D)
+DIRECTORY_GUARD  = mkdir -p $(@D)
+LD_SCRIPT 		:= $(ARCH).ld
 
-END_PATH 		:= kernel/common kernel/${ARCH} libs/libc
+END_PATH 		:= kernel/common kernel/${ARCH} libs/
 
-CFILES 			:= $(shell find $(END_PATH) -type f -name '*.c')
-CHEADS 			:= $(shell find $(END_PATH) -type f -name '*.h')
-COBJ 			:= $(patsubst %.c,$(BUILD_OUT)/%.o,$(CFILES))
-HEADDEPS 		:= $(CFILES:.c=.d)
+# compiler and linker
+CC 				:= $(ARCH)-elf-gcc
 
-ASMFILES		:= $(shell find $(END_PATH) -type f -name '*.asm')
-AMSOBJ			:= $(patsubst %.asm,$(BUILD_OUT)/%.o,$(ASMFILES))
-				
-OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
+LD 				:= $(ARCH)-elf-ld
 
+# flags
 DEFINEFLAGS  	:= -D__$(ARCH:_=-)
 
 INCLUDEFLAGS 	:= -I. \
@@ -27,22 +24,32 @@ INCLUDEFLAGS 	:= -I. \
 					-I./thirdparty/ \
         			-I./libs/libc \
        				-I./libs/ 
-
-CC 				:= $(ARCH)-elf-gcc
-CFLAGS 			:= 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
-					-mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
+					
+CFLAGS 			:= 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fpic -fno-stack-protector -fno-rtti \
+        			-fno-exceptions -mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
 					-O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
 
-LD_SCRIPT 		:= $(ARCH).ld
-LD 				:= $(ARCH)-elf-ld
 LDFLAGS 		:= 	-T $(LD_SCRIPT) -nostdlib -zmax-page-size=0x1000 -static -pie \
 					--no-dynamic-linker -ztext
 
-QEMU 			= /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
+# sources and objects
+CFILES 			:= $(shell find $(END_PATH) -type f -name '*.c')
+CHEADS 			:= $(shell find $(END_PATH) -type f -name '*.h')
+COBJ 			:= $(patsubst %.c,$(BUILD_OUT)/%.o,$(CFILES))
+HEADDEPS 		:= $(CFILES:.c=.d)
 
+ASMFILES		:= $(shell find $(END_PATH) -type f -name '*.asm') 
+SFILES 			:= $(shell find $(END_PATH) -type f -name '*.s')
+ASMOBJ			:= $(patsubst %.asm,$(BUILD_OUT)/%.o,$(ASMFILES)) 
+SOBJ			:= $(patsubst %.s,$(BUILD_OUT)/%.o,$(SFILES))
+
+OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
+
+# qemu settings
+QEMU 			= /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
 EMU_MEMORY 		= 1G
 RUN_FLAGS 		= -m ${EMU_MEMORY} -vga std
-DEBUG_FLAGS		= ${RUN_FLAGS} -serial file:serial.log -monitor stdio -d guest_errors
+DEBUG_FLAGS		= ${RUN_FLAGS} -serial stdio -d guest_errors
 
 # === COMMANDS AND BUILD ========================
 
@@ -50,32 +57,45 @@ DEBUG_FLAGS		= ${RUN_FLAGS} -serial file:serial.log -monitor stdio -d guest_erro
 $(BUILD_OUT)/%.o: %.c
 	@$(DIRECTORY_GUARD)
 	@echo "[KERNEL $(ARCH)] (c) $<"
-	${CC} ${CFLAGS} -c $< -o $@
+	@${CC} ${CFLAGS} -c $< -o $@
+
+$(BUILD_OUT)/%.o: %.cpp
+	@$(DIRECTORY_GUARD)
+	@echo "[KERNEL $(ARCH)] (c++) $<"
+	@${CCPP} ${CFLAGS} -c $< -o $@
+
+$(BUILD_OUT)/%.o: %.s
+	@$(DIRECTORY_GUARD)
+	@echo "[KERNEL $(ARCH)] (asm) $<"
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_OUT)/%.o: %.asm
 	@$(DIRECTORY_GUARD)
 	@echo "[KERNEL $(ARCH)] (asm) $<"
-	nasm $< -f elf -o $@
+	@nasm $< -f elf -o $@
 
 $(ELF_TARGET): $(BUILD_OUT)/$(ELF_TARGET)
 
 .PHONY:$(BUILD_OUT)/$(ELF_TARGET)
-$(BUILD_OUT)/$(ELF_TARGET): $(COBJ) $(AMSOBJ)
-	${LD} $^ $(LDFLAGS) -o $@
+$(BUILD_OUT)/$(ELF_TARGET): $(COBJ) $(ASMOBJ)
+	@echo "[KERNEL $(ARCH)] (ld) $^"
+	@${LD} $^ $(LDFLAGS) -o $@
 
 run: $(ISO_TARGET)
-	rm $(BUILD_OUT)/$(ELF_TARGET)
-	${QEMU} -cdrom $< ${RUN_FLAGS}
+	@rm $(BUILD_OUT)/$(ELF_TARGET)
+	@${QEMU} -cdrom $< ${RUN_FLAGS}
 
 debug: $(ISO_TARGET)
-	rm $(BUILD_OUT)/$(ELF_TARGET)
-	${QEMU} -cdrom	$< ${DEBUG_FLAGS} 
+	@rm $(BUILD_OUT)/$(ELF_TARGET)
+	@${QEMU} -cdrom	$< ${DEBUG_FLAGS} 
 
 clear:
-	rm -f $(COBJ) $(AMSOBJ) $(HEADDEPS) $(BUILD_OUT)/$(ELF_TARGET) $(ISO_TARGET)
+	@echo "[KERNEL $(ARCH)] Removing files..."
+	@rm -f $(COBJ) $(ASMOBJ) $(SOBJ) \
+	$(HEADDEPS) $(BUILD_OUT)/$(ELF_TARGET) $(ISO_TARGET)
 
 cd:	$(ISO_TARGET)
-	@echo "Preparing iso..."
+	@echo "[KERNEL $(ARCH)] Preparing iso..."
 
 .PHONY:$(ISO_TARGET)
 $(ISO_TARGET): $(ELF_TARGET)
