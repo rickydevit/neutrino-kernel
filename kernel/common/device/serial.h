@@ -7,7 +7,7 @@
 #define COM3 0x3e8
 #define COM4 0x2e8
 
-void serial_init(unsigned short port);
+void init_serial(unsigned short port);
 char serial_read();
 void serial_write(char c);
 void serial_write_string(char* message);

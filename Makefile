@@ -25,9 +25,9 @@ INCLUDEFLAGS 	:= -I. \
         			-I./libs/libc \
        				-I./libs/ 
 					
-CFLAGS 			:= 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fno-pic -fno-stack-protector -fno-rtti \
-        			-fno-exceptions -mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
-					-O2 -pipe -mcmodel=kernel $(INCLUDEFLAGS) $(DEFINEFLAGS)
+CFLAGS 			:= 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
+					-mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
+					-O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
 
 LDFLAGS 		:= 	-T $(LD_SCRIPT) -nostdlib -zmax-page-size=0x1000 -static -pie \
 					--no-dynamic-linker -ztext
@@ -72,7 +72,7 @@ $(BUILD_OUT)/%.o: %.s
 $(BUILD_OUT)/%.o: %.asm
 	@$(DIRECTORY_GUARD)
 	@echo "[KERNEL $(ARCH)] (asm) $<"
-	@nasm $< -f elf -o $@
+	@nasm $< -f elf64 -o $@
 
 $(ELF_TARGET): $(BUILD_OUT)/$(ELF_TARGET)
 

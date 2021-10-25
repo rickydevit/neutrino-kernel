@@ -4,7 +4,7 @@ unsigned short _PORT;
 
 // *Initialize serial communication to specified port
 // @param port serial port
-void serial_init(unsigned short port) {
+void init_serial(unsigned short port) {
     _PORT = port;
     portByteOut(_PORT + 1, 0x00);    //Disable all interrupts
     portByteOut(_PORT + 3, 0x80);    //Enable DLAB

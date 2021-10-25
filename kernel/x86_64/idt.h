@@ -15,6 +15,8 @@ struct IDT_entry {
     uint32_t zero2;
 };
 
+void init_idt();
+
 extern int load_idt();
 extern int irq0();
 extern int irq1();
