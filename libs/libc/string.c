@@ -1,6 +1,8 @@
 #include "string.h"
 #include "integer.h"
 #include "stdbool.h"
+#include "stdarg.h"
+#include "kernel/common/device/serial.h"
 
 char tbuf[32] = {0};
 char bchars[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
@@ -72,4 +74,101 @@ void itoa_s(int i, unsigned base, char* buf) {
         i *= -1;
     }
     itoa(i, base, buf);
+}
+
+// *Return a formatted string containing the specified arguments
+// @param istr the string to format
+// @param buffer the buffer to use during the conversion
+// @param ... the arguments to be formatted in the string
+// @return the formatted string
+char* strf(const char* istr, char buffer[], ...) {
+    if (!istr) return 0;
+
+    va_list args;
+    va_start(args, buffer);
+
+    return vstrf(istr, buffer, args);
+}
+
+// *Return a formatted string containing the specified arguments
+// @param istr the string to format
+// @param buffer the buffer to use during the conversion
+// @param args the arguments list to be formatted in the string
+// @return the formatted string
+char* vstrf(const char* istr, char buffer[], va_list args) {
+    if (!istr) return 0;
+
+    char *buffer_p = buffer;
+    unsigned int i=0;
+
+    while (istr[i] != '\0') {
+        switch (istr[i]) {
+            case '%':
+                switch (istr[i+1]) {
+                    case 'c': {
+                        char* c = va_arg(args, char*);
+                        for (int j=0; j < strlen(c); j++) {
+                            *buffer_p = c[j];
+                            buffer_p++;
+                        }
+                        i++;
+                        break;
+                    }
+
+                    case 'd':
+                    case 'i': {
+                        int c = va_arg(args, int);
+                        char str[32] = {0};
+                        itoa_s(c, 10, str);
+                        for (int j=0; j < strlen(str); j++) {
+                            *buffer_p = str[j];
+                            buffer_p++;
+                        }
+                        i++;
+                        break;
+                    }
+
+                    case 'X':
+                    case 'x': {
+                        uint32_t c = va_arg(args, uint32_t);
+                        char str[32] = {0};
+                        itoa(c, 16, str);
+                        *buffer_p++ = '0';
+                        *buffer_p++ = 'x';
+                        for (int j=0; j < strlen(str); j++) {
+                            *buffer_p = str[j];
+                            buffer_p++;
+                        }
+                        i++;
+                        break;
+                    }
+
+                    case 'b': {
+                        int c = va_arg(args, int);
+                        char str[32] = {0};
+                        itoa(c, 2, str);
+                        for (int j=0; j < strlen(str); j++) {
+                            *buffer_p = str[j];
+                            buffer_p++;
+                        }
+                        i++;
+                        break;
+                    }
+                    default:
+                        va_end(args);
+                        return 1;
+                }
+                break;
+
+            default:
+                *buffer_p = istr[i];
+                buffer_p++;
+                break;
+        }
+        i++;
+    }
+
+    *buffer_p = '\0';
+    va_end(args);
+    return buffer;
 }

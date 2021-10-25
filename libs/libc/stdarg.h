@@ -1,9 +1,9 @@
 #pragma once
-#include "va_list.h"
 
-#define STACKITEM int
-#define VA_SIZE(TYPE) ((sizeof(TYPE) + sizeof(STACKITEM) - 1) & ~(sizeof(STACKITEM) - 1))
+// #define STACKITEM int64_t
+// #define VA_SIZE(TYPE) ((sizeof(TYPE) + sizeof(STACKITEM) - 1) & ~(sizeof(STACKITEM) - 1))
+typedef __builtin_va_list va_list;
 
-#define va_start(AP, LASTARG) (AP=((va_list) & (LASTARG) + VA_SIZE(LASTARG)))
-#define va_end(AP)
-#define va_arg(AP, TYPE) (AP += VA_SIZE(TYPE), *((TYPE *)(AP - VA_SIZE(TYPE))))
+#define va_start(AP, LASTARG) __builtin_va_start(AP, LASTARG)
+#define va_end(AP) __builtin_va_end(AP)
+#define va_arg(AP, TYPE) __builtin_va_arg(AP, TYPE)
