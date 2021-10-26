@@ -1,5 +1,7 @@
 [BITS 64]
 
+section .text
+
 global irq0
 global irq1
 global irq2
@@ -145,7 +147,6 @@ _INTERRUPT_COMMON 0
 _INTERRUPT_COMMON 1
 _INTERRUPT_COMMON 2
 _INTERRUPT_COMMON 3
-_INTERRUPT_COMMON 4
 _INTERRUPT_COMMON 5
 _INTERRUPT_COMMON 6
 _INTERRUPT_COMMON 7
@@ -159,7 +160,6 @@ _INTERRUPT_COMMON 14
 _INTERRUPT_COMMON 15
 
 load_idt:
-	mov rdx, [rsp + 4]
-	lidt [rdx]
+	lidt [rdi]
 	sti
 	ret

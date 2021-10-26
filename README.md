@@ -3,12 +3,18 @@ This project is a personal way to discover and implement a 64 bit kernel written
 
 ## Features
 - [x] ⛱ **Limine bootloader** as the main boot-up solution for the moment
-    - [x] **Stivale2 protocol compliant** 
+    - [x] **Stivale2 protocol compliant**   
+        *The kernel asks the bootloader for a linear framebuffer, but can also use a terminal if the framebuffer is not available. The bootloader also pass some informations to the kernel.*
 
 - [ ] 🌳 **Basic kernel drivers**
-    - [ ] **GDT** setup
-    - [ ] **IDT** setup
-    - [x] **Serial comms**
+    - [x] **Kernel Services**   
+        *The kernel services functions are used to provide a easier to way to interface the kernel and the drivers. These functions will NOT be available to the user space.*
+    - [x] **GDT setup**   
+        *Null descriptor; 32 bit code and data descriptors; 64 bit code and data descriptors. More descriptors will be added when required.*
+    - [x] **IDT setup**   
+        *Basic x86_64 interrupts and exceptions handled. Software interrupts will be added when necessary.*
+    - [x] **Serial comms**   
+        *Serial communication with write and read operations from and to a given serial port*
     - [ ] **PIT**
     - [ ] **APIC**
     - [ ] **CPUID** 

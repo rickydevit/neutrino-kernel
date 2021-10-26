@@ -4,8 +4,7 @@
 #include "kernel/common/video/display.h"
 #include "kservice.h"
 #include "idt.h"
-
-#include "stdarg.h"
+#include "gdt.h"
 
 void _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_terminal *term_str_tag;
@@ -14,9 +13,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     //? Driver initialization
     init_serial(COM1);
     init_kservice();
-
-    ks.dbg("%c %i %x %b", "ciao", 50, -1, 13);
-
+    init_gdt();
     init_idt();
 
     //? Display driver setup

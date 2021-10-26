@@ -2,7 +2,7 @@
 #include "kservice.h"
 #include "kernel/common/device/port.h"
 
-struct IDT_entry IDT[256];
+struct IDT_entry IDT[IDT_SIZE];
 
 // *Add a new entry to the IDT table
 // @param irq the Interrupt number
@@ -10,23 +10,22 @@ struct IDT_entry IDT[256];
 // @param isr_address the address of the Interrupt Service Routine
 // @param selector the segment selector for the newly added idt entry
 // @param type_attr the attributes for the newly added idt entry
-void add_entry(unsigned int irq, int(*isr)(), unsigned long isr_address, unsigned short selector, unsigned char type_attr) {
-	isr_address = (unsigned long)isr;
-	IDT[irq].offset_lowerbits = (isr_address) & 0xffff;
+void add_entry(unsigned int irq, int(*isr)(), unsigned long *isr_address, unsigned short selector, unsigned char type_attr) {
+	unsigned long irq_address = (unsigned long)isr;
+	IDT[irq].offset_lowerbits = (irq_address) & 0xffff;
 	IDT[irq].selector = selector;
 	IDT[irq].zero = 0;
 	IDT[irq].type_attr = type_attr;
-	IDT[irq].offset_higherbits = ((isr_address) & 0xffff0000) >> 16;
+	IDT[irq].offset_higherbits = ((irq_address) & 0xffff0000) >> 16;
     IDT[irq].zero2 = 0;
 }
 
-// *Initialize the Interrupt Descriptor Table (IDT)
+// *Initialize the Interrupt Descriptor Table
 void init_idt() {
     unsigned long irq0_address;
     unsigned long irq1_address;
     unsigned long irq2_address;
     unsigned long irq3_address;          
-    unsigned long irq4_address; 
     unsigned long irq5_address;
     unsigned long irq6_address;
     unsigned long irq7_address;
@@ -49,40 +48,39 @@ void init_idt() {
 	unsigned long exc8_address;
 	unsigned long exc14_address; //PAGE FAULT
 
+	struct IDT_pointer idt_ptr; 
 	uint64_t idt_address;
-	uint64_t idt_ptr[2];
 
-    add_entry(0, exc0, exc0_address, 0x08, INTERRUPT_GATE);
-	add_entry(1, exc1, exc1_address, 0x08, INTERRUPT_GATE);
-	add_entry(2, exc2, exc2_address, 0x08, INTERRUPT_GATE);
-	add_entry(3, exc3, exc3_address, 0x08, INTERRUPT_GATE);
-	add_entry(4, exc4, exc4_address, 0x08, INTERRUPT_GATE);
-	add_entry(5, exc5, exc5_address, 0x08, INTERRUPT_GATE);
-	add_entry(6, exc6, exc6_address, 0x08, INTERRUPT_GATE);
-	add_entry(8, exc8, exc8_address, 0x08, INTERRUPT_GATE);
-	add_entry(14, exc14, exc14_address, 0x08, INTERRUPT_GATE);
+    add_entry(0, exc0, &exc0_address, 0x28, INTERRUPT_GATE);
+	add_entry(1, exc1, &exc1_address, 0x28, INTERRUPT_GATE);
+	add_entry(2, exc2, &exc2_address, 0x28, INTERRUPT_GATE);
+	add_entry(3, exc3, &exc3_address, 0x28, INTERRUPT_GATE);
+	add_entry(4, exc4, &exc4_address, 0x28, INTERRUPT_GATE);
+	add_entry(5, exc5, &exc5_address, 0x28, INTERRUPT_GATE);
+	add_entry(6, exc6, &exc6_address, 0x28, INTERRUPT_GATE);
+	add_entry(8, exc8, &exc8_address, 0x28, INTERRUPT_GATE);
+	add_entry(14, exc14, &exc14_address, 0x28, INTERRUPT_GATE);
 
-	add_entry(32, irq0, irq0_address, 0x08, INTERRUPT_GATE);
-	add_entry(33, irq1, irq1_address, 0x08, INTERRUPT_GATE);
-	add_entry(34, irq2, irq2_address, 0x08, INTERRUPT_GATE);
-	add_entry(35, irq3, irq3_address, 0x08, INTERRUPT_GATE);
-	add_entry(36, irq4, irq4_address, 0x08, INTERRUPT_GATE);
-	add_entry(37, irq5, irq5_address, 0x08, INTERRUPT_GATE);
-	add_entry(38, irq6, irq6_address, 0x08, INTERRUPT_GATE);
-	add_entry(39, irq7, irq7_address, 0x08, INTERRUPT_GATE);
-	add_entry(40, irq8, irq8_address, 0x08, INTERRUPT_GATE);
-	add_entry(41, irq9, irq9_address, 0x08, INTERRUPT_GATE);
-	add_entry(42, irq10, irq10_address, 0x08, INTERRUPT_GATE);
-	add_entry(43, irq11, irq11_address, 0x08, INTERRUPT_GATE);
-	add_entry(44, irq12, irq12_address, 0x08, INTERRUPT_GATE);
-	add_entry(45, irq13, irq13_address, 0x08, INTERRUPT_GATE);
-	add_entry(46, irq14, irq14_address, 0x08, INTERRUPT_GATE);
-	add_entry(47, irq15, irq15_address, 0x08, INTERRUPT_GATE);
+	add_entry(32, irq0, &irq0_address, 0x28, INTERRUPT_GATE);
+	add_entry(33, irq1, &irq1_address, 0x28, INTERRUPT_GATE);
+	add_entry(34, irq2, &irq2_address, 0x28, INTERRUPT_GATE);
+	add_entry(35, irq3, &irq3_address, 0x28, INTERRUPT_GATE);
+	add_entry(37, irq5, &irq5_address, 0x28, INTERRUPT_GATE);
+	add_entry(38, irq6, &irq6_address, 0x28, INTERRUPT_GATE);
+	add_entry(39, irq7, &irq7_address, 0x28, INTERRUPT_GATE);
+	add_entry(40, irq8, &irq8_address, 0x28, INTERRUPT_GATE);
+	add_entry(41, irq9, &irq9_address, 0x28, INTERRUPT_GATE);
+	add_entry(42, irq10, &irq10_address, 0x28, INTERRUPT_GATE);
+	add_entry(43, irq11, &irq11_address, 0x28, INTERRUPT_GATE);
+	add_entry(44, irq12, &irq12_address, 0x28, INTERRUPT_GATE);
+	add_entry(45, irq13, &irq13_address, 0x28, INTERRUPT_GATE);
+	add_entry(46, irq14, &irq14_address, 0x28, INTERRUPT_GATE);
+	add_entry(47, irq15, &irq15_address, 0x28, INTERRUPT_GATE);
 
     /* fill the IDT descriptor */
     idt_address = (uint64_t)IDT;
-    idt_ptr[0] = (sizeof(struct IDT_entry) *256) + ((idt_address & 0xffff) << 16);
-    idt_ptr[1] = idt_address >> 16;
+	idt_ptr.size = sizeof(struct IDT_entry) * IDT_SIZE;
+	idt_ptr.offset = idt_address;
 
     ks.dbg("IDT built at %x. Loading to register...", idt_address);
 	load_idt(idt_ptr);
