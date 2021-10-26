@@ -47,9 +47,9 @@ OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
 
 # qemu settings
 QEMU 			= /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
-EMU_MEMORY 		= 1G
-RUN_FLAGS 		= -m ${EMU_MEMORY} -vga std
-DEBUG_FLAGS		= ${RUN_FLAGS} -serial stdio -d guest_errors
+HARD_FLAGS 		= -m 1G -vga std
+RUN_FLAGS 		= ${HARD_FLAGS} -serial stdio
+DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -monitor stdio -d guest_errors
 
 # === COMMANDS AND BUILD ========================
 

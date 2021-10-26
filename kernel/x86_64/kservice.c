@@ -1,6 +1,7 @@
 #include "kservice.h"
 #include "libs/libc/stdarg.h"
 #include "libs/libc/string.h"
+#include "kernel/common/device/serial.h"
 
 // Private functions declarations
 
@@ -13,6 +14,7 @@ void kpanic(char* message, ...);
 
 //* Initialize the kernel services
 void init_kservice() {
+    ks._helper = serial_write_string;
     ks.log = klog;
     ks.dbg = kdbg;
     ks.err = kerr;
@@ -21,38 +23,52 @@ void init_kservice() {
     ks.dbg("Kernel services initialized.");
 }
 
+//* Set a new function for the given Kernel service
+// @param type the type of service to change
+// @param func the new function to be substituted in the kernel services
+void set_kservice(enum KSERVICE_TYPE type, void (*func)) {
+    switch (type) {
+        case KSERVICE_HELPER: ks._helper = func; break;
+        case KSERVICE_DEBUG: ks.dbg = func; break;
+        case KSERVICE_LOG: ks.log = func; break;
+        case KSERVICE_ERROR: ks.err = func; break;
+        case KSERVICE_PANIC: ks.panic = func; break;
+        default: break;
+    }
+}
+
 // Private functions
 
 void klog(char* message, ...) {
     va_list args; va_start(args, message);
     char buf[2048] = {0};
-    serial_write_string("[LOG] ");
-    serial_write_string(vstrf(message, buf, args));
-    serial_write_string("\n");
+    ks._helper("[LOG] ");
+    ks._helper(vstrf(message, buf, args));
+    ks._helper("\n");
 }
 
 void kdbg(char* message, ...) {
     va_list args; va_start(args, message);
     char buf[2048] = {0};
-    serial_write_string("[DEBUG] ");
-    serial_write_string(vstrf(message, buf, args));
-    serial_write_string("\n");
+    ks._helper("[DEBUG] ");
+    ks._helper(vstrf(message, buf, args));
+    ks._helper("\n");
 }
 
 void kerr(char* message, ...) {
     va_list args; va_start(args, message);
     char buf[2048] = {0};
-    serial_write_string("[ERR] ");
-    serial_write_string(vstrf(message, buf, args));
-    serial_write_string("\n");
+    ks._helper("[ERR] ");
+    ks._helper(vstrf(message, buf, args));
+    ks._helper("\n");
 }
 
 void kpanic(char* message, ...) {
     va_list args; va_start(args, message);
     char buf[2048] = {0};
-    serial_write_string("[PANIC] ");
-    serial_write_string(vstrf(message, buf, args));
-    serial_write_string("\n");
+    ks._helper("[PANIC] ");
+    ks._helper(vstrf(message, buf, args));
+    ks._helper("\n");
 
     asm("hlt");
 }
