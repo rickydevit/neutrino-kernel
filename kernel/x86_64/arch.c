@@ -2,7 +2,8 @@
 #include "libs/libc/size_t.h"
 #include "kernel/common/device/serial.h"
 #include "kernel/common/video/display.h"
-#include "kservice.h"
+#include "kernel/common/kservice.h"
+#include "kernel/common/cpuid.h"
 #include "idt.h"
 #include "gdt.h"
 
@@ -15,6 +16,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_kservice();
     init_gdt();
     init_idt();
+    init_cpuid();
 
     //? Display driver setup
     term_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_TERMINAL_ID);
@@ -46,6 +48,12 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
 
         term_write("\n\n", 2);
         term_write("Hello world", 11);
+    }
+
+    if (get_cpuid_availability()) {
+        char vendor[13] = {0};
+        get_cpu_vendor(vendor);
+        ks.log("CPUID supported. The current CPU's vendor is %c", vendor);
     }
 
     //TODO: implement user-space (final goal)
