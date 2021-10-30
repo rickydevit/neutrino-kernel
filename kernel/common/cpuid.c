@@ -1,5 +1,6 @@
 #include "cpuid.h"
 #include "libs/libc/stdbool.h"
+#include "kservice.h"
 
 //* Marks if the CPUID is available in the current configuration
 bool cpuid_available = false;
@@ -19,8 +20,9 @@ void execute_cpuid(uint32_t reg, uint32_t *eax, uint32_t *ebx, uint32_t *ecx, ui
 // @return true if the CPUID was successfully initialized, false otherwise
 bool init_cpuid() {
     // Test if CPUID is available by executing a CPUID instruction
-    char test[13];
-    get_cpu_vendor(test);
+    char vendor[13] = {0};
+    get_cpu_vendor(vendor);
+    ks.dbg("CPUID supported. The current CPU's vendor is %c", vendor);
     
     return cpuid_available = true;
 }

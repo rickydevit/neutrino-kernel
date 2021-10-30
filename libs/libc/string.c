@@ -76,6 +76,51 @@ void itoa_s(int i, unsigned base, char* buf) {
     itoa(i, base, buf);
 }
 
+// *Convert an unsigned long to its string equivalent
+// @param i the unsigned long to convert
+// @param base the base to convert the unsigned long to
+// @param buf the buffer to use during the conversion
+// @return the converted string 
+char* ltoa(uint64_t i, unsigned base, char* buf) {
+    int pos = 0;
+    int opos = 0;
+    int top = 0;
+
+    if (i == 0 || base > 16) {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return;
+    }
+
+    while (i != 0) {
+        tbuf[pos] = bchars[i % base];
+        pos++;
+        i /= base;
+    }
+
+    top=pos--;
+    for (opos = 0; opos < top; pos--, opos++) {
+        buf[opos] = tbuf[pos];
+    }
+    buf[opos] = 0;
+
+    return buf;
+}
+
+// *Convert a signed long to its string equivalent
+// @param i the signed long to convert
+// @param base the base to convert the signed long to
+// @param buf the buffer to use during the conversion
+// @return the converted string 
+void ltoa_s(int64_t i, unsigned base, char* buf) {
+    if (base > 16) return;
+    if (i < 0) {
+        *buf++ = '-';
+        i *= -1;
+    }
+    ltoa(i, base, buf);
+}
+
 // *Return a formatted string containing the specified arguments
 // @param istr the string to format
 // @param buffer the buffer to use during the conversion
@@ -115,9 +160,21 @@ char* vstrf(const char* istr, char buffer[], va_list args) {
                         break;
                     }
 
+                    case 'u': {
+                        uint64_t c = va_arg(args, uint64_t);
+                        char str[32] = {0};
+                        ltoa(c, 10, str);
+                        for (int j=0; j < strlen(str); j++) {
+                            *buffer_p = str[j];
+                            buffer_p++;
+                        }
+                        i++;
+                        break;
+                    }
+
                     case 'd':
                     case 'i': {
-                        int c = va_arg(args, int);
+                        int32_t c = va_arg(args, int32_t);
                         char str[32] = {0};
                         itoa_s(c, 10, str);
                         for (int j=0; j < strlen(str); j++) {
