@@ -17,9 +17,12 @@ This project is a personal way to discover and implement a 64 bit kernel written
         *Serial communication with write and read operations from and to a given serial port*
     - [ ] **PIT**
     - [ ] **APIC**
-    - [ ] **CPUID** 
+    - [x] **CPUID** 
     - [ ] **RTC**
     - [ ] **Memory manager**, both physical and virtual
+        - [x] **Physical memory manager**   
+            *Scans the loaded memory and manages it using 4KB blocks. Kernel and other reserved areas are marked accordingly*
+        - [ ] **Virtual memory manager**
     - [ ] **Process manager**
 
 - [ ] ⚙ **Advanced drivers**

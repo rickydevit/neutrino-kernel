@@ -4,12 +4,14 @@
 #include "kernel/common/video/display.h"
 #include "kernel/common/kservice.h"
 #include "kernel/common/cpuid.h"
+#include "memory/mem_phys.h"
 #include "idt.h"
 #include "gdt.h"
 
 void _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_terminal *term_str_tag;
     struct stivale2_struct_tag_framebuffer *framebuf_str_tag;
+    struct stivale2_struct_tag_memmap *memmap_str_tag;
 
     //? Driver initialization
     init_serial(COM1);
@@ -17,6 +19,29 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_gdt();
     init_idt();
     init_cpuid();
+    //? -----------------------------------------
+
+    //? Memory manager initialization
+    memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
+    uint32_t memmap_entries = memmap_str_tag->entries;
+
+    struct memory_physical_region entries[memmap_entries];
+    for (int i = 0; i < memmap_entries; i++) {
+        struct stivale2_mmap_entry *entry = memmap_str_tag->memmap + i;
+
+        entries[i].base = entry->base;
+        entries[i].size = entry->length;
+        entries[i].limit = entry->base + entry->length;
+        
+        if (entry->type == STIVALE2_MMAP_USABLE || entry->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE || 
+            entry->type == STIVALE2_MMAP_ACPI_RECLAIMABLE) entries[i].type = MEMORY_REGION_USABLE;
+        else if (entry->type == STIVALE2_MMAP_KERNEL_AND_MODULES) entries[i].type = MEMORY_REGION_KERNEL;
+        else if (entry->type == STIVALE2_MMAP_FRAMEBUFFER) entries[i].type = MEMORY_REGION_FRAMEBUFFER;
+        else entries[i].type = MEMORY_REGION_RESERVED;
+    }
+
+    init_pmm(entries, memmap_entries);
+    //? -----------------------------------------
 
     //? Display driver setup
     term_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_TERMINAL_ID);
@@ -49,12 +74,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
         term_write("\n\n", 2);
         term_write("Hello world", 11);
     }
-
-    if (get_cpuid_availability()) {
-        char vendor[13] = {0};
-        get_cpu_vendor(vendor);
-        ks.log("CPUID supported. The current CPU's vendor is %c", vendor);
-    }
+    //? -----------------------------------------
 
     //TODO: implement user-space (final goal)
     for (;;) asm("hlt");
