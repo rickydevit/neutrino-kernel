@@ -202,7 +202,7 @@ char* vstrf(const char* istr, char buffer[], va_list args) {
 
                     case 'b': {
                         int c = va_arg(args, int);
-                        char str[32] = {0};
+                        char str[128] = {0};
                         itoa(c, 2, str);
                         for (int j=0; j < strlen(str); j++) {
                             *buffer_p = str[j];
