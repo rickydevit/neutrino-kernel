@@ -1,5 +1,4 @@
 #include "mem_phys.h"
-#include "paging.h"
 #include "kernel/common/kservice.h"
 #include "kernel/common/memory/memory.h"
 #include "libs/libc/size_t.h"
