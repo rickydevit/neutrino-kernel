@@ -160,6 +160,6 @@ _INTERRUPT_COMMON 14
 _INTERRUPT_COMMON 15
 
 load_idt:
-	lidt [rdi]
+	lidt [edi]
 	sti
 	ret

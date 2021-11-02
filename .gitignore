@@ -3,4 +3,4 @@ build/
 .vscode/
 
 *.iso
-serial.log
+*.log
