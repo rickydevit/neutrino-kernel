@@ -18,14 +18,14 @@ struct memory_physical_region {
 };
 
 struct memory_physical {
-    uint32_t total_memory;      // in bytes
-    uint32_t usable_memory;     // in bytes
-    uint32_t total_blocks;      // in bytes/block_size (blocks)
-    uint32_t usable_blocks;     // in bytes/block_size (blocks)
-    uint32_t used_blocks;
+    uint64_t total_memory;      // in bytes
+    uint64_t usable_memory;     // in bytes
+    uint64_t total_blocks;      // in bytes/block_size (blocks)
+    uint64_t usable_blocks;     // in bytes/block_size (blocks)
+    uint64_t used_blocks;
 
     struct memory_physical_region* regions;
-    uint64_t* _map;
+    uint32_t* _map;
 };
 
 struct memory_physical pmm;
