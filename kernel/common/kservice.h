@@ -6,6 +6,7 @@ struct KernelService {
     void (*err)     (char* message, ...);
     void (*panic)   (char* message, ...);
 
+    void (*_put) (char* message, ...);
     void (*_helper) (char* message);
 };
 

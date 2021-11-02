@@ -5,6 +5,7 @@
 
 // Private functions declarations
 
+void kput(char* message, ...);
 void kdbg(char* message, ...);
 void klog(char* message, ...);
 void kerr(char* message, ...);
@@ -15,6 +16,7 @@ void kpanic(char* message, ...);
 //* Initialize the kernel services
 void init_kservice() {
     ks._helper = serial_write_string;
+    ks._put = kput;
     ks.log = klog;
     ks.dbg = kdbg;
     ks.err = kerr;
@@ -38,6 +40,12 @@ void set_kservice(enum KSERVICE_TYPE type, void (*func)) {
 }
 
 // Private functions
+
+void kput(char* message, ...) {
+    va_list args; va_start(args, message);
+    char buf[2048] = {0};
+    ks._helper(vstrf(message, buf, args));
+}
 
 void klog(char* message, ...) {
     va_list args; va_start(args, message);
