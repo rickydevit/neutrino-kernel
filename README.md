@@ -1,5 +1,15 @@
-# Neutrino Kernel Project
-This project is a personal way to discover and implement a 64 bit kernel written in C and Assembly. The kernel will have basic drivers and functionality, but other features may be added in the future. The currently implemented features are listed below.
+### ![Neutrino Kernel Project](./utils/logo.png)
+*Neutrino* is a project that aims to understand and implement a 64 bit kernel written in a modern C and Assembly. The kernel will have basic drivers and functionality, but other features may be added in the future. The currently implemented features are listed [here](#Features). 
+
+## Milestones
+- [ ] **0 ー Reaching Userspace** ⬅   
+    *Implement everything needed for reaching a simple userspace*
+- [ ] 1 ー Storage land   
+    *Implement a VFS to access installed drives, writing and reading files*
+- [ ] 2 ー Network stack   
+    *Add a network stack to ping, send and receive packets*
+- [ ] 3 ー Graphical impovements   
+    *Improve the GUI and the UX of the userspace, adding controls and a window manager*
 
 ## Features
 - [x] ⛱ **Limine bootloader** as the main boot-up solution for the moment
@@ -42,6 +52,7 @@ This project is a personal way to discover and implement a 64 bit kernel written
 ## Source structure
 - **`kernel\`**
     - **`x86-64\`** _platform-specific code for the x86-64 architecture_
+        - **`memory\`** _platform-specific code for memory related functions_
     - **`common\`** _platform-independent kernel code_
         - **`device\`** _libraries for device abstraction in the kernel_
         - **`video\`** _implementation of video driver_
