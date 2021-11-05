@@ -1,6 +1,7 @@
 #include "mem_phys.h"
 #include "kernel/common/kservice.h"
 #include "kernel/common/memory/memory.h"
+#include "libs/libc/stdbool.h"
 #include "libs/libc/size_t.h"
 
 // === PRIVATE FUNCTIONS ========================
@@ -19,9 +20,9 @@ void pmm_map_unset(int bit) {
 
 // *Get the value of the memory bitmap at the position [bit]
 // @param bit the bit to get the value from
-// @return 1 if the bit is set, 0 otherwise
-int pmm_map_get(int bit) {
-    return pmm._map[bit / 32] & (1 << (bit % 32));
+// @return true if the bit is set, false otherwise
+bool pmm_map_get(int bit) {
+    return (pmm._map[bit / 32] & (1 << (bit % 32))) == 0 ? false : true;
 }
 
 // *Find the first free slot in the memory, and return it
@@ -115,15 +116,16 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
     pmm.total_blocks = pmm.total_memory / PHYSMEM_BLOCK_SIZE;
     pmm.usable_memory = 0;
 	pmm._map = 0;
+	pmm._map_size = pmm.total_blocks / 8;
 
     for (int i = 0; i < size; i++) {
         struct memory_physical_region entry = entries[i];
 
-		// ks.dbg("%i: base %x length %u type %d", i, entry.base, entry.size, entry.type);
+		ks.dbg("%i: base %x length %u type %d", i, entry.base, entry.size, entry.type);
         
 		// find the first usable region and set it as the base address of the memory bitmap
-        if (entry.type == MEMORY_REGION_USABLE && pmm._map == 0 && entry.size >= pmm.total_blocks / 8) {
-			memory_set(entry.base, 0, pmm.total_blocks / 8);
+        if (entry.type == MEMORY_REGION_USABLE && pmm._map == 0 && entry.size >= pmm._map_size) {
+			memory_set(entry.base, 0, pmm._map_size);
 			pmm._map = entry.base;
 		}
         
@@ -134,7 +136,7 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
 	pmm.usable_blocks = pmm.usable_memory / PHYSMEM_BLOCK_SIZE;
 
 	// mark the memory bitmap itself as used
-	pmm_mark_region_used((uint64_t)pmm._map, pmm.total_blocks / 8);
+	pmm_mark_region_used((uint64_t)pmm._map, pmm._map_size);
 
 	// mark non-usable regions as used
 	for (int i = 0; i < size; i++) {
@@ -142,8 +144,20 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
 			pmm_mark_region_used(entries[i].base, entries[i].size);
 	}
 
-	ks.dbg("Memory map created at %x", pmm._map);
+	ks.dbg("Memory map created at %x. Size is %u bytes", pmm._map, pmm._map_size);
 	ks.dbg("Found %u bytes of usable memory. Preparing %u blocks", pmm.usable_memory, pmm.usable_blocks);
 	ks.dbg("Used %u/%u blocks", pmm.used_blocks, pmm.usable_blocks);
 	ks.dbg("PMM has been initialized.");
+}
+
+void print_memory_map(uint64_t base_addr, size_t size) {
+	int align = base_addr / PHYSMEM_BLOCK_SIZE;
+	int blocks = size / PHYSMEM_BLOCK_SIZE;
+
+	ks.dbg("Memory map from %x", base_addr);
+ 
+	for (; blocks>0; blocks--) 
+		ks._put("%b", pmm_map_get(align++));
+
+	ks._put("\n");
 }

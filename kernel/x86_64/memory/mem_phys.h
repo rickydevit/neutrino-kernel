@@ -26,6 +26,7 @@ struct memory_physical {
 
     struct memory_physical_region* regions;
     uint32_t* _map;
+    uint64_t _map_size;
 };
 
 struct memory_physical pmm;
