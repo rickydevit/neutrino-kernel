@@ -27,14 +27,11 @@ bool pmm_map_get(int bit) {
 
 // *Find the first free slot in the memory, and return it
 // @return the number of the bit representing first free slot in the memory
-int pmm_map_first_free() {
+uint32_t pmm_map_first_free() {
 	for (uint32_t i=0; i < pmm.total_blocks / 32; i++)
 		if (pmm._map[i] != 0xffffffff)
 			for (int j=0; j<32; j++) {		//! test each bit in the dword
- 
-				int bit = 1 << j;
-				if (! (pmm._map[i] & bit) )
-					return i*4*8+j;
+ 				if (!(pmm._map[i] & 1 << j)) return i*4*8+j;
 			}
  
 	return -1;
@@ -43,7 +40,7 @@ int pmm_map_first_free() {
 // *Find the first free series of slots in the memory, and return the first of them 
 // @param size the size of the series to find
 // @return the first free bit of the series
-int pmm_map_first_free_series(size_t size) {
+uint32_t pmm_map_first_free_series(size_t size) {
     if (size==0)
 		return -1;
 
@@ -134,6 +131,7 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
     }
 
 	pmm.usable_blocks = pmm.usable_memory / PHYSMEM_BLOCK_SIZE;
+	if ((uint32_t)pmm._map != 0) pmm_mark_region_used(0, pmm._map_size - (uint32_t)pmm._map);
 
 	// mark the memory bitmap itself as used
 	pmm_mark_region_used((uint64_t)pmm._map, pmm._map_size);
@@ -150,14 +148,66 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
 	ks.dbg("PMM has been initialized.");
 }
 
+// *Allocate a physical memory block and return the physical address of the assigned region
+// @return the physical address of the assigned block
+uintptr_t pmm_alloc() {
+	if (pmm.used_blocks >= pmm.usable_blocks) ks.panic("Out of physical memory!");
+	
+	uint32_t block = pmm_map_first_free();
+	if (block == -1) ks.panic("Out of physical memory!");
+	
+	pmm_map_set(block);
+	pmm.used_blocks++;
+
+	return (uintptr_t)(block*PHYSMEM_BLOCK_SIZE);
+}
+
+// *Free a physical memory block
+// @param addr the address of the physical memory block to free
+void pmm_free(uintptr_t addr) {
+	uint32_t p = (uint32_t)addr;
+	uint32_t block = p / PHYSMEM_BLOCK_SIZE;
+
+	pmm_map_clear(block);
+	pmm.used_blocks--;
+}
+
+// *Allocate a series physical memory blocks and return the physical address of the assigned region
+// @param size the number of physical memory blocks to allocate
+// @return the physical address of the assigned block
+uintptr_t pmm_alloc_series(size_t size) {
+	if (pmm.used_blocks + size >= pmm.usable_blocks) ks.panic("Out of physical memory!");
+
+	uint32_t block = pmm_map_first_free_series(size);
+	if (block == -1) ks.panic("Out of physical memory!");
+
+	for (uint32_t i=0; i<size; i++) pmm_map_set(block+i);
+	pmm.used_blocks += size;
+
+	return (uintptr_t)(block*PHYSMEM_BLOCK_SIZE);
+}
+
+// *Free a series of physical memory block
+// @param size the number of physical memory blocks to free
+// @param addr the address of the physical memory block to free
+void pmm_free_series(uintptr_t addr, size_t size) {
+	uint32_t p = (uint32_t)addr;
+	uint32_t block = p / PHYSMEM_BLOCK_SIZE;
+
+	for (uint32_t i=0; i<size; i++) pmm_map_clear(block+i);
+	pmm.used_blocks -= size;
+}
+
 void print_memory_map(uint64_t base_addr, size_t size) {
 	int align = base_addr / PHYSMEM_BLOCK_SIZE;
-	int blocks = size / PHYSMEM_BLOCK_SIZE;
 
 	ks.dbg("Memory map from %x", base_addr);
- 
-	for (; blocks>0; blocks--) 
-		ks._put("%b", pmm_map_get(align++));
+ 	ks._put("%x\t", base_addr);
+	for (int block = 0; block < size; block++) {
+		if (block % 64 == 0 && block != 0) ks._put("\n%x\t%b", base_addr+block*PHYSMEM_BLOCK_SIZE, pmm_map_get(align+block));
+		else if (block % 32 == 0 && block != 0) ks._put("\t%b", pmm_map_get(align+block));
+		else ks._put("%b", pmm_map_get(align+block));
+	}
 
 	ks._put("\n");
 }
