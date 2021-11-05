@@ -21,26 +21,44 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_cpuid();
     //? -----------------------------------------
 
-    //? Memory manager initialization
-    memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
-    uint32_t memmap_entries = memmap_str_tag->entries;
-
-    struct memory_physical_region entries[memmap_entries];
-    for (int i = 0; i < memmap_entries; i++) {
-        struct stivale2_mmap_entry *entry = memmap_str_tag->memmap + i;
-
-        entries[i].base = entry->base;
-        entries[i].size = entry->length;
-        entries[i].limit = entry->base + entry->length;
+    //? Memory manager initialization 
+    {
+        memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
+        uint32_t memmap_entries = memmap_str_tag->entries;
+        uint64_t n_base, n_size;
+        int i = 0, lookahead = 1;
         
-        if (entry->type == STIVALE2_MMAP_USABLE || entry->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE || 
-            entry->type == STIVALE2_MMAP_ACPI_RECLAIMABLE) entries[i].type = MEMORY_REGION_USABLE;
-        else if (entry->type == STIVALE2_MMAP_KERNEL_AND_MODULES) entries[i].type = MEMORY_REGION_KERNEL;
-        else if (entry->type == STIVALE2_MMAP_FRAMEBUFFER) entries[i].type = MEMORY_REGION_FRAMEBUFFER;
-        else entries[i].type = MEMORY_REGION_RESERVED;
-    }
+        struct memory_physical_region entries[memmap_entries];
+        while (i < memmap_entries) {
+            struct stivale2_mmap_entry *entry = memmap_str_tag->memmap + i;
 
-    init_pmm(entries, memmap_entries);
+            entries[i].base = entry->base;
+            entries[i].size = entry->length;
+            entries[i].limit = entry->base + entry->length;
+            
+            if (entry->type == STIVALE2_MMAP_USABLE || entry->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE || 
+                entry->type == STIVALE2_MMAP_ACPI_RECLAIMABLE) entries[i].type = MEMORY_REGION_USABLE;
+            else if (entry->type == STIVALE2_MMAP_KERNEL_AND_MODULES) entries[i].type = MEMORY_REGION_KERNEL;
+            else if (entry->type == STIVALE2_MMAP_FRAMEBUFFER) entries[i].type = MEMORY_REGION_FRAMEBUFFER;
+            else entries[i].type = MEMORY_REGION_RESERVED;
+
+            if (i+lookahead < memmap_entries) {
+                while ((entries[i].type == MEMORY_REGION_USABLE && (entry+lookahead)->type == STIVALE2_MMAP_USABLE || 
+                      (entry+lookahead)->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE || (entry+lookahead)->type == STIVALE2_MMAP_ACPI_RECLAIMABLE)) {
+                          entries[i].size += (entry+lookahead)->length;
+                          entries[i].limit = (entry+lookahead)->base + (entry+lookahead)->length;
+                          entries[i+lookahead].type = MEMORY_REGION_INVALID;
+                          lookahead++;
+                }
+                i += lookahead;
+                lookahead = 1;
+            } else {
+                i++;
+            }
+        }
+
+        init_pmm(entries, memmap_entries);
+    }
     //? -----------------------------------------
 
     //? Display driver setup

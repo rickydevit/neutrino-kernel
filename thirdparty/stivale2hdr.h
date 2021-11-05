@@ -10,17 +10,9 @@
 // ?stack for the limine bootloader
 static uint8_t stack[8192];
 
-static struct stivale2_header_tag_terminal terminal_hdr_tag = {
-    // All tags need to begin with an identifier and a pointer to the next tag.
-    .tag = {
-        // Identification constant defined in stivale2.h and the specification.
-        .identifier = STIVALE2_HEADER_TAG_TERMINAL_ID,
-        // If next is 0, it marks the end of the linked list of header tags.
-        .next = 0
-    },
-    // The terminal header tag possesses a flags field, leave it as 0 for now
-    // as it is unused.
-    .flags = 0
+static struct stivale2_tag unmap_null_hdr_tag = {
+    .identifier = STIVALE2_HEADER_TAG_UNMAP_NULL_ID,
+    .next = 0,
 };
 
 static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
@@ -30,7 +22,7 @@ static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
         // Instead of 0, we now point to the previous header tag. The order in
         // which header tags are linked does not matter.
         // .next = (uint64_t)&terminal_hdr_tag
-        .next = 0
+        .next = (uint64_t)&unmap_null_hdr_tag
     },
     // We set all the framebuffer specifics to 0 as we want the bootloader
     // to pick the best it can.
