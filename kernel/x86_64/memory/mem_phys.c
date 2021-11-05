@@ -168,7 +168,7 @@ void pmm_free(uintptr_t addr) {
 	uint32_t p = (uint32_t)addr;
 	uint32_t block = p / PHYSMEM_BLOCK_SIZE;
 
-	pmm_map_clear(block);
+	pmm_map_unset(block);
 	pmm.used_blocks--;
 }
 
@@ -194,7 +194,7 @@ void pmm_free_series(uintptr_t addr, size_t size) {
 	uint32_t p = (uint32_t)addr;
 	uint32_t block = p / PHYSMEM_BLOCK_SIZE;
 
-	for (uint32_t i=0; i<size; i++) pmm_map_clear(block+i);
+	for (uint32_t i=0; i<size; i++) pmm_map_unset(block+i);
 	pmm.used_blocks -= size;
 }
 
