@@ -100,6 +100,20 @@ void pmm_mark_region_used(uint64_t base_addr, size_t size) {
 	}
 }
 
+void pmm_print_memory_map(uint64_t base_addr, size_t size) {
+	int align = base_addr / PHYSMEM_BLOCK_SIZE;
+
+	ks.dbg("Memory map from %x", base_addr);
+ 	ks._put("%x\t", base_addr);
+	for (int block = 0; block < size; block++) {
+		if (block % 64 == 0 && block != 0) ks._put("\n%x\t%b", base_addr+block*PHYSMEM_BLOCK_SIZE, pmm_map_get(align+block));
+		else if (block % 32 == 0 && block != 0) ks._put("\t%b", pmm_map_get(align+block));
+		else ks._put("%b", pmm_map_get(align+block));
+	}
+
+	ks._put("\n");
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 // *Initialize the physical memory manager
@@ -109,6 +123,7 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
     ks.log("Initializing PMM...");
     
     pmm.regions = entries;
+	pmm.regions_count = size;
     pmm.total_memory = entries[size-1].limit - entries[0].base;
     pmm.total_blocks = pmm.total_memory / PHYSMEM_BLOCK_SIZE;
     pmm.usable_memory = 0;
@@ -198,16 +213,14 @@ void pmm_free_series(uintptr_t addr, size_t size) {
 	pmm.used_blocks -= size;
 }
 
-void print_memory_map(uint64_t base_addr, size_t size) {
-	int align = base_addr / PHYSMEM_BLOCK_SIZE;
-
-	ks.dbg("Memory map from %x", base_addr);
- 	ks._put("%x\t", base_addr);
-	for (int block = 0; block < size; block++) {
-		if (block % 64 == 0 && block != 0) ks._put("\n%x\t%b", base_addr+block*PHYSMEM_BLOCK_SIZE, pmm_map_get(align+block));
-		else if (block % 32 == 0 && block != 0) ks._put("\t%b", pmm_map_get(align+block));
-		else ks._put("%b", pmm_map_get(align+block));
+// *Get the base address of a memory region given the type. Only return the first region found
+// @param type the type of memory region to get
+// @return the base address of the memory region, 0 if not found 
+uintptr_t get_base_by_type(memory_physical_region_type type) {
+	for (uint32_t i = 0; i < pmm.regions_count; i++) {
+		if (pmm.regions[i].type != type) continue;
+		return (uintptr_t)pmm.regions[i].base;
 	}
 
-	ks._put("\n");
+	return 0;
 }

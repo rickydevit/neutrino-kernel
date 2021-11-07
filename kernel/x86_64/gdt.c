@@ -30,5 +30,5 @@ void init_gdt() {
 
     ks.dbg("GDT built at %x. Loading to register...", gdt_address);
     load_gdt((uint32_t)&gdt_ptr);
-	ks.dbg("Global Descriptor Table loaded successfully.");
+	ks.log("Global Descriptor Table loaded successfully.");
 }
