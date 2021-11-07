@@ -105,8 +105,8 @@ void pmm_mark_region_used(uint64_t base_addr, size_t size) {
 // *Initialize the physical memory manager
 // @param entries a valid array of memory_physical_region entries
 // @param size the size of the array of memory_physical_region
-void init_pmm(struct memory_physical_region *entries, uint32_t size) {    
-    ks.dbg("Initializing PMM...");
+void init_pmm(struct memory_physical_region *entries, uint32_t size) {
+    ks.log("Initializing PMM...");
     
     pmm.regions = entries;
     pmm.total_memory = entries[size-1].limit - entries[0].base;
@@ -143,9 +143,9 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
 	}
 
 	ks.dbg("Memory map created at %x. Size is %u bytes", pmm._map, pmm._map_size);
-	ks.dbg("Found %u bytes of usable memory. Preparing %u blocks", pmm.usable_memory, pmm.usable_blocks);
+	ks.log("Found %u bytes of usable memory. Preparing %u blocks", pmm.usable_memory, pmm.usable_blocks);
 	ks.dbg("Used %u/%u blocks", pmm.used_blocks, pmm.usable_blocks);
-	ks.dbg("PMM has been initialized.");
+	ks.log("PMM has been initialized.");
 }
 
 // *Allocate a physical memory block and return the physical address of the assigned region

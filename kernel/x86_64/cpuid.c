@@ -22,7 +22,7 @@ bool init_cpuid() {
     // Test if CPUID is available by executing a CPUID instruction
     char vendor[13] = {0};
     get_cpu_vendor(vendor);
-    ks.dbg("CPUID supported. The current CPU's vendor is %c", vendor);
+    ks.log("CPUID supported. The current CPU's vendor is %c", vendor);
     
     return cpuid_available = true;
 }

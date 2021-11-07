@@ -84,7 +84,7 @@ void init_idt() {
 
     ks.dbg("IDT built at %x. Loading to register...", idt_address);
 	load_idt(idt_ptr);
-	ks.dbg("Interrupt Descriptor Table loaded successfully.");
+	ks.log("Interrupt Descriptor Table loaded successfully.");
 
 	asm("sti");
 }
