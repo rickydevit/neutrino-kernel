@@ -3,6 +3,7 @@
 struct KernelService {
     void (*dbg)     (char* message, ...);
     void (*log)     (char* message, ...);
+    void (*warn)     (char* message, ...);
     void (*err)     (char* message, ...);
     void (*panic)   (char* message, ...);
 
@@ -14,6 +15,7 @@ enum KSERVICE_TYPE {
     KSERVICE_HELPER,
     KSERVICE_LOG,
     KSERVICE_DEBUG,
+    KSERVICE_WARNING,
     KSERVICE_ERROR,
     KSERVICE_PANIC
 };

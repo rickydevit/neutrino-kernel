@@ -8,6 +8,7 @@
 void kput(char* message, ...);
 void kdbg(char* message, ...);
 void klog(char* message, ...);
+void kwarn(char* message, ...);
 void kerr(char* message, ...);
 void kpanic(char* message, ...);
 
@@ -19,6 +20,7 @@ void init_kservice() {
     ks._put = kput;
     ks.log = klog;
     ks.dbg = kdbg;
+    ks.warn = kwarn;
     ks.err = kerr;
     ks.panic = kpanic;
 
@@ -33,6 +35,7 @@ void set_kservice(enum KSERVICE_TYPE type, void (*func)) {
         case KSERVICE_HELPER: ks._helper = func; break;
         case KSERVICE_DEBUG: ks.dbg = func; break;
         case KSERVICE_LOG: ks.log = func; break;
+        case KSERVICE_WARNING: ks.warn = func; break;
         case KSERVICE_ERROR: ks.err = func; break;
         case KSERVICE_PANIC: ks.panic = func; break;
         default: break;
@@ -59,6 +62,14 @@ void kdbg(char* message, ...) {
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[DEBUG] ");
+    ks._helper(vstrf(message, buf, args));
+    ks._helper("\n");
+}
+
+void kwarn(char* message, ...) {
+    va_list args; va_start(args, message);
+    char buf[2048] = {0};
+    ks._helper("[WARN] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
 }
