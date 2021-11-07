@@ -3,8 +3,8 @@
 #include "kernel/common/device/serial.h"
 #include "kernel/common/video/display.h"
 #include "kernel/common/kservice.h"
-#include "kernel/common/cpuid.h"
 #include "memory/mem_phys.h"
+#include "cpuid.h"
 #include "idt.h"
 #include "gdt.h"
 
