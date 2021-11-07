@@ -24,7 +24,7 @@ void init_kservice() {
     ks.err = kerr;
     ks.panic = kpanic;
 
-    ks.dbg("Kernel services initialized.");
+    ks.log("Kernel services initialized.");
 }
 
 //* Set a new function for the given Kernel service
