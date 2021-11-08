@@ -41,4 +41,4 @@ uintptr_t pmm_alloc();
 void pmm_free(uintptr_t addr);
 uintptr_t pmm_alloc_series(size_t size); 
 void pmm_free_series(uintptr_t addr, size_t size); 
-uintptr_t pmm_get_base_by_type(memory_physical_region_type type);
+struct memory_physical_region pmm_get_region_by_type(memory_physical_region_type type);

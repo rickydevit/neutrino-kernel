@@ -216,11 +216,11 @@ void pmm_free_series(uintptr_t addr, size_t size) {
 // *Get the base address of a memory region given the type. Only return the first region found
 // @param type the type of memory region to get
 // @return the base address of the memory region, 0 if not found 
-uintptr_t pmm_get_base_by_type(memory_physical_region_type type) {
+struct memory_physical_region pmm_get_region_by_type(memory_physical_region_type type) {
 	for (uint32_t i = 0; i < pmm.regions_count; i++) {
 		if (pmm.regions[i].type != type) continue;
-		return (uintptr_t)pmm.regions[i].base;
+		return (struct memory_physical_region)pmm.regions[i];
 	}
 
-	return 0;
+	return pmm.regions[0];
 }
