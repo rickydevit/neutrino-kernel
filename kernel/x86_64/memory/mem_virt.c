@@ -43,7 +43,7 @@ uint64_t vmm_get_phys_address(uint64_t virt) {
     page_table* ptab = vmm_get_entry(pdir, (uint64_t)GET_DIR_INDEX(virt));
     if (ptab == 0) ks.warn("physical address for virtual address %x is invalid", virt);
 
-    return GET_PHYSICAL_ADDRESS(ptab->entries[(uint64_t)GET_TAB_INDEX(virt)]) + GET_PAGE_OFFSET(virt);
+    return GET_PHYSICAL_ADDRESS(ptab->entries[(uint64_t)GET_TAB_INDEX(virt)]);
 }
 
 // *Return a new page table of 512 entries all set to not-present 
