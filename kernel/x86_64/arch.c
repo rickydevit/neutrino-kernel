@@ -1,12 +1,14 @@
-#include "thirdparty/stivale2hdr.h"
-#include "libs/libc/size_t.h"
-#include "kernel/common/device/serial.h"
-#include "kernel/common/video/display.h"
-#include "kernel/common/kservice.h"
-#include "memory/mem_phys.h"
+#include "arch.h"
 #include "cpuid.h"
 #include "idt.h"
 #include "gdt.h"
+#include "memory/mem_virt.h"
+#include "memory/mem_phys.h"
+#include "kernel/common/device/serial.h"
+#include "kernel/common/video/display.h"
+#include "kernel/common/kservice.h"
+#include "libs/libc/size_t.h"
+#include "thirdparty/stivale2hdr.h"
 
 void _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_terminal *term_str_tag;
@@ -40,6 +42,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
                 entry->type == STIVALE2_MMAP_ACPI_RECLAIMABLE) entries[i].type = MEMORY_REGION_USABLE;
             else if (entry->type == STIVALE2_MMAP_KERNEL_AND_MODULES) entries[i].type = MEMORY_REGION_KERNEL;
             else if (entry->type == STIVALE2_MMAP_FRAMEBUFFER) entries[i].type = MEMORY_REGION_FRAMEBUFFER;
+            else if (entry->type == STIVALE2_MMAP_ACPI_NVS) entries[i].type = MEMORY_REGION_ACPI;
             else entries[i].type = MEMORY_REGION_RESERVED;
 
             if (i+lookahead < memmap_entries) {
@@ -58,6 +61,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
         }
 
         init_pmm(entries, memmap_entries);
+        init_vmm();
     }
     //? -----------------------------------------
 
@@ -74,7 +78,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
         if (init_video_driver(framebuf_str_tag->framebuffer_addr, framebuf_str_tag->framebuffer_width, framebuf_str_tag->framebuffer_height, 
                         framebuf_str_tag->framebuffer_pitch, framebuf_str_tag->framebuffer_bpp, framebuf_str_tag->red_mask_size, framebuf_str_tag->green_mask_size, 
                         framebuf_str_tag->blue_mask_size, framebuf_str_tag->red_mask_shift, framebuf_str_tag->green_mask_shift, framebuf_str_tag->blue_mask_shift))
-            ks.dbg("Video driver initialized.");
+            ks.dbg("Video driver initialized. Framebuffer at %x", framebuf_str_tag->framebuffer_addr);
     
     } else if (checker_result == CHECKER_TERMINAL_AVAILABLE) {
         void *term_write_ptr = (void *)term_str_tag->term_write;
