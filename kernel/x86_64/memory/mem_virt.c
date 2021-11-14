@@ -30,6 +30,20 @@ page_table* vmm_create_entry(page_table* table, uint64_t entry, bool writable, b
     return pt;
 }
 
+// *Get or create the entry in the given page table. If the entry already exists in the page table, its address
+// *is returned. Otherwise a new entry is created and returned.
+// @param table the table to add the entry to
+// @param entry the index of the entry to be added
+// @param writable flag to indicate whether the newly created entry should be writable or not
+// @param user flags to indicate whether the newly created entry should be accessible from userspace or not
+// @return the address of the existing table or the newly created table
+page_table* vmm_get_or_create_entry(page_table* table, uint64_t entry, bool writable, bool user) {
+    if (IS_PRESENT(table->entries[entry]))
+        return GET_PHYSICAL_ADDRESS(table->entries[entry]);
+    else 
+        return vmm_create_entry(table, entry, writable, user);
+}
+
 // *Return the physical address given a virtual address
 // @param virt the virtual address
 // @return the physical address associated to the virtual address
@@ -43,7 +57,7 @@ uint64_t vmm_get_phys_address(uint64_t virt) {
     page_table* ptab = vmm_get_entry(pdir, (uint64_t)GET_DIR_INDEX(virt));
     if (ptab == 0) ks.warn("physical address for virtual address %x is invalid", virt);
 
-    return GET_PHYSICAL_ADDRESS(ptab->entries[(uint64_t)GET_TAB_INDEX(virt)]);
+    return GET_PHYSICAL_ADDRESS(ptab->entries[(uint64_t)GET_TAB_INDEX(virt)]) + GET_PAGE_OFFSET(virt);
 }
 
 // *Return a new page table of 512 entries all set to not-present 
@@ -55,6 +69,26 @@ page_table *vmm_new_table() {
     return pl4;
 }
 
+// *Map a physical address to a virtual page address
+// @param table the table to map the address into
+// @param phys_addr the physical address to map the virtual address to
+// @param virt_addr the virtual address to map the physical address to
+// @param writable flag to indicate whether the newly created entry should be writable or not
+// @param user flags to indicate whether the newly created entry should be accessible from userspace or not
+void vmm_map_page(page_table* table, uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
+    uint64_t pl4_entry = GET_PL4_INDEX(virt_addr);
+    uint64_t dpt_entry = GET_DPT_INDEX(virt_addr);
+    uint64_t pd_entry = GET_DIR_INDEX(virt_addr);
+    uint64_t pt_entry = GET_TAB_INDEX(virt_addr);
+
+    page_table *pdpt, *pd, *pt;
+    pdpt = vmm_get_or_create_entry(table, pl4_entry, true, true);
+    pd = vmm_get_or_create_entry(pdpt, dpt_entry, true, true);
+    pt = vmm_get_or_create_entry(pd, pd_entry, true, true);
+
+    pt->entries[pt_entry] = page_create(phys_addr, writable, user);
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 void init_vmm() {
@@ -64,17 +98,36 @@ void init_vmm() {
     vmm.active_page = (page_table*) read_cr3();
 
     // prepare a pml4 table for the kernel address space
-    page_table* pml4 = vmm_new_table();
-    page_table* test = vmm_create_entry(pml4, 255, true, false);
+    page_table* kernel_pml4 = vmm_new_table();
 
-    ks.dbg("entry: %b addr: %x", pml4->entries[255], GET_PHYSICAL_ADDRESS(pml4->entries[255]));
-    
-    // map the kernel in the 256th pml4 entry
-    ks.dbg("kernel is %i, needing %i pages", pmm_get_region_by_type(MEMORY_REGION_KERNEL).size, pmm_get_region_by_type(MEMORY_REGION_KERNEL).size / PAGE_SIZE + 1);
+    // identity map the first 2M of physical memory
+    for (int i = 0; i < PHYSMEM_2MEGS / PAGE_SIZE; i++)
+        vmm_map_page(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, true, false);
 
+    // map the page itself in the 511st pml4 entry
+    ks.dbg("mapping page map inside itself: %x to %x", kernel_pml4, RECURSIVE_PAGE_ADDRESS);
+    vmm_map_page(kernel_pml4, kernel_pml4, RECURSIVE_PAGE_ADDRESS, true, false);
+
+    // map the kernel in the 511th pml4 entry
+    for (int ind = 0; ind < pmm.regions_count; ind++) {
+        if (pmm.regions[ind].type != MEMORY_REGION_KERNEL) continue;
+
+        uint64_t aligned_base = pmm.regions[ind].base - pmm.regions[ind].base % PAGE_SIZE;
+        uint64_t aligned_size = ((pmm.regions[ind].size / PAGE_SIZE) + 1) * PAGE_SIZE;
+
+        ks.dbg("region is %i, needing %i pages. Aligned base is %x, aligned length is %x", 
+            pmm.regions[ind].size, pmm.regions[ind].size / PAGE_SIZE + 1, aligned_base, aligned_size);
+
+        for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
+            uint64_t addr = aligned_base + i * PAGE_SIZE;
+            ks.dbg("mapping region from %x to %x", addr, get_kern_address(addr));
+            vmm_map_page(kernel_pml4, addr, get_kern_address(addr), true, false);
+        } 
+    }
 
     // map other things that may be useful (like ACPI tables etc)
 
     // give CR3 the kernel pml4 address
-
+    write_cr3((uint64_t)kernel_pml4);
+    ks.panic("HELLO PAGING WORLD!");
 }

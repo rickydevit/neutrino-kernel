@@ -3,6 +3,7 @@
 #include "libs/libc/size_t.h"
 
 #define PHYSMEM_BLOCK_SIZE 0x1000
+#define PHYSMEM_2MEGS      0x200000
 
 typedef enum {
     MEMORY_REGION_USABLE,           // 0

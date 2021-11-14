@@ -27,12 +27,15 @@
         *Serial communication with write and read operations from and to a given serial port*
     - [ ] **PIT**
     - [ ] **APIC**
+    - [ ] **MADT** 
+    - [ ] **SMD (Symmetric multi-processing)**
     - [x] **CPUID** 
     - [ ] **RTC**
     - [ ] **Memory manager**, both physical and virtual
         - [x] **Physical memory manager**   
             *Scans the loaded memory and manages it using 4KB blocks. Kernel and other reserved areas are marked accordingly*
-        - [ ] **Virtual memory manager**
+        - [x] **Virtual memory manager**   
+            *Manages the virtual memory page tables.*
     - [ ] **Process manager**
 
 - [ ] ⚙ **Advanced drivers**

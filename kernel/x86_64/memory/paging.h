@@ -2,6 +2,7 @@
 #include "libs/libc/stdbool.h"
 
 #define PAGE_SIZE 0x1000
+#define RECURSIVE_PAGE_ADDRESS 0xffffc0000000
 
 #define PAGE_PL4_ENTRIES 512
 #define PAGE_DPT_ENTRIES 512

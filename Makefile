@@ -49,7 +49,7 @@ OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
 QEMU 			= /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
 HARD_FLAGS 		= -m 4G -vga std -cpu core2duo
 RUN_FLAGS 		= ${HARD_FLAGS} -serial stdio
-DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -monitor stdio -d guest_errors
+DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -monitor stdio -d cpu_reset -D qemu.log
 
 # === COMMANDS AND BUILD ========================
 
