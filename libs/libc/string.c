@@ -174,7 +174,7 @@ char* vstrf(const char* istr, char buffer[], va_list args) {
 
                     case 'd':
                     case 'i': {
-                        int32_t c = va_arg(args, int32_t);
+                        int64_t c = va_arg(args, int64_t);
                         char str[32] = {0};
                         itoa_s(c, 10, str);
                         for (int j=0; j < strlen(str); j++) {
@@ -187,7 +187,7 @@ char* vstrf(const char* istr, char buffer[], va_list args) {
 
                     case 'X':
                     case 'x': {
-                        uint32_t c = va_arg(args, uint32_t);
+                        uint64_t c = va_arg(args, uint64_t);
                         char str[32] = {0};
                         itoa(c, 16, str);
                         *buffer_p++ = '0';
@@ -201,7 +201,7 @@ char* vstrf(const char* istr, char buffer[], va_list args) {
                     }
 
                     case 'b': {
-                        int c = va_arg(args, int);
+                        int64_t c = va_arg(args, int64_t);
                         char str[128] = {0};
                         itoa(c, 2, str);
                         for (int j=0; j < strlen(str); j++) {
