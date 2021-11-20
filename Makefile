@@ -25,7 +25,7 @@ INCLUDEFLAGS 	:= -I. \
         			-I./libs/libc \
        				-I./libs/ 
 					
-CFLAGS 			:= 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
+CFLAGS 			:= 	-Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
 					-mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
 					-O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
 
@@ -82,11 +82,9 @@ $(BUILD_OUT)/$(ELF_TARGET): $(COBJ) $(ASMOBJ)
 	@${LD} $^ $(LDFLAGS) -o $@
 
 run: $(ISO_TARGET)
-	@rm $(BUILD_OUT)/$(ELF_TARGET)
 	@${QEMU} -cdrom $< ${RUN_FLAGS}
 
 debug: $(ISO_TARGET)
-	@rm $(BUILD_OUT)/$(ELF_TARGET)
 	@${QEMU} -cdrom	$< ${DEBUG_FLAGS} 
 
 clear:

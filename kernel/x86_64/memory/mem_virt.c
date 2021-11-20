@@ -14,7 +14,7 @@
 // @return a pointer to the page entry requested, or 0 if not found
 page_table* vmm_get_entry(page_table* table, uint64_t entry) {
     if (IS_PRESENT(table->entries[entry])) 
-        return GET_PHYSICAL_ADDRESS(table->entries[entry]);
+        return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     return 0;
 }
 
@@ -25,8 +25,8 @@ page_table* vmm_get_entry(page_table* table, uint64_t entry) {
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 // @return the address of the newly created entry
 page_table* vmm_create_entry(page_table* table, uint64_t entry, bool writable, bool user) {
-    page_table* pt = (page_table*)pmm_alloc();
-    table->entries[entry] = page_create(pt, writable, user);
+    page_table* pt = (page_table*)get_mem_address(pmm_alloc());
+    table->entries[entry] = page_create(get_rmem_address(pt), writable, user);
     return pt;
 }
 
@@ -39,7 +39,7 @@ page_table* vmm_create_entry(page_table* table, uint64_t entry, bool writable, b
 // @return the address of the existing table or the newly created table
 page_table* vmm_get_or_create_entry(page_table* table, uint64_t entry, bool writable, bool user) {
     if (IS_PRESENT(table->entries[entry]))
-        return GET_PHYSICAL_ADDRESS(table->entries[entry]);
+        return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     else 
         return vmm_create_entry(table, entry, writable, user);
 }
@@ -81,10 +81,15 @@ void vmm_map_page(page_table* table, uint64_t phys_addr, uint64_t virt_addr, boo
     uint64_t pd_entry = GET_DIR_INDEX(virt_addr);
     uint64_t pt_entry = GET_TAB_INDEX(virt_addr);
 
+    if (pl4_entry != 0) ks.dbg("pml4: %i pdpt: %i pd: %i pt: %i", pl4_entry, dpt_entry, pd_entry, pt_entry);
+
     page_table *pdpt, *pd, *pt;
     pdpt = vmm_get_or_create_entry(table, pl4_entry, true, true);
+    // if (pl4_entry != 0) ks.dbg("pdpt at %x", pdpt);
     pd = vmm_get_or_create_entry(pdpt, dpt_entry, true, true);
+    // if (pl4_entry != 0) ks.dbg("dp at %x", pd);
     pt = vmm_get_or_create_entry(pd, pd_entry, true, true);
+    // if (pl4_entry != 0) ks.dbg("pt at %x", pt);
 
     pt->entries[pt_entry] = page_create(phys_addr, writable, user);
 }
@@ -110,17 +115,19 @@ void init_vmm() {
 
     // map the kernel in the 511th pml4 entry
     for (int ind = 0; ind < pmm.regions_count; ind++) {
-        if (pmm.regions[ind].type != MEMORY_REGION_KERNEL) continue;
+        if (pmm.regions[ind].type == MEMORY_REGION_USABLE ||
+            pmm.regions[ind].type == MEMORY_REGION_INVALID ||
+            pmm.regions[ind].type == MEMORY_REGION_FRAMEBUFFER) continue;
 
         uint64_t aligned_base = pmm.regions[ind].base - pmm.regions[ind].base % PAGE_SIZE;
         uint64_t aligned_size = ((pmm.regions[ind].size / PAGE_SIZE) + 1) * PAGE_SIZE;
 
-        ks.dbg("region is %i, needing %i pages. Aligned base is %x, aligned length is %x", 
+        ks.dbg("region is %i bytes long, needing %i pages. Aligned base is %x, aligned length is %x", 
             pmm.regions[ind].size, pmm.regions[ind].size / PAGE_SIZE + 1, aligned_base, aligned_size);
 
         for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
             uint64_t addr = aligned_base + i * PAGE_SIZE;
-            ks.dbg("mapping region from %x to %x", addr, get_kern_address(addr));
+            // ks.dbg("mapping region from %x to %x", addr, get_kern_address(addr));
             vmm_map_page(kernel_pml4, addr, get_kern_address(addr), true, false);
         } 
     }
@@ -129,5 +136,5 @@ void init_vmm() {
 
     // give CR3 the kernel pml4 address
     write_cr3((uint64_t)kernel_pml4);
-    ks.panic("HELLO PAGING WORLD!");
+    ks.log("HELLO PAGING WORLD!");
 }
