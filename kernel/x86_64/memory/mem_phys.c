@@ -1,4 +1,5 @@
 #include "mem_phys.h"
+#include "arch.h"
 #include "kernel/common/kservice.h"
 #include "kernel/common/memory/memory.h"
 #include "libs/libc/stdbool.h"
@@ -25,10 +26,11 @@ bool pmm_map_get(int bit) {
     return (pmm._map[bit / 32] & (1 << (bit % 32))) == 0 ? false : true;
 }
 
-// *Find the first free slot in the memory, and return it
+// *Find the first free slot in the memory starting from the specified block, and return it
+// @param from_block the block to start searching from
 // @return the number of the bit representing first free slot in the memory
-uint32_t pmm_map_first_free() {
-	for (uint32_t i=0; i < pmm.total_blocks / 32; i++)
+int32_t pmm_map_first_free_starting_from(uint64_t from_block) {
+	for (uint32_t i= from_block; i < pmm.total_blocks/32; i++)
 		if (pmm._map[i] != 0xffffffff)
 			for (int j=0; j<32; j++) {		//! test each bit in the dword
  				if (!(pmm._map[i] & 1 << j)) return i*4*8+j;
@@ -37,17 +39,24 @@ uint32_t pmm_map_first_free() {
 	return -1;
 }
 
-// *Find the first free series of slots in the memory, and return the first of them 
+// *Find the first free slot in the memory, and return it
+// @return the number of the bit representing first free slot in the memory
+int32_t pmm_map_first_free() {
+	int32_t free_after_map = pmm_map_first_free_starting_from(((uint64_t)pmm._map + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
+	if (free_after_map != -1) return free_after_map;
+
+	int32_t free_from_start = pmm_map_first_free_starting_from(0);
+	if (free_from_start != -1) return free_from_start;
+ 
+	return -1;
+}
+
+// *Find the first free series of slots in the memory starting from the specified block, and return the first of them 
 // @param size the size of the series to find
+// @param from_block the block to start searching from
 // @return the first free bit of the series
-uint32_t pmm_map_first_free_series(size_t size) {
-    if (size==0)
-		return -1;
-
-	if (size==1)
-		return pmm_map_first_free();
-
-	for (uint32_t i=0; i < pmm.total_blocks/32; i++)
+int32_t pmm_map_first_free_series_starting_from(size_t size, uint32_t from_block) {
+	for (uint32_t i=from_block; i < pmm.total_blocks/32; i++)
 		if (pmm._map[i] != 0xffffffff)
 			for (int j=0; j<32; j++) {	//! test each bit in the dword
 
@@ -68,6 +77,22 @@ uint32_t pmm_map_first_free_series(size_t size) {
 					}
 				}
 			}
+
+	return -1;
+}
+
+// *Find the first free series of slots in the memory, and return the first of them 
+// @param size the size of the series to find
+// @return the first free bit of the series
+int32_t pmm_map_first_free_series(size_t size) {
+    if (size==0) return -1;
+	if (size==1) return pmm_map_first_free();
+
+	int32_t free_after_map = pmm_map_first_free_series_starting_from(size, ((uint64_t)pmm._map + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
+	if (free_after_map != -1) return free_after_map;
+
+	int32_t free_from_start = pmm_map_first_free_series_starting_from(size, 0);
+	if (free_from_start != -1) return free_from_start;
 
 	return -1;
 }
@@ -124,7 +149,7 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
     
     pmm.regions = entries;
 	pmm.regions_count = size;
-    pmm.total_memory = entries[size-1].limit - entries[0].base;
+    pmm.total_memory = entries[size-1].limit - entries[0].base - pmm_get_region_by_type(MEMORY_REGION_FRAMEBUFFER).size;
     pmm.total_blocks = pmm.total_memory / PHYSMEM_BLOCK_SIZE;
     pmm.usable_memory = 0;
 	pmm._map = 0;
@@ -136,9 +161,9 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
 		ks.dbg("%i: base %x length %u type %d", i, entry.base, entry.size, entry.type);
         
 		// find the first usable region and set it as the base address of the memory bitmap
-        if (entry.type == MEMORY_REGION_USABLE && pmm._map == 0 && entry.size >= pmm._map_size) {
-			memory_set(entry.base, 0, pmm._map_size);
-			pmm._map = entry.base;
+        if (entry.type == MEMORY_REGION_USABLE && pmm._map == 0 && entry.size >= pmm._map_size && entry.base >= PHYSMEM_2MEGS) {
+			pmm._map = get_mem_address(entry.base);
+			memory_set(pmm._map, 0, pmm._map_size);
 		}
         
 		// the usable_memory is the sum of all the usable memory regions
@@ -146,10 +171,10 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
     }
 
 	pmm.usable_blocks = pmm.usable_memory / PHYSMEM_BLOCK_SIZE;
-	if ((uint32_t)pmm._map != 0) pmm_mark_region_used(0, pmm._map_size - (uint32_t)pmm._map);
+	// if ((uint64_t)pmm._map != 0) pmm_mark_region_used(0, pmm._map_size - (uint64_t)pmm._map); 
 
 	// mark the memory bitmap itself as used
-	pmm_mark_region_used((uint64_t)pmm._map, pmm._map_size);
+	pmm_mark_region_used(get_rmem_address((uint64_t)pmm._map), pmm._map_size);
 
 	// mark non-usable regions as used
 	for (int i = 0; i < size; i++) {
@@ -173,6 +198,8 @@ uintptr_t pmm_alloc() {
 	
 	pmm_map_set(block);
 	pmm.used_blocks++;
+
+	ks.dbg("pmm_alloc() : first_free_block: %u return_address: %x", block, (uintptr_t)(block*PHYSMEM_BLOCK_SIZE));
 
 	return (uintptr_t)(block*PHYSMEM_BLOCK_SIZE);
 }
