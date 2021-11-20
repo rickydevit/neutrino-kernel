@@ -25,7 +25,7 @@ INCLUDEFLAGS 	:= -I. \
         			-I./libs/libc \
        				-I./libs/ 
 					
-CFLAGS 			:= 	-Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
+CFLAGS 			:= 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
 					-mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
 					-O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
 
@@ -49,7 +49,11 @@ OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
 QEMU 			= /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
 HARD_FLAGS 		= -m 4G -vga std -cpu core2duo
 RUN_FLAGS 		= ${HARD_FLAGS} -serial stdio
-DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -monitor stdio -d cpu_reset -D qemu.log
+DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -d cpu_reset -D qemu.log -s -S
+
+# gdb settings
+GDB				= gdb
+GDB_FLAGS 		= -ex "target remote localhost:1234"
 
 # === COMMANDS AND BUILD ========================
 
@@ -85,7 +89,8 @@ run: $(ISO_TARGET)
 	@${QEMU} -cdrom $< ${RUN_FLAGS}
 
 debug: $(ISO_TARGET)
-	@${QEMU} -cdrom	$< ${DEBUG_FLAGS} 
+	@${QEMU} -cdrom	$< ${DEBUG_FLAGS} &
+	@${GDB} ${BUILD_OUT}/${ELF_TARGET} ${GDB_FLAGS}
 
 clear:
 	@echo "[KERNEL $(ARCH)] Removing files..."
