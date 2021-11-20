@@ -13,7 +13,8 @@
 void _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_terminal *term_str_tag;
     struct stivale2_struct_tag_framebuffer *framebuf_str_tag;
-    struct stivale2_struct_tag_memmap *memmap_str_tag;
+    struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
+    struct stivale2_struct_tag_rsdp *rsdp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 
     //? Driver initialization
     init_serial(COM1);
@@ -23,9 +24,10 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_cpuid();
     //? -----------------------------------------
 
+    ks.dbg("kmain() : stivale2_struct: %x", stivale2_struct);
+
     //? Memory manager initialization 
     {
-        memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
         uint32_t memmap_entries = memmap_str_tag->entries;
         uint64_t n_base, n_size;
         int i = 0, lookahead = 1;
@@ -65,7 +67,13 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     }
     //? -----------------------------------------
 
+    ks.dbg("kmain() : stivale2_struct: %x", stivale2_struct);
+
     for (;;) asm("hlt");
+
+    //? ACPI initialization
+    ks.panic("rsdp located at %x", rsdp_str_tag->rsdp);
+    //? -----------------------------------------
 
     //? Display driver setup
     term_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_TERMINAL_ID);
