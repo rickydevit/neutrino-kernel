@@ -69,29 +69,50 @@ page_table *vmm_new_table() {
     return pl4;
 }
 
-// *Map a physical address to a virtual page address
-// @param table the table to map the address into
-// @param phys_addr the physical address to map the virtual address to
-// @param virt_addr the virtual address to map the physical address to
-// @param writable flag to indicate whether the newly created entry should be writable or not
-// @param user flags to indicate whether the newly created entry should be accessible from userspace or not
-void vmm_map_page(page_table* table, uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
-    uint64_t pl4_entry = GET_PL4_INDEX(virt_addr);
-    uint64_t dpt_entry = GET_DPT_INDEX(virt_addr);
-    uint64_t pd_entry = GET_DIR_INDEX(virt_addr);
-    uint64_t pt_entry = GET_TAB_INDEX(virt_addr);
+// *Refresh paging by reloading the CR3 register
+void vmm_refresh_paging() {
+    __asm__("mov %%cr3, %%rax" : : );
+    __asm__("mov %%rax, %%cr3" : : );
+}
 
-    if (pl4_entry != 0) ks.dbg("pml4: %i pdpt: %i pd: %i pt: %i", pl4_entry, dpt_entry, pd_entry, pt_entry);
+// *Check if a page table is free in each of its entries
+// @param table the page table to check
+// @return true if the page table is free, false otherwise
+bool vmm_is_table_free(page_table* table) {
+    for (int i = 0; i < 512; i++) {
+        if (vmm_get_entry(table, i) != 0) return false;
+    }
 
+    return true;
+}
+
+// *Free a physical memory block if the page pointing to it is free
+// @param table the table to check if is free
+// @param parent the parent page of the table
+// @param parent_index the index of [table] in the [parent] page
+void vmm_free_if_necessary_table(page_table* table, page_table* parent, uint64_t parent_index) {
+    if (vmm_is_table_free(table)) {
+        pmm_free(GET_PHYSICAL_ADDRESS(parent->entries[parent_index]));
+        page_clear_bit(vmm_get_entry(table, parent_index), PRESENT_BIT_OFFSET);
+    }
+}
+
+// *Free all the tables in the pml4 table where the given address is free
+// @param table the pml4 table to check the address in
+// @param address the address unmapped from the pml4 table
+void vmm_free_if_necessary_tables(page_table* table, uint64_t unmapped_addr) {
+    uint64_t pl4_entry = GET_PL4_INDEX(unmapped_addr);
+    uint64_t dpt_entry = GET_DPT_INDEX(unmapped_addr);
+    uint64_t pd_entry = GET_DIR_INDEX(unmapped_addr);
+    
     page_table *pdpt, *pd, *pt;
     pdpt = vmm_get_or_create_entry(table, pl4_entry, true, true);
-    // if (pl4_entry != 0) ks.dbg("pdpt at %x", pdpt);
     pd = vmm_get_or_create_entry(pdpt, dpt_entry, true, true);
-    // if (pl4_entry != 0) ks.dbg("dp at %x", pd);
     pt = vmm_get_or_create_entry(pd, pd_entry, true, true);
-    // if (pl4_entry != 0) ks.dbg("pt at %x", pt);
 
-    pt->entries[pt_entry] = page_create(phys_addr, writable, user);
+    vmm_free_if_necessary_table(pt, pd, pd_entry);
+    vmm_free_if_necessary_table(pd, pdpt, dpt_entry);
+    vmm_free_if_necessary_table(pdpt, table, pl4_entry);
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -136,5 +157,55 @@ void init_vmm() {
 
     // give CR3 the kernel pml4 address
     write_cr3((uint64_t)kernel_pml4);
-    ks.log("HELLO PAGING WORLD!");
+    ks.log("VMM has been initialized.");
+}
+
+// *Map a physical address to a virtual page address
+// @param table the table to map the address into
+// @param phys_addr the physical address to map the virtual address to
+// @param virt_addr the virtual address to map the physical address to
+// @param writable flag to indicate whether the newly created entry should be writable or not
+// @param user flags to indicate whether the newly created entry should be accessible from userspace or not
+void vmm_map_page(page_table* table, uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
+    uint64_t pl4_entry = GET_PL4_INDEX(virt_addr);
+    uint64_t dpt_entry = GET_DPT_INDEX(virt_addr);
+    uint64_t pd_entry = GET_DIR_INDEX(virt_addr);
+    uint64_t pt_entry = GET_TAB_INDEX(virt_addr);
+
+    if (pl4_entry != 0) ks.dbg("pml4: %i pdpt: %i pd: %i pt: %i", pl4_entry, dpt_entry, pd_entry, pt_entry);
+
+    page_table *pdpt, *pd, *pt;
+    pdpt = vmm_get_or_create_entry(table, pl4_entry, true, true);
+    // if (pl4_entry != 0) ks.dbg("pdpt at %x", pdpt);
+    pd = vmm_get_or_create_entry(pdpt, dpt_entry, true, true);
+    // if (pl4_entry != 0) ks.dbg("dp at %x", pd);
+    pt = vmm_get_or_create_entry(pd, pd_entry, true, true);
+    // if (pl4_entry != 0) ks.dbg("pt at %x", pt);
+
+    pt->entries[pt_entry] = page_create(phys_addr, writable, user);
+}
+
+// *Unmap a page given the table and a virtual address in the page
+// @param table the pml4 table the virtual address resides in
+// @param virt_addr the virtual address in the page
+// @return true if the page was successfully unmapped, false otherwise
+bool vmm_unmap_page(page_table* table, uint64_t virt_addr) {
+    uint64_t pl4_entry = GET_PL4_INDEX(virt_addr);
+    uint64_t dpt_entry = GET_DPT_INDEX(virt_addr);
+    uint64_t pd_entry = GET_DIR_INDEX(virt_addr);
+    uint64_t pt_entry = GET_TAB_INDEX(virt_addr);
+    
+    page_table *pdpt, *pd, *pt;
+    pdpt = vmm_get_or_create_entry(table, pl4_entry, true, true);
+    pd = vmm_get_or_create_entry(pdpt, dpt_entry, true, true);
+    pt = vmm_get_or_create_entry(pd, pd_entry, true, true);
+
+    page_table *to_free = vmm_get_entry(pt, pt_entry);
+    if (to_free == 0) return false;
+
+    page_clear_bit(to_free, PRESENT_BIT_OFFSET);
+
+    vmm_free_if_necessary_tables(table, virt_addr);
+    vmm_refresh_paging();
+    return true;
 }
