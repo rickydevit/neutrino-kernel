@@ -153,7 +153,7 @@ void init_vmm() {
         for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
             uint64_t addr = aligned_base + i * PAGE_SIZE;
             // ks.dbg("mapping region from %x to %x", addr, get_kern_address(addr));
-            vmm_map_page(kernel_pml4, addr, get_mem_address(addr), true, false);
+            vmm_map_page(kernel_pml4, addr, addr, true, false);
             if (pmm.regions[ind].type == MEMORY_REGION_KERNEL) vmm_map_page(kernel_pml4, addr, get_kern_address(addr), true, false);
         } 
     }
