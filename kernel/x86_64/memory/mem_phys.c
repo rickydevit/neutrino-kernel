@@ -199,7 +199,7 @@ uintptr_t pmm_alloc() {
 	pmm_map_set(block);
 	pmm.used_blocks++;
 
-	ks.dbg("pmm_alloc() : first_free_block: %u return_address: %x", block, (uintptr_t)(block*PHYSMEM_BLOCK_SIZE));
+	// ks.dbg("pmm_alloc() : first_free_block: %u return_address: %x", block, (uintptr_t)(block*PHYSMEM_BLOCK_SIZE));
 
 	return (uintptr_t)(block*PHYSMEM_BLOCK_SIZE);
 }

@@ -28,7 +28,7 @@ page_table* vmm_create_entry(page_table* table, uint64_t entry, bool writable, b
     page_table* pt = (page_table*)get_mem_address(pmm_alloc());
     table->entries[entry] = page_create(get_rmem_address(pt), writable, user);
 
-    ks.dbg("vmm_create_entry() : table: %x entry: %u new_page: %x (%x)", table, entry, pt, get_rmem_address(pt));
+    // ks.dbg("vmm_create_entry() : table: %x entry: %u new_page: %x (%x)", table, entry, pt, get_rmem_address(pt));
     return pt;
 }
 
@@ -43,7 +43,7 @@ page_table* vmm_get_or_create_entry(page_table* table, uint64_t entry, bool writ
     if (IS_PRESENT(table->entries[entry])) {
         return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     } else {
-        ks.dbg("vmm_get_or_create_entry() : table: %x entry: %u", table, entry);
+        // ks.dbg("vmm_get_or_create_entry() : table: %x entry: %u", table, entry);
         return vmm_create_entry(table, entry, writable, user);
     }
 }
