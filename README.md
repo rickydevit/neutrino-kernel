@@ -27,7 +27,8 @@
         *Serial communication with write and read operations from and to a given serial port*
     - [ ] **PIT**
     - [ ] **APIC**
-    - [ ] **MADT** 
+    - [ ] **ACPI**
+         - [ ] **MADT** 
     - [ ] **SMD (Symmetric multi-processing)**
     - [x] **CPUID** 
     - [ ] **RTC**
