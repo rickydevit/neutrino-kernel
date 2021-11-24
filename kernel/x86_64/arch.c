@@ -4,6 +4,7 @@
 #include "gdt.h"
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
+#include "device/acpi.h"
 #include "kernel/common/device/serial.h"
 #include "kernel/common/video/display.h"
 #include "kernel/common/kservice.h"
@@ -14,7 +15,6 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_terminal *term_str_tag;
     struct stivale2_struct_tag_framebuffer *framebuf_str_tag;
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
-    struct stivale2_struct_tag_rsdp *rsdp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 
     //? Driver initialization
     init_serial(COM1);
@@ -23,8 +23,6 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_idt();
     init_cpuid();
     //? -----------------------------------------
-
-    ks.dbg("kmain() : stivale2_struct: %x", stivale2_struct);
 
     //? Memory manager initialization 
     {
@@ -40,16 +38,16 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
             entries[i].size = entry->length;
             entries[i].limit = entry->base + entry->length;
             
-            if (entry->type == STIVALE2_MMAP_USABLE || entry->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE || 
-                entry->type == STIVALE2_MMAP_ACPI_RECLAIMABLE) entries[i].type = MEMORY_REGION_USABLE;
+            if (entry->type == STIVALE2_MMAP_USABLE || entry->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE) entries[i].type = MEMORY_REGION_USABLE;
             else if (entry->type == STIVALE2_MMAP_KERNEL_AND_MODULES) entries[i].type = MEMORY_REGION_KERNEL;
             else if (entry->type == STIVALE2_MMAP_FRAMEBUFFER) entries[i].type = MEMORY_REGION_FRAMEBUFFER;
-            else if (entry->type == STIVALE2_MMAP_ACPI_NVS) entries[i].type = MEMORY_REGION_ACPI;
+            else if (entry->type == STIVALE2_MMAP_ACPI_NVS) entries[i].type = MEMORY_REGION_ACPI_RSVD;
+            else if (entry->type == STIVALE2_MMAP_ACPI_RECLAIMABLE) entries[i].type = MEMORY_REGION_ACPI_RCLM;
             else entries[i].type = MEMORY_REGION_RESERVED;
 
             if (i+lookahead < memmap_entries) {
                 while ((entries[i].type == MEMORY_REGION_USABLE && (entry+lookahead)->type == STIVALE2_MMAP_USABLE || 
-                      (entry+lookahead)->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE || (entry+lookahead)->type == STIVALE2_MMAP_ACPI_RECLAIMABLE)) {
+                      (entry+lookahead)->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE)) {
                           entries[i].size += (entry+lookahead)->length;
                           entries[i].limit = (entry+lookahead)->base + (entry+lookahead)->length;
                           entries[i+lookahead].type = MEMORY_REGION_INVALID;
@@ -67,13 +65,11 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     }
     //? -----------------------------------------
 
-    ks.dbg("kmain() : stivale2_struct: %x", stivale2_struct);
+    //? ACPI initialization
+    init_acpi();
+    //? -----------------------------------------
 
     for (;;) asm("hlt");
-
-    //? ACPI initialization
-    ks.panic("rsdp located at %x", rsdp_str_tag->rsdp);
-    //? -----------------------------------------
 
     //? Display driver setup
     term_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_TERMINAL_ID);
