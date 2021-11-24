@@ -10,9 +10,10 @@ typedef enum {
     MEMORY_REGION_RESERVED,         // 1
     MEMORY_REGION_KERNEL,           // 2
     MEMORY_REGION_FRAMEBUFFER,      // 3
-    MEMORY_REGION_ACPI,             // 4
+    MEMORY_REGION_ACPI_RSVD,        // 4
+    MEMORY_REGION_ACPI_RCLM,        // 5
 
-    MEMORY_REGION_INVALID           // 5
+    MEMORY_REGION_INVALID           // 6
 } memory_physical_region_type;
 
 struct memory_physical_region {
@@ -39,6 +40,7 @@ struct memory_physical pmm;
 
 void init_pmm(struct memory_physical_region *entries, uint32_t size);
 uintptr_t pmm_alloc(); 
+uintptr_t pmm_alloc_zero(); 
 void pmm_free(uintptr_t addr);
 uintptr_t pmm_alloc_series(size_t size); 
 void pmm_free_series(uintptr_t addr, size_t size); 

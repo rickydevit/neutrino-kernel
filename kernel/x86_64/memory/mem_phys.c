@@ -125,6 +125,20 @@ void pmm_mark_region_used(uint64_t base_addr, size_t size) {
 	}
 }
 
+char* pmm_region_type_string(memory_physical_region_type type) {
+	switch (type) {
+		case MEMORY_REGION_USABLE: return "USABLE";
+		case MEMORY_REGION_FRAMEBUFFER: return "FRAMEBUFFER";
+		case MEMORY_REGION_ACPI_RCLM: return "ACPI_RCLM";
+		case MEMORY_REGION_ACPI_RSVD: return "ACPI_RSVD";
+		case MEMORY_REGION_KERNEL: return "KERNEL";
+		case MEMORY_REGION_RESERVED: return "RESERVED";
+		case MEMORY_REGION_INVALID:
+		default: 
+			return "INVALID";
+	}
+}
+
 void pmm_print_memory_map(uint64_t base_addr, size_t size) {
 	int align = base_addr / PHYSMEM_BLOCK_SIZE;
 
@@ -158,7 +172,7 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
     for (int i = 0; i < size; i++) {
         struct memory_physical_region entry = entries[i];
 
-		ks.dbg("%i: base %x length %u type %d", i, entry.base, entry.size, entry.type);
+		ks.dbg("%i: base %x length %u type %c", i, entry.base, entry.size, pmm_region_type_string(entry.type));
         
 		// find the first usable region and set it as the base address of the memory bitmap
         if (entry.type == MEMORY_REGION_USABLE && pmm._map == 0 && entry.size >= pmm._map_size && entry.base >= PHYSMEM_2MEGS) {
@@ -202,6 +216,14 @@ uintptr_t pmm_alloc() {
 	// ks.dbg("pmm_alloc() : first_free_block: %u return_address: %x", block, (uintptr_t)(block*PHYSMEM_BLOCK_SIZE));
 
 	return (uintptr_t)(block*PHYSMEM_BLOCK_SIZE);
+}
+
+// *Allocate a physical memory block, clear all the bits and return the physical address of the assigned region
+// @return the physical address of the assigned block
+uintptr_t pmm_alloc_zero() {
+	uintptr_t frame = pmm_alloc();
+	memory_set(frame, 0, PHYSMEM_BLOCK_SIZE);
+	return frame;
 }
 
 // *Free a physical memory block
