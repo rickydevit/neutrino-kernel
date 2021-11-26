@@ -54,4 +54,4 @@ struct acpi {
 struct acpi acpi;
 
 void init_acpi();
-void *find_sdt_entry(void* root_sdt, const char* entry_name);
+void *find_sdt_entry(const char* entry_sign);
