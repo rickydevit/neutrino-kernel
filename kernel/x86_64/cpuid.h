@@ -88,6 +88,6 @@ bool init_cpuid();
 void set_cpuid_availability(int);
 bool get_cpuid_availability();
 
-bool get_cpu_feature(CPU_FEATURE, bool);
+bool get_cpu_feature(CPU_FEATURE feature, bool use_ecx);
 uint8_t get_physical_address_length();
 void get_cpu_vendor(char* vendor);
