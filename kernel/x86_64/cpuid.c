@@ -11,7 +11,7 @@ bool cpuid_available = false;
 void execute_cpuid(uint32_t reg, uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx) {
     __asm__ volatile("cpuid"
         : "=a" (*eax), "=b" (*ebx), "=c" (*ecx), "=d" (*edx)
-        : "0" (reg));
+        : "a" (reg));
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -51,10 +51,10 @@ uint8_t get_physical_address_length() {
 // @return true if the feature is available, false otherwise
 bool get_cpu_feature(CPU_FEATURE feature, bool use_ecx) {
     uint32_t eax, ebx, ecx, edx;
-    execute_cpuid(0, &eax, &ebx, &ecx, &edx);
+    execute_cpuid(1, &eax, &ebx, &ecx, &edx);
 
-    if (use_ecx) return ecx && feature;
-    else return edx && feature;
+    if (use_ecx) return (bool)(ecx && feature);
+    else return (bool)(edx && feature);
     
     return false;
 }
