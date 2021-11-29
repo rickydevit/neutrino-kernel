@@ -25,11 +25,15 @@
         *Basic x86_64 interrupts and exceptions handled. Software interrupts will be added when necessary.*
     - [x] **Serial comms**   
         *Serial communication with write and read operations from and to a given serial port*
+    - [x] **SSE**   
+        *Floating point unit initialization and XSAVE/AVX check and enabling*
     - [ ] **PIT**
-    - [ ] **APIC**
-    - [ ] **ACPI**
+    - [x] **ACPI**   
+        *Basic ACPI tables listing and parsing*
          - [ ] **MADT** 
+    - [ ] **APIC**
     - [ ] **SMD (Symmetric multi-processing)**
+        - [ ] **Per-CPU initialization (via stivale2)**
     - [x] **CPUID** 
     - [ ] **RTC**
     - [ ] **Memory manager**, both physical and virtual
@@ -37,7 +41,7 @@
             *Scans the loaded memory and manages it using 4KB blocks. Kernel and other reserved areas are marked accordingly*
         - [x] **Virtual memory manager**   
             *Manages the virtual memory page tables. Can map, remap and unmap pages*
-    - [ ] **Process manager**
+    - [ ] **Process scheduler**
 
 - [ ] ⚙ **Advanced drivers**
     - [x] **Video driver**
@@ -56,9 +60,11 @@
 ## Source structure
 - **`kernel\`**
     - **`x86-64\`** _platform-specific code for the x86-64 architecture_
+        - **`device\`** _platform-specific code for device libraries_
         - **`memory\`** _platform-specific code for memory related functions_
     - **`common\`** _platform-independent kernel code_
         - **`device\`** _libraries for device abstraction in the kernel_
+        - **`memory\`** _libraries for memory related functions_
         - **`video\`** _implementation of video driver_
 - **`libs\`**
     - **`libc\`** _porting of useful C libraries_
