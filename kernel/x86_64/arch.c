@@ -2,6 +2,7 @@
 #include "cpuid.h"
 #include "idt.h"
 #include "gdt.h"
+#include "sse.h" 
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
 #include "device/acpi.h"
@@ -19,6 +20,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     //? Core initialization
     init_serial(COM1);
     init_kservice();
+    init_sse();
     init_gdt();
     init_idt();
     init_cpuid();
@@ -28,7 +30,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
 
     //? ACPI initialization
     init_acpi();
-    
+
     //? -----------------------------------------
     for (;;) asm("hlt");
 
