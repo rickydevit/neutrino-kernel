@@ -3,6 +3,7 @@
 #include "idt.h"
 #include "gdt.h"
 #include "sse.h" 
+#include "smp.h"
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
 #include "device/acpi.h"
@@ -16,6 +17,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_terminal *term_str_tag;
     struct stivale2_struct_tag_framebuffer *framebuf_str_tag;
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
+    struct stivale2_struct_tag_smp *smp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 
     //? Core initialization
     init_serial(COM1);
@@ -28,8 +30,9 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     //? Memory manager initialization 
     kinit_mem_manager(memmap_str_tag);
 
-    //? ACPI initialization
+    //? 2nd stage initialization
     init_acpi();
+    init_smp(get_rmem_address(smp_str_tag));
 
     //? -----------------------------------------
     for (;;) asm("hlt");
@@ -84,7 +87,7 @@ void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag) {
         entries[i].size = entry->length;
         entries[i].limit = entry->base + entry->length;
         
-        if (entry->type == STIVALE2_MMAP_USABLE || entry->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE) entries[i].type = MEMORY_REGION_USABLE;
+        if (entry->type == STIVALE2_MMAP_USABLE) entries[i].type = MEMORY_REGION_USABLE;
         else if (entry->type == STIVALE2_MMAP_KERNEL_AND_MODULES) entries[i].type = MEMORY_REGION_KERNEL;
         else if (entry->type == STIVALE2_MMAP_FRAMEBUFFER) entries[i].type = MEMORY_REGION_FRAMEBUFFER;
         else if (entry->type == STIVALE2_MMAP_ACPI_NVS) entries[i].type = MEMORY_REGION_ACPI_RSVD;
@@ -92,8 +95,7 @@ void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag) {
         else entries[i].type = MEMORY_REGION_RESERVED;
 
         if (i+lookahead < memmap_entries) {
-            while ((entries[i].type == MEMORY_REGION_USABLE && (entry+lookahead)->type == STIVALE2_MMAP_USABLE || 
-                    (entry+lookahead)->type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE)) {
+            while ((entries[i].type == MEMORY_REGION_USABLE && (entry+lookahead)->type == STIVALE2_MMAP_USABLE)) {
                         entries[i].size += (entry+lookahead)->length;
                         entries[i].limit = (entry+lookahead)->base + (entry+lookahead)->length;
                         entries[i+lookahead].type = MEMORY_REGION_INVALID;
