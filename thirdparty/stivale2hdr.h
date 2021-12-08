@@ -10,9 +10,17 @@
 // ?stack for the limine bootloader
 static uint8_t stack[8192];
 
+static struct stivale2_header_tag_smp smp_hdr_tag = {
+    .tag = {
+        .identifier = STIVALE2_HEADER_TAG_SMP_ID,
+        .next = 0,
+    },
+    .flags = 0 // 0: use xAPIC, 1: use x2APIC
+};
+
 static struct stivale2_tag unmap_null_hdr_tag = {
     .identifier = STIVALE2_HEADER_TAG_UNMAP_NULL_ID,
-    .next = 0,
+    .next = (uint64_t)&smp_hdr_tag,
 };
 
 static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {

@@ -47,7 +47,7 @@ OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
 
 # qemu settings
 QEMU 			= /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
-HARD_FLAGS 		= -m 4G -vga std -cpu Skylake-Client
+HARD_FLAGS 		= -m 4G -vga std -cpu Skylake-Client -smp 2
 RUN_FLAGS 		= ${HARD_FLAGS} -serial stdio
 DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -d cpu_reset -D qemu.log -s -S
 
