@@ -226,34 +226,32 @@ bool vmm_unmap_page(page_table* table, uint64_t virt_addr) {
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 void vmm_map_page_in_active_table(uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
-    // vmm_map_page((page_table*)RECURSE_PML4, phys_addr, virt_addr, writable, user);
     ks.dbg("vmm_map_page_in_active_table() : phys_addr: %x virt_addr: %x", phys_addr, virt_addr);
 
     uint64_t pl4_entry = GET_PL4_INDEX(virt_addr);
     uint64_t dpt_entry = GET_DPT_INDEX(virt_addr);
     uint64_t pd_entry = GET_DIR_INDEX(virt_addr);
     uint64_t pt_entry = GET_TAB_INDEX(virt_addr);
-    page_table_e* p;
+    volatile page_table_e* p;
 
-    ks.dbg("vmm_map_page_in_active_table() : pl4_e: %u dpdt_e: %u pd_e: %u pt_e: %u", pl4_entry, dpt_entry, pd_entry, pt_entry);
+    // ks.dbg("vmm_map_page_in_active_table() : pl4_e: %u dpdt_e: %u pd_e: %u pt_e: %u", pl4_entry, dpt_entry, pd_entry, pt_entry);
 
-    // p = &(GET_RECURSIVE_ADDRESS(RECURSE, RECURSE, RECURSE)->entries[pl4_entry]);
     p = GET_RECURSIVE_ADDRESS(RECURSE, RECURSE, RECURSE, pl4_entry);
-    if (!IS_PRESENT(*p)) *p = page_create(pmm_alloc_zero(), writable, user);
-    ks.dbg("vmm_map_page_in_active_table() : dpdt: %x", p);
+    // ks.dbg("vmm_map_page_in_active_table() : pml4: %x", p);
+    if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
 
     p = GET_RECURSIVE_ADDRESS(RECURSE, RECURSE, pl4_entry, dpt_entry);
-    if (!IS_PRESENT(*p)) *p = page_create(pmm_alloc_zero(), writable, user);
-    ks.dbg("vmm_map_page_in_active_table() : pd: %x", p);
+    // ks.dbg("vmm_map_page_in_active_table() : pdpt: %x", p);
+    if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
 
     p = GET_RECURSIVE_ADDRESS(RECURSE, pl4_entry, dpt_entry, pd_entry);
-    if (!IS_PRESENT(*p)) *p = page_create(pmm_alloc_zero(), writable, user);
-    ks.dbg("vmm_map_page_in_active_table() : pt: %x", p);
+    // ks.dbg("vmm_map_page_in_active_table() : dpt: %x", p);
+    if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
 
-    p = GET_RECURSIVE_ADDRESS(pl4_entry, dpt_entry, pd_entry, pt_entry);
-    ks.dbg("vmm_map_page_in_active_table() : pt: %x", p);
-    *p = page_create(phys_addr, writable, user); // !
-    ks.dbg("vmm_map_page_in_active_table() : done. refreshing");
+    p = GET_RECURSIVE_ADDRESS(pl4_entry, dpt_entry, pd_entry, pt_entry); 
+    // ks.dbg("vmm_map_page_in_active_table() : pt: %x", p);
+    *p = page_create(phys_addr, writable, user); 
+    // ks.dbg("vmm_map_page_in_active_table() : done. refreshing");
 
     vmm_refresh_paging();
 }
