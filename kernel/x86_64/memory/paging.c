@@ -27,7 +27,7 @@ uint64_t read_cr3() {
 // *Write the given value to the CR3 register
 // @param value the value to write to CR3 register
 void write_cr3(uint64_t value) {
-    __asm__("mov %%rax, %%cr3" : : "a"(value));
+    __asm__("mov %0, %%cr3" : : "r"(value));
 }
 
 page_table_e page_create(uint64_t addr, bool writable, bool user) {
