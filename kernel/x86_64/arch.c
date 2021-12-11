@@ -4,6 +4,7 @@
 #include "gdt.h"
 #include "sse.h" 
 #include "smp.h"
+#include "apic.h"
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
 #include "device/acpi.h"
@@ -18,20 +19,22 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_framebuffer *framebuf_str_tag;
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     struct stivale2_struct_tag_smp *smp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
+    struct memory_physical_region entries[memmap_str_tag->entries];
 
     //? Core initialization
     init_serial(COM1);
     init_kservice();
-    init_sse();
     init_gdt();
     init_idt();
     init_cpuid();
 
     //? Memory manager initialization 
-    kinit_mem_manager(memmap_str_tag);
+    kinit_mem_manager(memmap_str_tag, entries);
 
     //? 2nd stage initialization
+    init_sse();
     init_acpi();
+    init_apic();
     init_smp(get_rmem_address(smp_str_tag));
 
     //? -----------------------------------------
@@ -74,12 +77,11 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     for (;;) asm("hlt");
 }
 
-void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag) {
+void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, struct memory_physical_region* entries) {
     uint32_t memmap_entries = memmap_str_tag->entries;
     uint64_t n_base, n_size;
     int i = 0, lookahead = 1;
     
-    struct memory_physical_region entries[memmap_entries];
     while (i < memmap_entries) {
         struct stivale2_mmap_entry *entry = memmap_str_tag->memmap + i;
 
