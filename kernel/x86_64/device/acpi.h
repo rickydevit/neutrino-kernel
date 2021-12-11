@@ -43,6 +43,13 @@ struct XSDT {
     uint64_t PointerToOtherSDT[];
 } __attribute__ ((packed)); 
 
+struct MADT {
+    struct SDT_header h;
+    uint32_t lapic_address;
+    uint32_t flags;
+    uint16_t interrupt_devices_start;
+} __attribute__ ((packed)); 
+
 struct acpi {
     uint8_t version;
     union {
