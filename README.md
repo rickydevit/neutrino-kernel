@@ -34,8 +34,8 @@
     - [ ] **APIC**
          - [ ] **IOAPIC initialization**
          - [x] **LAPIC initialization**
-    - [ ] **SMD (Symmetric multi-processing)**
-        - [ ] **Per-CPU initialization (via stivale2)**
+    - [x] **SMD (Symmetric multi-processing)**
+        - [x] **Per-CPU initialization (via stivale2)**
     - [x] **CPUID** 
     - [ ] **RTC**
     - [x] **Memory manager**, both physical and virtual

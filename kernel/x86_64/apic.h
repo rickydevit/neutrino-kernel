@@ -26,3 +26,4 @@ struct apic_t apic;
 
 void init_apic();
 void enable_apic();
+void map_apic_into_space();

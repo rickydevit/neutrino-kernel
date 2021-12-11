@@ -36,21 +36,24 @@ void init_apic() {
     if (madt->lapic_address == 0) ks.panic("Cannot find LAPIC address");
     apic.apic_addr = madt->lapic_address;
 
-    for (int i = 0; i < 3; i++) 
-        vmm_map_page_in_active_table((uint64_t)madt->lapic_address + i * PAGE_SIZE, (uint64_t)apic.apic_addr + i * PAGE_SIZE, true, false);
-    
-    // enable the APIC
-    enable_apic();
+    map_apic_into_space();      // map the LAPIC address into space
+    enable_apic();              // enable the APIC
     ks.dbg("APIC enabled");
 
-    // disable the PIC
-    disable_pic();
+    disable_pic();              // disable the PIC
     ks.dbg("PIC disabled");
 
     // todo ioapic
     // todo iso table
 }
 
+// *Map the LAPIC into the active table
+void map_apic_into_space() {
+    for (int i = 0; i < 3; i++) 
+        vmm_map_page_in_active_table((uint64_t)apic.apic_addr + i * PAGE_SIZE, (uint64_t)apic.apic_addr + i * PAGE_SIZE, true, false);
+}
+
+// *Enable the APIC by writing to its registers
 void enable_apic() {
     write_msr(APIC, (read_msr(APIC) | 0x800) & ~(LAPIC_ENABLE));
     apic_write(sivr, apic_read(sivr) | 0x1ff);

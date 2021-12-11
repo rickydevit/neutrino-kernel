@@ -18,12 +18,13 @@ void start_cpu(struct stivale2_smp_info* smp_info) {
     init_vmm_on_ap(smp_info);
     
     init_sse();
-    // enable_apic();
+    map_apic_into_space();
+    enable_apic();
 
     cpu_started = true;
 
     asm("sti");
-    for (;;) asm("hlt");
+    asm("hlt");
 }
 
 // === PUBLIC FUNCTIONS =========================
