@@ -1,10 +1,12 @@
 #include "mem_virt.h"
 #include "mem_phys.h"
 #include "paging.h"
+#include "../smp.h"
 #include "../cpuid.h"
 #include "../arch.h"
 #include "kernel/common/kservice.h"
 #include "libs/libc/stdbool.h"
+#include "thirdparty/stivale2.h"
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -51,7 +53,7 @@ page_table* vmm_get_or_create_entry(page_table* table, uint64_t entry, bool writ
 // @param virt the virtual address
 // @return the physical address associated to the virtual address
 uint64_t vmm_get_phys_address(uint64_t virt) {
-    page_table* pdpt = vmm_get_entry(vmm.active_page, (uint64_t)GET_PL4_INDEX(virt));
+    page_table* pdpt = vmm_get_entry(vmm.kernel_page_physaddr, (uint64_t)GET_PL4_INDEX(virt));
     if (pdpt == 0) ks.warn("Physical address for virtual address %x is invalid", virt);
     
     page_table* pdir = vmm_get_entry(pdpt, (uint64_t)GET_DPT_INDEX(virt));
@@ -118,45 +120,54 @@ void vmm_free_if_necessary_tables(page_table* table, uint64_t unmapped_addr) {
     vmm_free_if_necessary_table(pdpt, table, pl4_entry);
 }
 
+// *Map the physical regions stored in the physical manager to the given page
+// @param phys the physical memory manager
+// @param page the page to map the regions into
+void vmm_map_physical_regions(struct memory_physical* phys, page_table* page) {
+    for (int ind = 0; ind < phys->regions_count; ind++) {
+        if (phys->regions[ind].type == MEMORY_REGION_USABLE ||
+            phys->regions[ind].type == MEMORY_REGION_INVALID ||
+            phys->regions[ind].type == MEMORY_REGION_FRAMEBUFFER) continue;
+
+        uint64_t aligned_base = phys->regions[ind].base - phys->regions[ind].base % PAGE_SIZE;
+        uint64_t aligned_size = ((phys->regions[ind].size / PAGE_SIZE) + 1) * PAGE_SIZE;
+
+        ks.dbg("region is %i bytes long, needing %i pages. Aligned base is %x, aligned length is %x", 
+            phys->regions[ind].size, phys->regions[ind].size / PAGE_SIZE + 1, aligned_base, aligned_size);
+
+        for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
+            uint64_t addr = aligned_base + i * PAGE_SIZE;
+            vmm_map_page(page, addr, addr, true, false);
+            if (phys->regions[ind].type == MEMORY_REGION_KERNEL) {
+                vmm_map_page(page, addr, get_kern_address(addr), true, false);
+            } 
+        } 
+    }
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 void init_vmm() {
     ks.log("Initializing VMM...");
 
     vmm.address_size = get_physical_address_length();
-    vmm.active_page = (page_table*) read_cr3();
+    vmm.stivale2_page_physaddr = (page_table*) read_cr3();
+    vmm.kernel_page_physaddr = vmm.stivale2_page_physaddr;
 
     // prepare a pml4 table for the kernel address space
     page_table* kernel_pml4 = vmm_new_table();
+    ks.dbg("New pml4 created at %x", kernel_pml4);
 
     // identity map the first 2M of physical memory
     for (int i = 0; i < PHYSMEM_2MEGS / PAGE_SIZE; i++)
         vmm_map_page(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, true, false);
 
-    // map the page itself in the 511st pml4 entry
+    // map the page itself in the 510st pml4 entry
     ks.dbg("mapping page map inside itself: %x (%x) to %x", kernel_pml4, get_rmem_address((uint64_t)kernel_pml4), RECURSE_PML4);
     kernel_pml4->entries[RECURSE] = page_create(get_rmem_address((uint64_t)kernel_pml4), true, false);
-    // vmm_map_page(kernel_pml4, get_rmem_address((uint64_t)kernel_pml4), RECURSE_PML4, true, false);
 
-    // map the kernel in the 511th pml4 entry
-    for (int ind = 0; ind < pmm.regions_count; ind++) {
-        if (pmm.regions[ind].type == MEMORY_REGION_USABLE ||
-            pmm.regions[ind].type == MEMORY_REGION_INVALID ||
-            pmm.regions[ind].type == MEMORY_REGION_FRAMEBUFFER) continue;
-
-        uint64_t aligned_base = pmm.regions[ind].base - pmm.regions[ind].base % PAGE_SIZE;
-        uint64_t aligned_size = ((pmm.regions[ind].size / PAGE_SIZE) + 1) * PAGE_SIZE;
-
-        ks.dbg("region is %i bytes long, needing %i pages. Aligned base is %x, aligned length is %x", 
-            pmm.regions[ind].size, pmm.regions[ind].size / PAGE_SIZE + 1, aligned_base, aligned_size);
-
-        for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
-            uint64_t addr = aligned_base + i * PAGE_SIZE;
-            // ks.dbg("mapping region from %x to %x", addr, get_kern_address(addr));
-            vmm_map_page(kernel_pml4, addr, addr, true, false);
-            if (pmm.regions[ind].type == MEMORY_REGION_KERNEL) vmm_map_page(kernel_pml4, addr, get_kern_address(addr), true, false);
-        } 
-    }
+    // map physical regions in the page
+    vmm_map_physical_regions(&pmm, kernel_pml4);
 
     // map the pmm map
     uint64_t aligned_base = (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE;
@@ -170,7 +181,52 @@ void init_vmm() {
     
     // give CR3 the kernel pml4 address
     ks.dbg("Preparing to load pml4...");
-    vmm.active_page = RECURSE_PML4; // todo change to a pml4 array 
+    vmm.kernel_page_physaddr = get_rmem_address((uint64_t)kernel_pml4); 
+    get_bootstrap_cpu()->page_table = get_rmem_address((uint64_t)kernel_pml4);
+    write_cr3(get_rmem_address((uint64_t)kernel_pml4));
+    ks.log("VMM has been initialized.");
+}
+
+void init_vmm_on_ap(struct stivale2_smp_info* info) {
+    ks.log("Initializing VMM on CPU #%u...", info->processor_id);
+
+    // prepare a pml4 table for the kernel address space
+    page_table* kernel_pml4 = vmm_new_table();
+    ks.dbg("New pml4 created at %x for CPU #%u", kernel_pml4, info->processor_id);
+
+    // identity map the first 2M of physical memory
+    for (int i = 0; i < PHYSMEM_2MEGS / PAGE_SIZE; i++)
+        vmm_map_page(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, true, false);
+
+    // map the page itself in the 510st pml4 entry
+    ks.dbg("mapping page map inside itself: %x (%x) to %x", kernel_pml4, get_rmem_address((uint64_t)kernel_pml4), RECURSE_PML4);
+    kernel_pml4->entries[RECURSE] = page_create(get_mem_address((uint64_t)kernel_pml4), true, false);
+
+    // map kernel in the page
+    vmm_map_physical_regions(&pmm, kernel_pml4); 
+
+    // map the cpu stack in the page
+    uint64_t stack_base = (uint64_t)(info->target_stack-CPU_STACK_SIZE) - (uint64_t)(info->target_stack - CPU_STACK_SIZE) % PAGE_SIZE;
+    uint64_t stack_size = ((CPU_STACK_SIZE / PAGE_SIZE) + 1) * PAGE_SIZE;
+    ks.dbg("Mapping CPU stack starting %x, length %x", stack_base, stack_size);
+    for (int i = 0; i * PAGE_SIZE < stack_size; i++) {
+        uint64_t addr = stack_base + i * PAGE_SIZE;
+        vmm_map_page(kernel_pml4, get_rmem_address(addr), addr, true, false);
+    }
+
+    // map the pmm map
+    uint64_t aligned_base = (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE;
+    uint64_t aligned_size = ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE;
+    ks.dbg("Aligned base is %x, aligned length is %x", aligned_base, aligned_size);
+
+    for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
+        uint64_t addr = aligned_base + i * PAGE_SIZE;
+        vmm_map_page(kernel_pml4, get_rmem_address(addr), addr, true, false);
+    }
+    
+    // give CR3 the kernel pml4 address
+    ks.dbg("Preparing to load pml4... %x %x", kernel_pml4, get_rmem_address((uint64_t)kernel_pml4));
+    get_cpu(info->processor_id)->page_table = get_rmem_address((uint64_t)kernel_pml4);
     write_cr3(get_rmem_address((uint64_t)kernel_pml4));
     ks.log("VMM has been initialized.");
 }
