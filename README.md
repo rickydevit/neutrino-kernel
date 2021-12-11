@@ -30,13 +30,15 @@
     - [ ] **PIT**
     - [x] **ACPI**   
         *Basic ACPI tables listing and parsing*
-         - [ ] **MADT** 
+         - [x] **MADT** 
     - [ ] **APIC**
+         - [ ] **IOAPIC initialization**
+         - [x] **LAPIC initialization**
     - [ ] **SMD (Symmetric multi-processing)**
         - [ ] **Per-CPU initialization (via stivale2)**
     - [x] **CPUID** 
     - [ ] **RTC**
-    - [ ] **Memory manager**, both physical and virtual
+    - [x] **Memory manager**, both physical and virtual
         - [x] **Physical memory manager**   
             *Scans the loaded memory and manages it using 4KB blocks. Kernel and other reserved areas are marked accordingly*
         - [x] **Virtual memory manager**   
