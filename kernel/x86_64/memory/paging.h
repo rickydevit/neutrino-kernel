@@ -1,7 +1,7 @@
 #pragma once
 #include "libs/libc/stdbool.h"
 
-#define PAGE_SIZE 0x1000
+#define PAGE_SIZE       0x1000
 #define RECURSE         510UL
 #define RECURSE_PML4    (0xffffff0000000000UL)
 #define GET_RECURSIVE_ADDRESS(p3, p2, p1, offset) (page_table_e*)((RECURSE_PML4) | (p3<<30) | (p2<<21) | (p1<<12)) + offset

@@ -198,9 +198,9 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
     for (int i = 0; i < PHYSMEM_2MEGS / PAGE_SIZE; i++)
         vmm_map_page(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, true, false);
 
-    // map the page itself in the 510st pml4 entry
+    // map the page itself in the 510th pml4 entry
     ks.dbg("mapping page map inside itself: %x (%x) to %x", kernel_pml4, get_rmem_address((uint64_t)kernel_pml4), RECURSE_PML4);
-    kernel_pml4->entries[RECURSE] = page_create(get_mem_address((uint64_t)kernel_pml4), true, false);
+    kernel_pml4->entries[RECURSE] = page_create(get_rmem_address((uint64_t)kernel_pml4), true, false);
 
     // map kernel in the page
     vmm_map_physical_regions(&pmm, kernel_pml4); 
