@@ -107,6 +107,7 @@ void pmm_mark_region_free(uint64_t base_addr, size_t size) {
 	for (; blocks>0; blocks--) {
 		pmm_map_unset(align++);
 		pmm.used_blocks--;
+		pmm.usable_blocks++;
 	}
  
 	pmm_map_set(0);	//first block is always set. This insures allocs cant be 0
@@ -122,6 +123,7 @@ void pmm_mark_region_used(uint64_t base_addr, size_t size) {
 	for (; blocks>0; blocks--) {
 		pmm_map_set(align++);
 		pmm.used_blocks++;
+		pmm.usable_blocks--;
 	}
 }
 
@@ -212,6 +214,7 @@ uintptr_t pmm_alloc() {
 	
 	pmm_map_set(block);
 	pmm.used_blocks++;
+	pmm.usable_blocks--;
 
 	// ks.dbg("pmm_alloc() : first_free_block: %u return_address: %x", block, (uintptr_t)(block*PHYSMEM_BLOCK_SIZE));
 
@@ -234,6 +237,7 @@ void pmm_free(uintptr_t addr) {
 
 	pmm_map_unset(block);
 	pmm.used_blocks--;
+	pmm.usable_blocks++;
 }
 
 // *Allocate a series physical memory blocks and return the physical address of the assigned region
@@ -247,6 +251,7 @@ uintptr_t pmm_alloc_series(size_t size) {
 
 	for (uint32_t i=0; i<size; i++) pmm_map_set(block+i);
 	pmm.used_blocks += size;
+	pmm.usable_blocks -= size;
 
 	return (uintptr_t)(block*PHYSMEM_BLOCK_SIZE);
 }
@@ -260,6 +265,7 @@ void pmm_free_series(uintptr_t addr, size_t size) {
 
 	for (uint32_t i=0; i<size; i++) pmm_map_unset(block+i);
 	pmm.used_blocks -= size;
+	pmm.usable_blocks += size;
 }
 
 // *Get the base address of a memory region given the type. Only return the first region found
