@@ -7,12 +7,6 @@
 
 // === PRIVATE FUNCTIONS ========================
 
-// *Disable the 8259 PIC
-void disable_pic() {
-    portByteOut(0xa1, 0xff);
-    portByteOut(0x21, 0xff);
-}
-
 // *Write a value to the specified APIC register
 // @param reg the APIC register to write to
 // @param value the value to write

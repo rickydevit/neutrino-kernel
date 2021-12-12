@@ -4,7 +4,8 @@
 #include "gdt.h"
 #include "sse.h" 
 #include "smp.h"
-#include "apic.h"
+#include "pic.h"
+#include "device/apic.h"
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
 #include "device/acpi.h"
@@ -32,6 +33,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     kinit_mem_manager(memmap_str_tag, entries);
 
     //? 2nd stage initialization
+    init_pic();
     init_sse();
     init_acpi();
     init_apic();
