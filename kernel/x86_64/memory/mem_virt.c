@@ -5,6 +5,7 @@
 #include "../cpuid.h"
 #include "../arch.h"
 #include "kernel/common/kservice.h"
+#include "kernel/common/memory/memory.h"
 #include "libs/libc/stdbool.h"
 #include "thirdparty/stivale2.h"
 
@@ -27,7 +28,8 @@ page_table* vmm_get_entry(page_table* table, uint64_t entry) {
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 // @return the address of the newly created entry
 page_table* vmm_create_entry(page_table* table, uint64_t entry, bool writable, bool user) {
-    page_table* pt = (page_table*)get_mem_address(pmm_alloc_zero());
+    page_table* pt = (page_table*)get_mem_address(pmm_alloc());
+    memory_set(pt, 0, PHYSMEM_BLOCK_SIZE);
     table->entries[entry] = page_create(get_rmem_address(pt), writable, user);
 
     // ks.dbg("vmm_create_entry() : table: %x entry: %u new_page: %x (%x)", table, entry, pt, get_rmem_address(pt));
@@ -68,7 +70,8 @@ uint64_t vmm_get_phys_address(uint64_t virt) {
 // *Return a new page table of 512 entries all set to not-present 
 // @return the new page table pointer
 page_table *vmm_new_table() {
-    page_table *pl4 = (page_table*) get_mem_address(pmm_alloc_zero());
+    page_table *pl4 = (page_table*) get_mem_address(pmm_alloc());
+    memory_set(pl4, 0, PHYSMEM_BLOCK_SIZE);
     for (int i = 0; i < PAGE_PL4_ENTRIES; i++) pl4->entries[i] = 0;
 
     return pl4;

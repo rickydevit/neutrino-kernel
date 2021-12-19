@@ -23,7 +23,7 @@ void pmm_map_unset(int bit) {
 // @param bit the bit to get the value from
 // @return true if the bit is set, false otherwise
 bool pmm_map_get(int bit) {
-    return (pmm._map[bit / 32] & (1 << (bit % 32))) == 0 ? false : true;
+    return (pmm._map[bit / 32] & (1 << (bit % 32)));
 }
 
 // *Find the first free slot in the memory starting from the specified block, and return it
@@ -42,8 +42,8 @@ int32_t pmm_map_first_free_starting_from(uint64_t from_block) {
 // *Find the first free slot in the memory, and return it
 // @return the number of the bit representing first free slot in the memory
 int32_t pmm_map_first_free() {
-	int32_t free_after_map = pmm_map_first_free_starting_from(((uint64_t)pmm._map + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
-	if (free_after_map != -1) return free_after_map;
+	// int32_t free_after_map = pmm_map_first_free_starting_from(((uint64_t)pmm._map + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
+	// if (free_after_map != -1) return free_after_map;
 
 	int32_t free_from_start = pmm_map_first_free_starting_from(0);
 	if (free_from_start != -1) return free_from_start;
@@ -88,7 +88,7 @@ int32_t pmm_map_first_free_series(size_t size) {
     if (size==0) return -1;
 	if (size==1) return pmm_map_first_free();
 
-	int32_t free_after_map = pmm_map_first_free_series_starting_from(size, ((uint64_t)pmm._map + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
+	int32_t free_after_map = pmm_map_first_free_series_starting_from(size, (((uint64_t)pmm._map) + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
 	if (free_after_map != -1) return free_after_map;
 
 	int32_t free_from_start = pmm_map_first_free_series_starting_from(size, 0);
@@ -169,7 +169,7 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
     pmm.total_blocks = pmm.total_memory / PHYSMEM_BLOCK_SIZE;
     pmm.usable_memory = 0;
 	pmm._map = 0;
-	pmm._map_size = pmm.total_blocks / 8;
+	pmm._map_size = pmm.total_blocks / PHYSMEM_MAP_BLOCKS_PER_UNIT;
 
     for (int i = 0; i < size; i++) {
         struct memory_physical_region entry = entries[i];
@@ -253,6 +253,7 @@ uintptr_t pmm_alloc_series(size_t size) {
 	pmm.used_blocks += size;
 	pmm.usable_blocks -= size;
 
+	// ks.dbg("pmm_alloc_series() : size: %u first_free_block: %u return_address: %x", size, block, (uintptr_t)(block*PHYSMEM_BLOCK_SIZE));
 	return (uintptr_t)(block*PHYSMEM_BLOCK_SIZE);
 }
 

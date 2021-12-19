@@ -38,6 +38,8 @@ struct memory_physical {
 
 struct memory_physical pmm;
 
+#define PHYSMEM_MAP_BLOCKS_PER_UNIT (8*sizeof(*pmm._map))
+
 void init_pmm(struct memory_physical_region *entries, uint32_t size);
 uintptr_t pmm_alloc(); 
 uintptr_t pmm_alloc_zero(); 
