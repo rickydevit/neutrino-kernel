@@ -2,8 +2,8 @@
 #include "cpuid.h"
 #include "idt.h"
 #include "gdt.h"
-#include "sse.h" 
 #include "smp.h"
+#include "sse.h" 
 #include "pic.h"
 #include "device/apic.h"
 #include "memory/mem_virt.h"
@@ -23,6 +23,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     struct memory_physical_region entries[memmap_str_tag->entries];
 
     //? Core initialization
+    setup_bsp(stack);
     init_serial(COM1);
     init_kservice();
     init_gdt();
@@ -33,6 +34,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     kinit_mem_manager(memmap_str_tag, entries);
 
     //? 2nd stage initialization
+    init_tss(get_bootstrap_cpu());
     init_pic();
     init_sse();
     init_acpi();

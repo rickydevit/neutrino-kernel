@@ -13,9 +13,11 @@ static volatile bool cpu_started = false;
 // === PRIVATE FUNCTIONS ========================
 
 void start_cpu(struct stivale2_smp_info* smp_info) {
-    init_gdt();
+    init_gdt_on_ap(smp_info->processor_id);
     init_idt();
+
     init_vmm_on_ap(smp_info);
+    init_tss(get_cpu(smp_info->processor_id));
     
     init_sse();
     map_apic_into_space();
@@ -42,6 +44,12 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
         smp.cpus[i].id = cpu_info.processor_id;
         smp.cpus[i].lapic_id = cpu_info.lapic_id;
 
+        // setup the tss
+        smp.cpus[i].tss.iopb_offset = sizeof(tss);
+        smp.cpus[i].tss.rsp0 = (uint64_t)smp.cpus[i].stack;
+        smp.cpus[i].stack_interrupt = pmm_alloc_series(CPU_STACK_SIZE / PHYSMEM_BLOCK_SIZE);
+        smp.cpus[i].tss.ist1 = (uint64_t)smp.cpus[i].stack_interrupt + CPU_STACK_SIZE;
+
         // skip the bsp
         if (cpu_info.lapic_id == smp_struct->bsp_lapic_id) continue;
 
@@ -60,6 +68,14 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
     }
 
     ks.log("%u CPUs initialized successfully.", smp.cpu_count);
+}
+
+// *Set the information about the BSP on startup
+// @param bsp_stack the stack of the bootstrap processor
+void setup_bsp(uint8_t* bsp_stack) {
+    smp.cpus[0].id = 0;
+    smp.cpus[0].lapic_id = 0;
+    smp.cpus[0].stack = bsp_stack;
 }
 
 // *Get the cpu info given the cpu id
