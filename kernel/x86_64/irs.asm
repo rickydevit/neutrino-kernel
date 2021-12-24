@@ -1,62 +1,12 @@
 [BITS 64]
 
 section .text
-
-global irq0
-global irq1
-global irq2
-global irq3
-global irq4
-global irq5
-global irq6
-global irq7
-global irq8
-global irq9
-global irq10
-global irq11
-global irq12
-global irq13
-global irq14
-global irq15
-
-global exc0
-global exc1
-global exc2
-global exc3
-global exc4
-global exc5
-global exc6
-global exc8
-global exc14
  
 global load_idt
  
-extern irq0_handler
-extern irq1_handler
-extern irq2_handler
-extern irq3_handler
-extern irq4_handler
-extern irq5_handler
-extern irq6_handler
-extern irq7_handler
-extern irq8_handler
-extern irq9_handler
-extern irq10_handler
-extern irq11_handler
-extern irq12_handler
-extern irq13_handler
-extern irq14_handler
-extern irq15_handler
-
-extern exc0_handler
-extern exc1_handler
-extern exc2_handler
-extern exc3_handler
-extern exc4_handler
-extern exc5_handler
-extern exc6_handler
-extern exc8_handler
-extern exc14_handler
+extern interrupt_handler
+extern exception_handler
+extern pagefault_handler
 
 %macro pushall 0
 
@@ -97,12 +47,18 @@ extern exc14_handler
 
 %endmacro
 
+%macro _INT_NAME 1
+dq irq%1
+%endmacro
+
 %macro _EXCEPTION_COMMON 1
-exc%1:
+irq%1:
   cld
   pushall
 
-  call exc%1_handler
+  push qword %1
+  call exception_handler
+  add rsp, 8          ; pop interrupt number
 
   popall
   sti
@@ -114,7 +70,9 @@ irq%1:
   cld
   pushall
 
-  call irq%1_handler
+  push qword %1       ; push interrupt number
+  call interrupt_handler
+  add rsp, 8          ; pop interrupt number
 
   popall
   sti
@@ -125,41 +83,117 @@ _EXCEPTION_COMMON 0   ; DIVIDE EXCEPTION
 _EXCEPTION_COMMON 1   ; DEBUG EXCEPTION
 _EXCEPTION_COMMON 2   ; INTEL RESERVED
 _EXCEPTION_COMMON 3   ; BREAKPOINT
-_EXCEPTION_COMMON 4   ; OVERFLOW
+_EXCEPTION_COMMON 4   ; invalid in 64 bit
 _EXCEPTION_COMMON 5   ; BOUNDS CHECK 
 _EXCEPTION_COMMON 6   ; INVALID OPCODE
+_EXCEPTION_COMMON 7   ; NO FPU
 _EXCEPTION_COMMON 8   ; DOUBLE FAULT
-exc14:                ; PAGE FAULT
+_EXCEPTION_COMMON 9   ; not used
+_EXCEPTION_COMMON 10  ; INVALID TSS
+_EXCEPTION_COMMON 11  ; SEGMENT NOT PRESENT 
+_EXCEPTION_COMMON 12  ; INVALID STACK
+_EXCEPTION_COMMON 13  ; GENERAL PROTECTION FAULT
+irq14:                ; PAGE FAULT
   cld
   pushall
   mov rdi, rsp
 
-  call exc14_handler
+  call pagefault_handler
 
   mov rsp, rax
   popall
   sti
   iretq
+_EXCEPTION_COMMON 15  ; invalid
+_EXCEPTION_COMMON 16  ; x87 FPU FAULT
+_EXCEPTION_COMMON 17  ; ALIGNMENT FAULT
+_EXCEPTION_COMMON 18
+_EXCEPTION_COMMON 19
+_EXCEPTION_COMMON 20
+_EXCEPTION_COMMON 21
+_EXCEPTION_COMMON 22
+_EXCEPTION_COMMON 23
+_EXCEPTION_COMMON 24
+_EXCEPTION_COMMON 25
+_EXCEPTION_COMMON 26
+_EXCEPTION_COMMON 27
+_EXCEPTION_COMMON 28
+_EXCEPTION_COMMON 29
+_EXCEPTION_COMMON 30
+_EXCEPTION_COMMON 31
 
-; IRQs
-
-_INTERRUPT_COMMON 0 
-_INTERRUPT_COMMON 1
-_INTERRUPT_COMMON 2
-_INTERRUPT_COMMON 3
-_INTERRUPT_COMMON 5
-_INTERRUPT_COMMON 6
-_INTERRUPT_COMMON 7
-_INTERRUPT_COMMON 8
-_INTERRUPT_COMMON 9
-_INTERRUPT_COMMON 10
-_INTERRUPT_COMMON 11
-_INTERRUPT_COMMON 12
-_INTERRUPT_COMMON 13 
-_INTERRUPT_COMMON 14
-_INTERRUPT_COMMON 15
+_INTERRUPT_COMMON 32 
+_INTERRUPT_COMMON 33
+_INTERRUPT_COMMON 34
+_INTERRUPT_COMMON 35
+_INTERRUPT_COMMON 36
+_INTERRUPT_COMMON 37
+_INTERRUPT_COMMON 38
+_INTERRUPT_COMMON 39
+_INTERRUPT_COMMON 40
+_INTERRUPT_COMMON 41
+_INTERRUPT_COMMON 42
+_INTERRUPT_COMMON 43
+_INTERRUPT_COMMON 44 
+_INTERRUPT_COMMON 45
+_INTERRUPT_COMMON 46
+_INTERRUPT_COMMON 47
 
 load_idt:
-	lidt [edi]
-	sti
+	lidt [rdi]
 	ret
+
+section .data
+global _interrupt_vector
+
+_interrupt_vector:
+  _INT_NAME 0
+  _INT_NAME 1
+  _INT_NAME 2
+  _INT_NAME 3
+  _INT_NAME 4
+  _INT_NAME 5
+  _INT_NAME 6
+  _INT_NAME 7
+  _INT_NAME 8
+  _INT_NAME 9
+  _INT_NAME 10
+  _INT_NAME 11
+  _INT_NAME 12
+  _INT_NAME 13
+  _INT_NAME 14
+  _INT_NAME 15
+  _INT_NAME 16
+  _INT_NAME 17
+  _INT_NAME 18
+  _INT_NAME 19
+  _INT_NAME 20
+  _INT_NAME 21
+  _INT_NAME 22
+  _INT_NAME 23
+  _INT_NAME 24
+  _INT_NAME 25
+  _INT_NAME 26
+  _INT_NAME 27
+  _INT_NAME 28
+  _INT_NAME 29
+  _INT_NAME 30
+  _INT_NAME 31
+
+  _INT_NAME 32
+  _INT_NAME 33
+  _INT_NAME 34
+  _INT_NAME 35
+  _INT_NAME 36
+  _INT_NAME 37
+  _INT_NAME 38
+  _INT_NAME 39
+  _INT_NAME 40
+  _INT_NAME 41
+  _INT_NAME 42
+  _INT_NAME 43
+  _INT_NAME 44
+  _INT_NAME 45
+  _INT_NAME 46
+  _INT_NAME 47
+  
