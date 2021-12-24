@@ -19,6 +19,15 @@ enum apic_register {
     timer_current =         0x390
 };
 
+enum ioapic_register {
+    version_reg = 0x1
+};
+
+enum ioapic_flags {
+    active_high_low = 2,
+    edge_level = 8
+};
+
 enum apic_type {
     LAPIC = 0,
     IOAPIC = 1,
@@ -27,6 +36,13 @@ enum apic_type {
     LAPIC_NMI = 4,
     LAPIC_AO = 5,
     Lx2APIC = 9
+};
+
+struct io_apic_version_table {
+    uint8_t version;
+    uint8_t reserved;
+    uint8_t maximum_redirection;
+    uint8_t reserved2;
 };
 
 struct apic_t {
@@ -44,3 +60,4 @@ struct apic_t apic;
 void init_apic();
 void enable_apic();
 void map_apic_into_space();
+void apic_redirect_irq(uint32_t cpu, uint8_t irq, uint32_t status);
