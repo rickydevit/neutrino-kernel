@@ -1,5 +1,6 @@
 #pragma once
 #include "libs/libc/stdint.h"
+#include "acpi.h"
 
 #define LAPIC_ENABLE (1 << 10)
 
@@ -18,8 +19,24 @@ enum apic_register {
     timer_current =         0x390
 };
 
+enum apic_type {
+    LAPIC = 0,
+    IOAPIC = 1,
+    IOAPIC_ISO = 2,
+    IOAPIC_NMI = 3,
+    LAPIC_NMI = 4,
+    LAPIC_AO = 5,
+    Lx2APIC = 9
+};
+
 struct apic_t {
     uint64_t apic_addr;
+
+    uint16_t ioapics_count;
+    MADT_apic_IOAPIC* ioapics[64];
+
+    uint16_t ioapics_iso_count;
+    MADT_apic_IOAPIC_ISO* ioapics_iso[64];
 };
 
 struct apic_t apic;

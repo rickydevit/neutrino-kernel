@@ -43,12 +43,45 @@ struct XSDT {
     uint64_t PointerToOtherSDT[];
 } __attribute__ ((packed)); 
 
+struct MADT_apic_header {
+    uint8_t type;
+    uint8_t length;
+};
+
 struct MADT {
     struct SDT_header h;
     uint32_t lapic_address;
     uint32_t flags;
-    uint16_t interrupt_devices_start;
+    struct MADT_apic_header interrupt_devices_start;
 } __attribute__ ((packed)); 
+
+struct MADT_apic_IOAPIC_t {
+    struct MADT_apic_header h;
+    uint8_t apic_id;
+    uint8_t reserved;
+    uint32_t apic_addr;
+    uint32_t gsib;          // global system interrupt base
+};
+
+struct MADT_apic_IOAPIC_ISO_t {
+    struct MADT_apic_header h;
+    uint8_t bus_source;
+    uint8_t irq_source;
+    uint32_t gsi;           // global system interrupt
+    uint16_t flags;
+};
+
+struct MADT_apic_IOAPIC_NMI_t {
+    struct MADT_apic_header h;
+    uint8_t nmi_source;
+    uint8_t reserved;
+    uint16_t flags;
+    uint32_t gsi;           // global system interrupt
+};
+
+typedef struct MADT_apic_IOAPIC_t MADT_apic_IOAPIC;
+typedef struct MADT_apic_IOAPIC_ISO_t MADT_apic_IOAPIC_ISO;
+typedef struct MADT_apic_IOAPIC_NMI_t MADT_apic_IOAPIC_NMI;
 
 struct acpi {
     uint8_t version;

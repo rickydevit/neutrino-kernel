@@ -21,6 +21,39 @@ uint32_t apic_read(uint32_t reg) {
     return *((volatile uint32_t *)((uint64_t)apic.apic_addr + reg));
 }
 
+// *Setup the I/O APIC 
+void apic_setup_IOAPIC() {
+    struct MADT* madt = (struct MADT*) find_sdt_entry("APIC");
+    struct MADT_apic_header* entry_hdr = &(madt->interrupt_devices_start);
+    apic.ioapics_count = 0;
+
+    while (entry_hdr < ((uint64_t)madt + madt->h.Length)) {
+        if (entry_hdr->type == IOAPIC) {
+            apic.ioapics[apic.ioapics_count] = (MADT_apic_IOAPIC*) entry_hdr;
+            ks.dbg("ioapic #%u addr: %x", apic.ioapics[apic.ioapics_count]->apic_id, apic.ioapics[apic.ioapics_count]->apic_addr);
+            apic.ioapics_count++;
+        }
+        entry_hdr = (struct MADT_apic_header*) ((uint64_t)entry_hdr + entry_hdr->length);
+    }
+}
+
+// *Setup the I/O APIC Interrupt Source Override
+void apic_setup_IOAPIC_ISO() {
+    struct MADT* madt = (struct MADT*) find_sdt_entry("APIC");
+    struct MADT_apic_header* entry_hdr = &(madt->interrupt_devices_start);
+    apic.ioapics_iso_count = 0;
+
+    while (entry_hdr < ((uint64_t)madt + madt->h.Length)) {
+        if (entry_hdr->type == IOAPIC_ISO) {
+            apic.ioapics_iso[apic.ioapics_iso_count] = (MADT_apic_IOAPIC_ISO*) entry_hdr;
+            ks.dbg("ioapic iso bus: %u interrupt: %u", apic.ioapics_iso[apic.ioapics_iso_count]->bus_source, 
+                    apic.ioapics_iso[apic.ioapics_iso_count]->irq_source);
+            apic.ioapics_iso_count++;
+        }
+        entry_hdr = (struct MADT_apic_header*) ((uint64_t)entry_hdr + entry_hdr->length);
+    }
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 void init_apic() {
@@ -37,8 +70,11 @@ void init_apic() {
     disable_pic();              // disable the PIC
     ks.dbg("PIC disabled");
 
-    // todo ioapic
-    // todo iso table
+    ks.dbg("Setting up IOAPICs...");
+    apic_setup_IOAPIC();
+
+    ks.dbg("Setting up IOAPIC ISOs...");
+    apic_setup_IOAPIC_ISO();
 }
 
 // *Map the LAPIC into the active table
