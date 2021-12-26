@@ -41,6 +41,11 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_apic();
     init_smp(get_rmem_address(smp_str_tag));
 
+    for (int i = 0; i < 16; i++)
+        apic_redirect_irq(0, i, 1);
+
+    asm volatile("sti");
+
     //? -----------------------------------------
     for (;;) asm("hlt");
 

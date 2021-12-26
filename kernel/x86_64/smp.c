@@ -56,6 +56,7 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
         // prepare the stack
         smp.cpus[i].stack = pmm_alloc_series(CPU_STACK_SIZE/PHYSMEM_BLOCK_SIZE);
         smp_struct->smp_info[i].target_stack = get_mem_address(smp.cpus[i].stack) + CPU_STACK_SIZE;
+        smp.cpus[i].tss.rsp0 = (uint64_t)smp.cpus[i].stack;
 
         // boot the ap
         ks.log("Starting CPU #%d, stack at %x, trampoline at %x", i, smp_struct->smp_info[i].target_stack, (uint64_t)start_cpu);

@@ -9,7 +9,6 @@ extern exception_handler
 extern pagefault_handler
 
 %macro pushall 0
-
     push rax
     push rbx
     push rcx
@@ -25,7 +24,6 @@ extern pagefault_handler
     push r13
     push r14
     push r15
-
 %endmacro
 
 %macro popall 0
@@ -44,7 +42,6 @@ extern pagefault_handler
     pop rcx
     pop rbx
     pop rax
-
 %endmacro
 
 %macro _INT_NAME 1
@@ -53,31 +50,50 @@ dq irq%1
 
 %macro _EXCEPTION_COMMON 1
 irq%1:
-  cld
-  pushall
+  push qword 0        ; push placeholder error
+  push qword %1       ; push interrupt number
+  jmp _generic_exception
+%endmacro
 
-  push qword %1
-  call exception_handler
-  add rsp, 8          ; pop interrupt number
-
-  popall
-  sti
-  iretq
+%macro _EXCEPTION_WERROR 1
+irq%1:
+  ; cpu will push the error code
+  push qword %1       ; push interrupt number
+  jmp _generic_exception
 %endmacro
 
 %macro _INTERRUPT_COMMON 1
 irq%1:
+  push qword 0        ; push dummy error code
+  push qword %1       ; push interrupt number
+  jmp _generic_interrupt
+%endmacro
+
+_generic_exception:
+  cld
+  pushall
+  
+  mov rdi, rsp
+  call exception_handler
+  mov rsp, rax
+
+  popall
+  add rsp, 16         ; pop interrupt number
+  sti
+  iretq
+
+_generic_interrupt:
   cld
   pushall
 
-  push qword %1       ; push interrupt number
+  mov rdi, rsp
   call interrupt_handler
-  add rsp, 8          ; pop interrupt number
+  mov rsp, rax
 
   popall
+  add rsp, 16         ; pop interrupt number
   sti
   iretq
-%endmacro
 
 _EXCEPTION_COMMON 0   ; DIVIDE EXCEPTION
 _EXCEPTION_COMMON 1   ; DEBUG EXCEPTION
@@ -87,12 +103,12 @@ _EXCEPTION_COMMON 4   ; invalid in 64 bit
 _EXCEPTION_COMMON 5   ; BOUNDS CHECK 
 _EXCEPTION_COMMON 6   ; INVALID OPCODE
 _EXCEPTION_COMMON 7   ; NO FPU
-_EXCEPTION_COMMON 8   ; DOUBLE FAULT
+_EXCEPTION_WERROR 8   ; DOUBLE FAULT
 _EXCEPTION_COMMON 9   ; not used
-_EXCEPTION_COMMON 10  ; INVALID TSS
-_EXCEPTION_COMMON 11  ; SEGMENT NOT PRESENT 
-_EXCEPTION_COMMON 12  ; INVALID STACK
-_EXCEPTION_COMMON 13  ; GENERAL PROTECTION FAULT
+_EXCEPTION_WERROR 10  ; INVALID TSS
+_EXCEPTION_WERROR 11  ; SEGMENT NOT PRESENT 
+_EXCEPTION_WERROR 12  ; INVALID STACK
+_EXCEPTION_WERROR 13  ; GENERAL PROTECTION FAULT
 irq14:                ; PAGE FAULT
   cld
   pushall
@@ -106,11 +122,11 @@ irq14:                ; PAGE FAULT
   iretq
 _EXCEPTION_COMMON 15  ; invalid
 _EXCEPTION_COMMON 16  ; x87 FPU FAULT
-_EXCEPTION_COMMON 17  ; ALIGNMENT FAULT
+_EXCEPTION_WERROR 17  ; ALIGNMENT FAULT
 _EXCEPTION_COMMON 18
 _EXCEPTION_COMMON 19
 _EXCEPTION_COMMON 20
-_EXCEPTION_COMMON 21
+_EXCEPTION_WERROR 21
 _EXCEPTION_COMMON 22
 _EXCEPTION_COMMON 23
 _EXCEPTION_COMMON 24
@@ -118,8 +134,8 @@ _EXCEPTION_COMMON 25
 _EXCEPTION_COMMON 26
 _EXCEPTION_COMMON 27
 _EXCEPTION_COMMON 28
-_EXCEPTION_COMMON 29
-_EXCEPTION_COMMON 30
+_EXCEPTION_WERROR 29
+_EXCEPTION_WERROR 30
 _EXCEPTION_COMMON 31
 
 _INTERRUPT_COMMON 32 

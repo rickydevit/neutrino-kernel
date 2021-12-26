@@ -6,7 +6,7 @@
 //? 2: 32 bit data descriptor
 //? 3: 64 bit code descriptor
 //? 4: 64 bit data descriptor
-#define MAX_GDT_SIZE 64
+#define GDT_ENTRIES 5
 
 #define GDT_PRESENT     0b10010000	        // Present bit. This must be 1 for all valid selectors.
 #define GDT_USER        0b01100000		    // Privilege, 2 bits. Contains the ring level, 0 = highest (kernel), 3 = lowest (user applications).
@@ -16,9 +16,10 @@
 #define GDT_TSS_PRESENT 0b10000000
 #define GDT_TSS			0b00001001
 
-#define GDT_FLAGS_64BIT 0b1010
-#define GDT_FLAGS_32BIT 0b1100
-#define GDT_FLAGS_TSS	0b0000 		
+#define GDT_FLAGS_64BIT 		0b1000
+#define GDT_FLAGS_64BIT_CODE 	0b1010
+#define GDT_FLAGS_32BIT 		0b1100
+#define GDT_FLAGS_TSS			0b0000 		
 
 struct GDT_pointer {
 	uint16_t size;
@@ -35,16 +36,17 @@ struct GDT_entry {
 	uint8_t base24_31;
 };
 
-struct cpu_GDT {
-	struct GDT_entry GDT[MAX_GDT_SIZE];
-};
-
 struct TSS_entry {
-	struct GDT_entry low;
-	struct {
+	struct GDT_entry low;	
+	struct high_t {
 		uint32_t base32_63;
 		uint32_t reserved;
 	} high;
+};
+
+struct cpu_GDT {
+	struct GDT_entry GDT[GDT_ENTRIES];
+	struct TSS_entry TSS;
 };
 
 struct _tss {
@@ -83,7 +85,8 @@ struct TSS_entry inline tss_entry_create(uint64_t base, uint64_t limit, uint64_t
 	struct TSS_entry entry;
 
 	entry.low = gdt_entry_create(base, limit, access, flags);
-	entry.high.base32_63 = (uint32_t)(base >> 32);
+	entry.high.base32_63 = ((base) >> 32) & 0xffffffff;
+	entry.high.reserved = 0;
 
 	return entry;
 }

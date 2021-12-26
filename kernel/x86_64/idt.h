@@ -23,7 +23,40 @@ struct IDT_pointer {
     uint64_t offset; 
 } __attribute__((packed));
 
+struct interrupt_stack_t {
+    uint64_t r15;
+    uint64_t r14;
+    uint64_t r13;
+    uint64_t r12;
+    uint64_t r11;
+    uint64_t r10;
+    uint64_t r9;
+    uint64_t r8;
+    uint64_t rbp;
+    uint64_t rdi;
+    uint64_t rsi;
+    uint64_t rdx;
+    uint64_t rcx;
+    uint64_t rbx;
+    uint64_t rax;
+
+    uint64_t irq;
+    uint64_t error_code;
+
+    // Interrupt stack frame
+    uint64_t rip;
+    uint64_t cs;
+    uint64_t rflags;
+    uint64_t rsp;
+    uint64_t ss;
+} __attribute__((packed));
+
+typedef struct interrupt_stack_t interrupt_stack;
+
 void init_idt();
+interrupt_stack* exception_handler(interrupt_stack* stack);
+interrupt_stack* interrupt_handler(interrupt_stack* stack);
+void pagefault_handler(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j, int k, int l, int m, int n);
 
 extern int load_idt();
 extern uint64_t _interrupt_vector[128];

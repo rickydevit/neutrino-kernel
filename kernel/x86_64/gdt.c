@@ -18,7 +18,7 @@ void setup_gdt(struct cpu_GDT* gdt) {
     gdt->GDT[2] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE                 , GDT_FLAGS_32BIT);
 
     // 64-bit code and data descriptors 0x18 0x20
-    gdt->GDT[3] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_EXECUTABLE, GDT_FLAGS_64BIT);
+    gdt->GDT[3] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_EXECUTABLE, GDT_FLAGS_64BIT_CODE);
     gdt->GDT[4] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE                 , GDT_FLAGS_64BIT);
 }
 
@@ -29,7 +29,7 @@ void install_gdt(struct cpu_GDT* gdt) {
     struct GDT_pointer gdt_ptr;
 
     gdt_address = (uint64_t)gdt;
-    gdt_ptr.size = (sizeof(struct GDT_entry) * MAX_GDT_SIZE);
+    gdt_ptr.size = sizeof(struct cpu_GDT);
     gdt_ptr.offset = gdt_address;
 
     ks.dbg("GDT built at %x. Loading to register...", gdt_address);
@@ -37,7 +37,7 @@ void install_gdt(struct cpu_GDT* gdt) {
 }
 
 void inline install_tss() {
-   __asm__ volatile("ltr %%ax" : : "a"((uint16_t)0x28));
+   __asm__ volatile("ltr %%ax" : : "a"(0x28));
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -64,7 +64,9 @@ void init_gdt_on_ap(uint32_t cpu_id) {
 void init_tss(struct cpu* cpu) {
     ks.dbg("Setting up TSS...");
     // tss descriptor 0x28
-    *((struct TSS_entry*)&(gdt_array[cpu->id]).GDT[5]) = tss_entry_create(&(cpu->tss), &(cpu->tss) + sizeof(cpu->tss), GDT_TSS_PRESENT | GDT_TSS, GDT_FLAGS_TSS);
+    struct TSS_entry entry = tss_entry_create(&(cpu->tss), (uint64_t)&(cpu->tss) + sizeof(cpu->tss), GDT_TSS_PRESENT | GDT_TSS, GDT_FLAGS_TSS);
+    gdt_array[cpu->id].TSS = entry;
+
     install_tss();
     ks.dbg("TSS set up for CPU #%u", cpu->id);
 }
