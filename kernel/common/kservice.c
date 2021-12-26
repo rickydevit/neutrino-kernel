@@ -89,5 +89,6 @@ void kpanic(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
 
+    asm("cli");
     asm("hlt");
 }

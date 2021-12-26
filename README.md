@@ -2,7 +2,7 @@
 *Neutrino* is a project that aims to understand and implement a 64 bit kernel written in a modern C and Assembly. The kernel will have basic drivers and functionality, but other features may be added in the future. The currently implemented features are listed [here](#Features). 
 
 ## Milestones
-- [ ] **0 ー Reaching Userspace** ⬅   
+- [ ] **0 ー Reaching Userspace** ⬅  
     *Implement everything needed for reaching a simple userspace*
 - [ ] 1 ー Storage land   
     *Implement a VFS to access installed drives, writing and reading files*
@@ -16,8 +16,8 @@
     - [x] **Stivale2 protocol compliant**   
         *The kernel asks the bootloader for a linear framebuffer, but can also use a terminal if the framebuffer is not available. The bootloader also pass some informations to the kernel.*
 
-- [ ] 🌳 **Basic kernel drivers**
-    - [x] **Kernel Services**   
+- [ ] 🌳 **Basic kernel**
+    - [x] **Kernel Services**  
         *The kernel services functions are used to provide a easier to way to interface the kernel and the drivers. These functions will NOT be available to the user space.*
     - [x] **GDT setup**   
         *Null descriptor; 32 bit code and data descriptors; 64 bit code and data descriptors. More descriptors will be added when required.*
@@ -27,22 +27,29 @@
         *Serial communication with write and read operations from and to a given serial port*
     - [x] **SSE**   
         *Floating point unit initialization and XSAVE/AVX check and enabling*
-    - [ ] **PIT**
     - [x] **ACPI**   
         *Basic ACPI tables listing and parsing*
-         - [x] **MADT** 
-    - [ ] **APIC**
-         - [ ] **IOAPIC initialization**
+         - [x] **RSDT/XSDT**   
+            *with the possibility to find tables*
+         - [x] **MADT**   
+            *including the LAPIC, IOAPIC, IOAPIC_ISO sub-tables*
+    - [x] **APIC**
+         - [x] **IOAPIC initialization**   
+            *with regards to the Interrupt Source Override table*
          - [x] **LAPIC initialization**
     - [x] **SMD (Symmetric multi-processing)**
         - [x] **Per-CPU initialization (via stivale2)**
     - [x] **CPUID** 
-    - [ ] **RTC**
-    - [x] **Memory manager**, both physical and virtual
+    - [ ] **Timers**
+        - [ ] **RTC**
+        - [ ] **LAPIC timer**
+        - [ ] **PIT**
+    - [x] **Memory manager**
         - [x] **Physical memory manager**   
             *Scans the loaded memory and manages it using 4KB blocks. Kernel and other reserved areas are marked accordingly*
         - [x] **Virtual memory manager**   
             *Manages the virtual memory page tables. Can map, remap and unmap pages*
+        - [ ] **Kernel Heap manager**
     - [ ] **Process scheduler**
 
 - [ ] ⚙ **Advanced drivers**

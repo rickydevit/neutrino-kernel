@@ -91,17 +91,29 @@ void init_idt() {
 }
 
 interrupt_stack* exception_handler(interrupt_stack* stack) {
-	ks.warn("got exception: %c (%u), error code: %x, cs: %x", interrupt_exception_name[stack->irq], stack->irq, stack->error_code, stack->cs);
+	ks.warn("got exception: %c (%u)", interrupt_exception_name[stack->irq], stack->irq);
     log_interrupt_stack(stack);
+
+    switch (stack->irq) {
+        case 8:     // DF
+        case 10:    // TS
+        case 11:    // NP
+        case 12:    // SS
+        case 13:    // GP
+        case 17:    // AC
+        case 18:    // MC
+        case 21:    // CP
+        case 29:    // VC
+        case 30:    // SX
+            ks.panic("Neutrino encountered a fatal exception!\nFaulting instruction at %x. Cannot proceed.", stack->rip);
+            break;
+    }
 
     apic_eoi();
     return stack;
 }
 
 interrupt_stack* interrupt_handler(interrupt_stack* stack) {
-	ks.log("got interrupt %u", stack->irq);
-    log_interrupt_stack(stack);
-
     apic_eoi();
     return stack;
 }
