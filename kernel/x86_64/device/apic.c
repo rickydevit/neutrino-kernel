@@ -8,20 +8,6 @@
 
 // === PRIVATE FUNCTIONS ========================
 
-// *Write a value to the specified APIC register
-// @param reg the APIC register to write to
-// @param value the value to write
-void apic_write(uint32_t reg, uint32_t value) {
-    *((volatile uint32_t *)(((uint64_t)apic.apic_addr) + reg)) = value;
-}
-
-// *Read a value from the specified APIC register
-// @param reg the APIC register to read from
-// @return the value read from the specified APIC register
-uint32_t apic_read(uint32_t reg) {
-    return *((volatile uint32_t *)((uint64_t)apic.apic_addr + reg));
-}
-
 // *Write a value to the specified IOAPIC register
 // @param base the base address of the IOAPIC
 // @param reg the APIC register to write to
@@ -74,6 +60,9 @@ void apic_setup_IOAPIC_ISO() {
     }
 }
 
+// *Get the max redirections for the APIC specified by the apic_id parameter
+// @param apic_id the APIC ID to get the max redirections from
+// @return the max redirections for the APIC specified by the apic_id parameter
 uint32_t apic_io_max_redirect(uint32_t apic_id) {
     uint64_t addr = apic.ioapics[apic_id]->apic_addr;
     uint32_t raw_t = apic_io_read(addr, version_reg);
@@ -82,13 +71,12 @@ uint32_t apic_io_max_redirect(uint32_t apic_id) {
     return tables->maximum_redirection;
 }
 
-void apic_set_raw_redirect(uint8_t vector, uint32_t target_gsi, uint16_t flags, uint32_t cpu, uint32_t status) {
+void apic_set_raw_redirect(uint8_t vector, uint32_t target_gsi, uint16_t flags, uint32_t cpu, bool status) {
     uint64_t end = vector;
 
     int64_t io_apic_target = -1;
     for (uint64_t i = 0; i < apic.ioapics_count; i++) {
-        if (apic.ioapics[i]->gsib <= target_gsi && 
-            apic.ioapics[i]->gsib + apic_io_max_redirect(i) > target_gsi) {
+        if (apic.ioapics[i]->gsib <= target_gsi && apic.ioapics[i]->gsib + apic_io_max_redirect(i) > target_gsi) {
                 io_apic_target = i;
                 break;
         }
@@ -112,6 +100,7 @@ void apic_set_raw_redirect(uint8_t vector, uint32_t target_gsi, uint16_t flags, 
 
 // === PUBLIC FUNCTIONS =========================
 
+// *Intialize the APIC
 void init_apic() {
     ks.log("Initializing APIC...");
 
@@ -145,6 +134,10 @@ void enable_apic() {
     apic_write(sivr, apic_read(sivr) | 0x1ff);
 }
 
+// *Redirect a IRQ to the correct IRS. Also checks for overrides from the ISO table: if an override is found, that is used instead.
+// @param cpu the cpu to redirect the IRQ to
+// @param irq the IRQ to redirect. The redirected IRQ will be 32 position ahead of the original IRQ
+// @param status 1 to enable interrupt, 0 to mask interrupt
 void apic_redirect_irq(uint32_t cpu, uint8_t irq, uint32_t status) {
     ks.dbg("setting redirect for cpu #%u, irq: %u status: %x", cpu, irq, status);
 
@@ -157,6 +150,20 @@ void apic_redirect_irq(uint32_t cpu, uint8_t irq, uint32_t status) {
     }
 
     apic_set_raw_redirect(irq + 0x20, irq, 0, cpu, status);
+}
+
+// *Write a value to the specified APIC register
+// @param reg the APIC register to write to
+// @param value the value to write
+void apic_write(uint32_t reg, uint32_t value) {
+    *((volatile uint32_t *)(((uint64_t)apic.apic_addr) + reg)) = value;
+}
+
+// *Read a value from the specified APIC register
+// @param reg the APIC register to read from
+// @return the value read from the specified APIC register
+uint32_t apic_read(uint32_t reg) {
+    return *((volatile uint32_t *)((uint64_t)apic.apic_addr + reg));
 }
 
 // *Send a EOI to the APIC

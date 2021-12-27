@@ -60,5 +60,7 @@ struct apic_t apic;
 void init_apic();
 void enable_apic();
 void apic_eoi();
+void apic_write(uint32_t reg, uint32_t value);
+uint32_t apic_read(uint32_t reg);
 void map_apic_into_space();
 void apic_redirect_irq(uint32_t cpu, uint8_t irq, uint32_t status);
