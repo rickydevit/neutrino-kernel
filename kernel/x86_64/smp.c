@@ -1,7 +1,7 @@
 #include "smp.h"
 #include "gdt.h"
 #include "arch.h"
-#include "idt.h"
+#include "interrupts.h"
 #include "device/apic.h"
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"

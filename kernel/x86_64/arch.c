@@ -1,6 +1,6 @@
 #include "arch.h"
 #include "cpuid.h"
-#include "idt.h"
+#include "interrupts.h"
 #include "gdt.h"
 #include "smp.h"
 #include "sse.h" 
@@ -46,7 +46,13 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_smp(get_rmem_address(smp_str_tag));
 
     enable_interrupts();
-    
+
+    //? Timer initialization
+    init_pit(1000);
+    ks.log("has hpet? %c", has_hpet() ? "yes" : "no");
+    pit_wait(4000);
+    ks.dbg("Waited for 2 seconds.");
+
     //? -----------------------------------------
     for (;;) asm("hlt");
 

@@ -1,4 +1,4 @@
-#include "idt.h"
+#include "interrupts.h"
 #include "kservice.h"
 #include "pic.h"
 #include "device/time/pit.h"
