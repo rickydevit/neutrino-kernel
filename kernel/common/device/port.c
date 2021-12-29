@@ -5,7 +5,7 @@
 // @return the byte read from the port
 unsigned char port_byte_in(unsigned short port) {
     unsigned char result;
-    __asm__("in %%dx, %%al" : "=a" (result) : "d" (port));
+    asm volatile("in %%dx, %%al" : "=a" (result) : "d" (port));
     return result;
 }
 
@@ -13,7 +13,7 @@ unsigned char port_byte_in(unsigned short port) {
 // @param port the port to write to
 // @param data the data to write to the port
 void port_byte_out(unsigned short port, unsigned char data) {
-    __asm__("out %%al, %%dx" : : "a" (data), "d" (port));
+    asm volatile("out %%al, %%dx" : : "a" (data), "d" (port));
 }
 
 // *Read a word (16 bit) from the given port
@@ -21,7 +21,7 @@ void port_byte_out(unsigned short port, unsigned char data) {
 // @return the short read from the port
 unsigned short port_word_in(unsigned short port) {
     unsigned short result;
-    __asm__("in %%dx, %%ax" : "=a" (result) : "d" (port));
+    asm volatile("in %%dx, %%ax" : "=a" (result) : "d" (port));
     return result;
 }
 
@@ -29,5 +29,5 @@ unsigned short port_word_in(unsigned short port) {
 // @param port the port to write to
 // @param data the data to write to the port
 void port_word_out(unsigned short port, unsigned short data) {
-    __asm__("out %%ax, %%dx" : : "a" (data), "d" (port));
+    asm volatile("out %%ax, %%dx" : : "a" (data), "d" (port));
 }
