@@ -6,7 +6,6 @@ global load_idt
  
 extern interrupt_handler
 extern exception_handler
-extern pagefault_handler
 
 %macro pushall 0
     push rax
@@ -50,7 +49,7 @@ dq irq%1
 
 %macro _EXCEPTION_COMMON 1
 irq%1:
-  push qword 0        ; push placeholder error
+  push qword 0xff     ; push dummy error
   push qword %1       ; push interrupt number
   jmp _generic_exception
 %endmacro
@@ -64,7 +63,7 @@ irq%1:
 
 %macro _INTERRUPT_COMMON 1
 irq%1:
-  push qword 0        ; push dummy error code
+  push qword 0xff     ; push dummy error code
   push qword %1       ; push interrupt number
   jmp _generic_interrupt
 %endmacro
@@ -109,17 +108,7 @@ _EXCEPTION_WERROR 10  ; INVALID TSS
 _EXCEPTION_WERROR 11  ; SEGMENT NOT PRESENT 
 _EXCEPTION_WERROR 12  ; INVALID STACK
 _EXCEPTION_WERROR 13  ; GENERAL PROTECTION FAULT
-irq14:                ; PAGE FAULT
-  cld
-  pushall
-  mov rdi, rsp
-
-  call pagefault_handler
-
-  mov rsp, rax
-  popall
-  sti
-  iretq
+_EXCEPTION_WERROR 14  ; PAGE FAULT
 _EXCEPTION_COMMON 15  ; invalid
 _EXCEPTION_COMMON 16  ; x87 FPU FAULT
 _EXCEPTION_WERROR 17  ; ALIGNMENT FAULT

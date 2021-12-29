@@ -112,14 +112,12 @@ void init_apic() {
     enable_apic();              // enable the APIC
     ks.dbg("APIC enabled");
 
-    disable_pic();              // disable the PIC
+    pic_disable();              // disable the PIC
     ks.dbg("PIC disabled");
 
-    ks.dbg("Setting up IOAPICs...");
     apic_setup_IOAPIC();
-
-    ks.dbg("Setting up IOAPIC ISOs...");
     apic_setup_IOAPIC_ISO();
+    apic_set_legacy_irq_redirect();
 }
 
 // *Map the LAPIC into the active table
@@ -150,6 +148,12 @@ void apic_redirect_irq(uint32_t cpu, uint8_t irq, uint32_t status) {
     }
 
     apic_set_raw_redirect(irq + 0x20, irq, 0, cpu, status);
+}
+
+void apic_set_legacy_irq_redirect() {
+    asm volatile ("cli");
+    for (int i = 0; i < 16; i++) 
+        apic_redirect_irq(0, i, 1);
 }
 
 // *Write a value to the specified APIC register

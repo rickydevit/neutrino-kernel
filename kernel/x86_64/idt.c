@@ -1,5 +1,7 @@
 #include "idt.h"
 #include "kservice.h"
+#include "pic.h"
+#include "device/time/pit.h"
 #include "kernel/common/device/port.h"
 #include "libs/libc/stdint.h"
 
@@ -61,12 +63,18 @@ void set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t type_attr) {
 
 // *Log the interrupt stack passed to the function. Useful for debugging interrupts stack frames
 // @param stack the pointer to the interrupt stack to be logged
-void log_interrupt_stack(interrupt_stack* stack) {
-    ks.dbg(" ========== STACK FRAME LOG ==========");
+void log_interrupt(interrupt_stack* stack) {
+    ks.dbg(" ========== INTERRUPT FRAME LOG ==========");
+    ks.dbg("interrupt: %u error code: %x", stack->irq, stack->error_code);
     ks.dbg("rax: %x rbx: %x rcx: %x rdx: %x", stack->rax, stack->rbx, stack->rcx, stack->rdx);
     ks.dbg("rsi: %x rdi: %x rbp: %x", stack->rsi, stack->rdi, stack->rbp);
+    ks.dbg("r8: %x r9: %x r10: %x", stack->r8, stack->r9, stack->r10);
+    ks.dbg("r11: %x r12: %x r13: %x", stack->r11, stack->r12, stack->r13);
+    ks.dbg("r14: %x r15: %x", stack->r14, stack->r15);
+    ks.dbg("rflags: %x rsp: %x", stack->rflags, stack->rsp);
     ks.dbg("cs: %x ss: %x rip: %x", stack->cs, stack->ss, stack->rip);
-    ks.dbg(" ====== END OF STACK FRAME LOG =======");
+    ks.dbg("pic isr: %x  pic irr: %x", pic_get_isr(), pic_get_irr());
+    ks.dbg(" ====== END OF INTERRUPT FRAME LOG =======");
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -75,7 +83,7 @@ void log_interrupt_stack(interrupt_stack* stack) {
 void init_idt() {
 	for (uint64_t i = 0; i < 48; i++) {
 		if (i == 14 || i == 32) 
-			set_idt_entry(i, _interrupt_vector[i], 1, INTERRUPT_GATE);
+			set_idt_entry(i, _interrupt_vector[i], 0, INTERRUPT_GATE);
 		else
 			set_idt_entry(i, _interrupt_vector[i], 0, INTERRUPT_GATE);
 	}
@@ -90,9 +98,17 @@ void init_idt() {
 	ks.log("Interrupt Descriptor Table loaded successfully.");
 }
 
+void disable_interrupts() {
+    asm volatile ("cli");
+}
+
+void enable_interrupts() {
+    asm volatile ("sti");
+}
+
 interrupt_stack* exception_handler(interrupt_stack* stack) {
 	ks.warn("got exception: %c (%u)", interrupt_exception_name[stack->irq], stack->irq);
-    log_interrupt_stack(stack);
+    log_interrupt(stack);
 
     switch (stack->irq) {
         case 8:     // DF
@@ -105,8 +121,10 @@ interrupt_stack* exception_handler(interrupt_stack* stack) {
         case 21:    // CP
         case 29:    // VC
         case 30:    // SX
-            ks.panic("Neutrino encountered a fatal exception!\nFaulting instruction at %x. Cannot proceed.", stack->rip);
+            ks.err("Neutrino encountered a fatal exception! Cannot proceed.", stack->rip);
             break;
+        case 14:    // PF
+            pagefault_handler(stack);
     }
 
     apic_eoi();
@@ -114,19 +132,21 @@ interrupt_stack* exception_handler(interrupt_stack* stack) {
 }
 
 interrupt_stack* interrupt_handler(interrupt_stack* stack) {
+    ks.dbg("Got interrupt %u", stack->irq);
+
     apic_eoi();
     return stack;
 }
 
-void pagefault_handler(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j, int k, int l, int m, int n) {
-	unsigned long faulting_address, temp;
+void pagefault_handler(interrupt_stack* stack) {
+	uint64_t faulting_address;
    	asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
 
-	int present = !(m & 0x1);
-	int rw = m & 0x2;           // Write operation?
-    int us = m & 0x4;           // Processor was in user-mode?
-    int reserved = m & 0x8;     // Overwritten CPU-reserved bits of page entry?
-    int id = m & 0x10; 
+	int present = !(stack->error_code & 0x1);
+	int rw = stack->error_code & 0x2;           // Write operation?
+    int us = stack->error_code& 0x4;           // Processor was in user-mode?
+    int reserved = stack->error_code& 0x8;     // Overwritten CPU-reserved bits of page entry?
+    int id = stack->error_code& 0x10; 
 
 	ks.err("Page fault at address %x", faulting_address); 
 	asm("hlt");

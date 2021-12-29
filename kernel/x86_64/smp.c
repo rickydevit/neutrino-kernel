@@ -1,6 +1,7 @@
 #include "smp.h"
 #include "gdt.h"
 #include "arch.h"
+#include "idt.h"
 #include "device/apic.h"
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
@@ -13,6 +14,8 @@ static volatile bool cpu_started = false;
 // === PRIVATE FUNCTIONS ========================
 
 void start_cpu(struct stivale2_smp_info* smp_info) {
+    disable_interrupts();
+
     init_gdt_on_ap(smp_info->processor_id);
     init_idt();
 
@@ -25,8 +28,8 @@ void start_cpu(struct stivale2_smp_info* smp_info) {
 
     cpu_started = true;
 
-    asm("sti");
-    asm("hlt");
+    enable_interrupts();
+    asm volatile("hlt");
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -50,6 +53,8 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
         smp.cpus[i].stack_interrupt = pmm_alloc_series(CPU_STACK_SIZE / PHYSMEM_BLOCK_SIZE);
         smp.cpus[i].tss.ist1 = (uint64_t)smp.cpus[i].stack_interrupt + CPU_STACK_SIZE;
 
+        vmm_map_page_in_active_table(smp.cpus[i].stack_interrupt, smp.cpus[i].stack_interrupt, true, false);
+
         // skip the bsp
         if (cpu_info.lapic_id == smp_struct->bsp_lapic_id) continue;
 
@@ -69,6 +74,7 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
     }
 
     ks.log("%u CPUs initialized successfully.", smp.cpu_count);
+    disable_interrupts();
 }
 
 // *Set the information about the BSP on startup

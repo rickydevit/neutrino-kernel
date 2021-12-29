@@ -9,6 +9,8 @@
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
 #include "device/acpi.h"
+#include "device/time/pit.h"
+#include "device/time/hpet.h"
 #include "kernel/common/device/serial.h"
 #include "kernel/common/video/display.h"
 #include "kernel/common/kservice.h"
@@ -21,6 +23,8 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     struct stivale2_struct_tag_smp *smp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
     struct memory_physical_region entries[memmap_str_tag->entries];
+
+    disable_interrupts();
 
     //? Core initialization
     setup_bsp(stack);
@@ -41,11 +45,8 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_apic();
     init_smp(get_rmem_address(smp_str_tag));
 
-    for (int i = 0; i < 16; i++)
-        apic_redirect_irq(0, i, 1);
-
-    asm volatile("sti");
-
+    enable_interrupts();
+    
     //? -----------------------------------------
     for (;;) asm("hlt");
 

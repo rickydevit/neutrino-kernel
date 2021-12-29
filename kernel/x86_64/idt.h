@@ -56,7 +56,10 @@ typedef struct interrupt_stack_t interrupt_stack;
 void init_idt();
 interrupt_stack* exception_handler(interrupt_stack* stack);
 interrupt_stack* interrupt_handler(interrupt_stack* stack);
-void pagefault_handler(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j, int k, int l, int m, int n);
+void pagefault_handler(interrupt_stack* stack);
+
+void enable_interrupts();
+void disable_interrupts();
 
 extern int load_idt();
 extern uint64_t _interrupt_vector[128];
