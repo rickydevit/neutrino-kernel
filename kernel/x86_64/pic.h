@@ -1,4 +1,5 @@
 #pragma once
+#include "libs/libc/stdint.h"
 
 #define PIC1                0x20
 #define PIC1_COMMAND        PIC1
@@ -12,6 +13,9 @@
 
 #define ICW1_ICW4           0x01
 #define ICW1_INIT           0x10
+#define PIC_READ_ISR        0x0b
+#define PIC_READ_IRR        0x0a
+#define PIC_EOI             0x20
 
 void inline pic_wait() {
     do {
@@ -23,4 +27,7 @@ void inline pic_wait() {
 }
 
 void init_pic();
-void disable_pic();
+void pic_disable();
+void pic_eoi();
+uint16_t pic_get_irr();
+uint16_t pic_get_isr();
