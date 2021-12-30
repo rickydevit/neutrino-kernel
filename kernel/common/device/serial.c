@@ -2,6 +2,22 @@
 
 unsigned short _PORT;
 
+// === PRIVATE FUNCTIONS ========================
+
+// *Return a value received form the port
+// @return byte value read from port
+int serial_received() {
+    return port_byte_in(_PORT + 5 ) & 1;
+}
+
+// *Return if the transmission buffer is empty
+// @return true if the transmission buffer is empty, false otherwise
+int is_transmit_empty() {
+    return port_byte_in(_PORT + 5) & 0x20;
+}
+
+// === PUBLIC FUNCTIONS =========================
+
 // *Initialize serial communication to specified port
 // @param port serial port
 void init_serial(unsigned short port) {
@@ -36,18 +52,4 @@ void serial_write_string(char* message) {
     for (i = 0; i < strlen(message); i++) {
         serial_write(message[i]);
     }
-}
-
-// === PRIVATE FUNCTIONS ========================
-
-// *Return a value received form the port
-// @return byte value read from port
-int serial_received() {
-    return port_byte_in(_PORT + 5 ) & 1;
-}
-
-// *Return if the transmission buffer is empty
-// @return true if the transmission buffer is empty, false otherwise
-int is_transmit_empty() {
-    return port_byte_in(_PORT + 5) & 0x20;
 }

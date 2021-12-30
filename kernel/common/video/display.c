@@ -20,13 +20,13 @@ display_info_t info;
 // @param green_mask_shift the shift in bits of the green channel mask
 // @param red_mask_shift the shift in bits of the red channel mask
 // @return true if the driver is initialized correctly, false otherwise
-bool init_video_driver(uint32_t* addr, uint16_t width, uint16_t height, uint16_t pitch, uint16_t bpp, 
+bool init_video_driver(uint64_t* addr, uint16_t width, uint16_t height, uint16_t pitch, uint16_t bpp, 
                        uint8_t red_mask_size, uint8_t green_mask_size, uint8_t blue_mask_size, 
                        uint8_t red_mask_shift, uint8_t green_mask_shift, uint8_t blue_mask_shift) {
    
     if (width <= 0 || height <= 0 || pitch <= 0 || bpp <= 0) return false;
 
-    info.addr = addr;
+    info.addr = (uint64_t)addr;
     info.width = width;
     info.height = height;
     info.pitch = pitch;
@@ -44,7 +44,7 @@ bool init_video_driver(uint32_t* addr, uint16_t width, uint16_t height, uint16_t
 // === PRIVATE FUNCTIONS ================================
 
 void put_pixel(uint32_t pos_x, uint32_t pos_y, uint32_t color) {
-    uint32_t* pixel = info.addr + pos_y*info.pitch + pos_x*(info.bpp/8);
+    uint32_t* pixel = (uint32_t*)(info.addr + pos_y*info.pitch + pos_x*(info.bpp/8));
     *(pixel) = ((color >> 16 & 0xff) << info.red_mask_shift) | 
                ((color >> 8 & 0xff) << info.green_mask_shift) | 
                ((color & 0xff) << info.blue_mask_shift);

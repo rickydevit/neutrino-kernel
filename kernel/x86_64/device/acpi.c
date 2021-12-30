@@ -3,6 +3,7 @@
 #include "libs/libc/stdint.h"
 #include "libs/libc/stdbool.h"
 #include "libs/libc/size_t.h"
+#include "libs/libc/string.h"
 #include "kernel/common/kservice.h"
 #include "kernel/common/memory/memory.h"
 #include "../memory/mem_virt.h"

@@ -59,7 +59,7 @@ static struct stivale2_header stivale_hdr = {
     // Let's tell the bootloader where our stack is.
     // We need to add the sizeof(stack) since in x86(_64) the stack grows
     // downwards.
-    .stack = (uintptr_t)stack + sizeof(stack),
+    .stack = (uint64_t)(stack + sizeof(stack)),
     // Bit 1, if set, causes the bootloader to return to us pointers in the
     // higher half, which we likely want.
     // Bit 2, if set, tells the bootloader to enable protected memory ranges,
@@ -68,7 +68,7 @@ static struct stivale2_header stivale_hdr = {
     .flags = (1 << 1) | (1 << 2),
     // This header structure is the root of the linked list of header tags and
     // points to the first one in the linked list.
-    .tags = (uintptr_t)&any_video_hdr_tag
+    .tags = (uint64_t)&any_video_hdr_tag
 };
 
 void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {

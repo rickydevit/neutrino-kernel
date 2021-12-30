@@ -17,6 +17,42 @@
 #include "libs/libc/size_t.h"
 #include "thirdparty/stivale2hdr.h"
 
+void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, struct memory_physical_region* entries) {
+    uint32_t memmap_entries = memmap_str_tag->entries;
+    int i = 0, lookahead = 1;
+    
+    while (i < memmap_entries) {
+        struct stivale2_mmap_entry *entry = memmap_str_tag->memmap + i;
+
+        entries[i].base = entry->base;
+        entries[i].size = entry->length;
+        entries[i].limit = entry->base + entry->length;
+        
+        if (entry->type == STIVALE2_MMAP_USABLE) entries[i].type = MEMORY_REGION_USABLE;
+        else if (entry->type == STIVALE2_MMAP_KERNEL_AND_MODULES) entries[i].type = MEMORY_REGION_KERNEL;
+        else if (entry->type == STIVALE2_MMAP_FRAMEBUFFER) entries[i].type = MEMORY_REGION_FRAMEBUFFER;
+        else if (entry->type == STIVALE2_MMAP_ACPI_NVS) entries[i].type = MEMORY_REGION_ACPI_RSVD;
+        else if (entry->type == STIVALE2_MMAP_ACPI_RECLAIMABLE) entries[i].type = MEMORY_REGION_ACPI_RCLM;
+        else entries[i].type = MEMORY_REGION_RESERVED;
+
+        if (i+lookahead < memmap_entries) {
+            while ((entries[i].type == MEMORY_REGION_USABLE && (entry+lookahead)->type == STIVALE2_MMAP_USABLE)) {
+                        entries[i].size += (entry+lookahead)->length;
+                        entries[i].limit = (entry+lookahead)->base + (entry+lookahead)->length;
+                        entries[i+lookahead].type = MEMORY_REGION_INVALID;
+                        lookahead++;
+            }
+            i += lookahead;
+            lookahead = 1;
+        } else {
+            i++;
+        }
+    }
+
+    init_pmm(entries, memmap_entries);
+    init_vmm();
+}
+
 void _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_terminal *term_str_tag;
     struct stivale2_struct_tag_framebuffer *framebuf_str_tag;
@@ -43,7 +79,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_sse();
     init_acpi();
     init_apic();
-    init_smp(get_rmem_address(smp_str_tag));
+    init_smp((struct stivale2_struct_tag_smp*)get_rmem_address(smp_str_tag));
 
     enable_interrupts();
 
@@ -91,41 +127,4 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
 
     //TODO: implement user-space (final goal)
     for (;;) asm("hlt");
-}
-
-void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, struct memory_physical_region* entries) {
-    uint32_t memmap_entries = memmap_str_tag->entries;
-    uint64_t n_base, n_size;
-    int i = 0, lookahead = 1;
-    
-    while (i < memmap_entries) {
-        struct stivale2_mmap_entry *entry = memmap_str_tag->memmap + i;
-
-        entries[i].base = entry->base;
-        entries[i].size = entry->length;
-        entries[i].limit = entry->base + entry->length;
-        
-        if (entry->type == STIVALE2_MMAP_USABLE) entries[i].type = MEMORY_REGION_USABLE;
-        else if (entry->type == STIVALE2_MMAP_KERNEL_AND_MODULES) entries[i].type = MEMORY_REGION_KERNEL;
-        else if (entry->type == STIVALE2_MMAP_FRAMEBUFFER) entries[i].type = MEMORY_REGION_FRAMEBUFFER;
-        else if (entry->type == STIVALE2_MMAP_ACPI_NVS) entries[i].type = MEMORY_REGION_ACPI_RSVD;
-        else if (entry->type == STIVALE2_MMAP_ACPI_RECLAIMABLE) entries[i].type = MEMORY_REGION_ACPI_RCLM;
-        else entries[i].type = MEMORY_REGION_RESERVED;
-
-        if (i+lookahead < memmap_entries) {
-            while ((entries[i].type == MEMORY_REGION_USABLE && (entry+lookahead)->type == STIVALE2_MMAP_USABLE)) {
-                        entries[i].size += (entry+lookahead)->length;
-                        entries[i].limit = (entry+lookahead)->base + (entry+lookahead)->length;
-                        entries[i+lookahead].type = MEMORY_REGION_INVALID;
-                        lookahead++;
-            }
-            i += lookahead;
-            lookahead = 1;
-        } else {
-            i++;
-        }
-    }
-
-    init_pmm(entries, memmap_entries);
-    init_vmm();
 }
