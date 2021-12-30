@@ -1,5 +1,5 @@
 #pragma once
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 
 //? 0: null descriptor
 //? 1: 32 bit code descriptor

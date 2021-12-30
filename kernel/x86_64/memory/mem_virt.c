@@ -6,7 +6,7 @@
 #include "../arch.h"
 #include "kernel/common/kservice.h"
 #include "kernel/common/memory/memory.h"
-#include "libs/libc/stdbool.h"
+#include "stdbool.h"
 #include "thirdparty/stivale2.h"
 
 // === PRIVATE FUNCTIONS ========================

@@ -1,5 +1,5 @@
 #pragma once
-#include "libs/libc/stdbool.h"
+#include "stdbool.h"
 
 // ?Vendor-strings
 #define CPUID_VENDOR_OLDAMD       "AMDisbetter!" /* early engineering samples of AMD K5 processor */

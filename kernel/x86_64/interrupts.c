@@ -3,7 +3,7 @@
 #include "pic.h"
 #include "device/time/pit.h"
 #include "kernel/common/device/port.h"
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 
 struct IDT_entry IDT[IDT_SIZE];
 

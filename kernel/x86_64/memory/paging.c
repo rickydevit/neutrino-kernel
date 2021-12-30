@@ -1,5 +1,5 @@
 #include "paging.h"
-#include "libs/libc/stdbool.h"
+#include "stdbool.h"
  
 // *Check if paging is enabled
 // @return true if paging is enabled, false otherwise

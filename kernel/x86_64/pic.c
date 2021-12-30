@@ -1,7 +1,7 @@
 #include "pic.h"
 #include "kernel/common/device/port.h"
 #include "kernel/common/kservice.h"
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 
 // === PRIVATE FUNCTIONS ========================
 

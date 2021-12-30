@@ -1,5 +1,5 @@
 #pragma once
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 
 #define RSDP_LOW    0x80000
 #define RSDP_HIGH   0x100000

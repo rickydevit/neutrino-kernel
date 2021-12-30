@@ -7,7 +7,7 @@
 #include "memory/mem_phys.h"
 #include "kernel/common/kservice.h"
 #include "thirdparty/stivale2.h"
-#include "libs/libc/stdbool.h"
+#include "stdbool.h"
 
 static volatile bool cpu_started = false;
 

@@ -1,5 +1,5 @@
 #include "cpuid.h"
-#include "libs/libc/stdbool.h"
+#include "stdbool.h"
 #include "kservice.h"
 
 //* Marks if the CPUID is available in the current configuration

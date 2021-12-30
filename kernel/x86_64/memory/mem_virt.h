@@ -1,7 +1,7 @@
 #pragma once
 #include "paging.h"
-#include "libs/libc/stdint.h"
-#include "libs/libc/stdbool.h"
+#include "stdint.h"
+#include "stdbool.h"
 #include "thirdparty/stivale2.h"
 
 struct memory_virtual {

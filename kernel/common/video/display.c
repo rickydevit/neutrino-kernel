@@ -1,6 +1,6 @@
 #include "display.h"
-#include "libs/libc/stdbool.h"
-#include "libs/libc/stdint.h"
+#include "stdbool.h"
+#include "stdint.h"
 #include "libs/_null.h"
 
 display_info_t info;

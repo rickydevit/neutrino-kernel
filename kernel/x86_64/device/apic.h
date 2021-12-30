@@ -1,5 +1,5 @@
 #pragma once
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 #include "acpi.h"
 
 #define LAPIC_ENABLE (1 << 10)

@@ -1,6 +1,6 @@
 #pragma once
 #include "libs/_null.h"
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 #include "stivale2.h"
 
 #define CHECKER_NEITHER_AVAILABLE       0

@@ -1,7 +1,7 @@
 #include "kservice.h"
 #include "libs/utils/lock.h"
-#include "libs/libc/stdarg.h"
-#include "libs/libc/string.h"
+#include "stdarg.h"
+#include "string.h"
 #include "kernel/common/device/serial.h"
 
 // Private functions declarations

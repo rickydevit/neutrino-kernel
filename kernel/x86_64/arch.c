@@ -14,7 +14,7 @@
 #include "kernel/common/device/serial.h"
 #include "kernel/common/video/display.h"
 #include "kernel/common/kservice.h"
-#include "libs/libc/size_t.h"
+#include "size_t.h"
 #include "thirdparty/stivale2hdr.h"
 
 void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, struct memory_physical_region* entries) {

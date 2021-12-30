@@ -1,5 +1,5 @@
 #pragma once
-#include "libs/libc/stdbool.h"
+#include "stdbool.h"
 
 #define XCR0_X87_STATE  (1 << 0)
 #define XCR0_ENABLE_SSE (1 << 1)

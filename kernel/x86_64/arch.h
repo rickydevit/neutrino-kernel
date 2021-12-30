@@ -1,5 +1,5 @@
 #pragma once
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 
 #define MEMV_OFFSET 0xffff800000000000
 #define KERN_OFFSET 0xffffffff80000000

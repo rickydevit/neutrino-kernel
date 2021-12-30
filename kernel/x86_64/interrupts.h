@@ -1,5 +1,5 @@
 #pragma once
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 
 #define INTERRUPT_GATE  0x8e
 #define TRAP_GATE       0x8f

@@ -2,8 +2,8 @@
 #include "arch.h"
 #include "kernel/common/kservice.h"
 #include "kernel/common/memory/memory.h"
-#include "libs/libc/stdbool.h"
-#include "libs/libc/size_t.h"
+#include "stdbool.h"
+#include "size_t.h"
 
 // === PRIVATE FUNCTIONS ========================
 

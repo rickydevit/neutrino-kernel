@@ -1,5 +1,5 @@
 #pragma once
-#include "libs/libc/stdbool.h"
+#include "stdbool.h"
 
 #define PAGE_SIZE       0x1000
 #define RECURSE         510UL

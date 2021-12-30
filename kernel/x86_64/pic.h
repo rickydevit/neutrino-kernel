@@ -1,5 +1,5 @@
 #pragma once
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 
 #define PIC1                0x20
 #define PIC1_COMMAND        PIC1

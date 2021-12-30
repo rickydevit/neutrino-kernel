@@ -2,7 +2,7 @@
 #include "gdt.h"
 #include "memory/mem_virt.h"
 #include "thirdparty/stivale2.h"
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 
 #define MAX_CPU 64
 #define CPU_STACK_SIZE 0x2000

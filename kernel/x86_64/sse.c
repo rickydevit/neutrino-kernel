@@ -1,5 +1,5 @@
 #include "sse.h"
-#include "libs/libc/stdbool.h"
+#include "stdbool.h"
 #include "cpuid.h"
 #include "kservice.h"
 

@@ -1,5 +1,5 @@
 #include "memory.h"
-#include "libs/libc/stdint.h"
+#include "stdint.h"
 
 // *Copy [nbytes] bytes from the [source] memory pointer to the [dest] memory pointer
 // @param source the source memory pointer

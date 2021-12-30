@@ -1,6 +1,6 @@
 #pragma once
-#include "libs/libc/stdint.h"
-#include "libs/libc/size_t.h"
+#include "stdint.h"
+#include "size_t.h"
 
 #define PHYSMEM_BLOCK_SIZE 0x1000
 #define PHYSMEM_2MEGS      0x200000
