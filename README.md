@@ -18,7 +18,7 @@
 
 - [ ] 🌳 **Basic kernel**
     - [x] **Kernel Services**  
-        *The kernel services functions are used to provide a easier to way to interface the kernel and the drivers. These functions will NOT be available to the user space.*
+        *The kernel services functions are used to provide a easier to way to interface the kernel and the drivers. These functions will NOT be available to the user space. Also enables kernel components to log and throw fatal exceptions with [specific codes](/utils/documentation/KernelService%20Fatal%20Codes.md)*
     - [x] **GDT setup**   
         *Null descriptor; 32 bit code and data descriptors; 64 bit code and data descriptors. More descriptors will be added when required.*
     - [x] **IDT setup**   
@@ -43,14 +43,15 @@
     - [ ] **Timers**
         - [ ] **RTC**
         - [ ] **LAPIC timer**
-        - [ ] **PIT**
+        - [ ] **PIT** `🔻 LOW PRIORITY`
+        - [ ] **HPET**
     - [x] **Memory manager**
         - [x] **Physical memory manager**   
             *Scans the loaded memory and manages it using 4KB blocks. Kernel and other reserved areas are marked accordingly*
         - [x] **Virtual memory manager**   
             *Manages the virtual memory page tables. Can map, remap and unmap pages*
         - [ ] **Kernel Heap manager**
-    - [ ] **Process scheduler**
+    - [ ] **Process scheduler** `🔗 Timers`
 
 - [ ] ⚙ **Advanced drivers**
     - [x] **Video driver**
@@ -70,6 +71,7 @@
 - **`kernel\`**
     - **`x86-64\`** _platform-specific code for the x86-64 architecture_
         - **`device\`** _platform-specific code for device libraries_
+            - **`time\`** _source files for time related components (hpet, lapic, etc.)_
         - **`memory\`** _platform-specific code for memory related functions_
     - **`common\`** _platform-independent kernel code_
         - **`device\`** _libraries for device abstraction in the kernel_
@@ -77,6 +79,7 @@
         - **`video\`** _implementation of video driver_
 - **`libs\`**
     - **`libc\`** _porting of useful C libraries_
+    - **`utils\`** _kernel useful libraries_
 - **`limine\`** [_limine bootloader binaries_](https://github.com/limine-bootloader/limine/tree/v2.0-branch-binary)
 - **`thirdparty\`** _implementations of thirdparty headers and libraries_
 - **`utils\`** _file stored as backup or utility_
