@@ -2,6 +2,7 @@
 #include "kernel/common/device/port.h"
 #include "kernel/common/kservice.h"
 #include "stdint.h"
+#include "interrupts.h"
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -29,7 +30,7 @@ void pic_disable() {
 
 void init_pic() {
     ks.log("Initializing PIC...");
-    asm volatile("cli");
+    disable_interrupts();
 
     pic_send(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);  
     pic_send(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4);
