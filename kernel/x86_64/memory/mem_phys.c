@@ -155,6 +155,11 @@ void pmm_print_memory_map(uint64_t base_addr, size_t size) {
 	ks._put("\n");
 }
 
+// *Throw a fatal exception. This should be raised when out of physical memory
+void inline pmm_fatal() {
+	ks.fatal(FatalError(OUT_OF_MEMORY, "Out of physical memory!"));
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 // *Initialize the physical memory manager
@@ -207,10 +212,10 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
 // *Allocate a physical memory block and return the physical address of the assigned region
 // @return the physical address of the assigned block
 uintptr_t pmm_alloc() {
-	if (pmm.used_blocks >= pmm.usable_blocks) ks.panic("Out of physical memory!");
+	if (pmm.used_blocks >= pmm.usable_blocks) pmm_fatal();
 	
 	uint32_t block = pmm_map_first_free();
-	if (block == -1) ks.panic("Out of physical memory!");
+	if (block == -1) pmm_fatal();
 	
 	pmm_map_set(block);
 	pmm.used_blocks++;
@@ -244,10 +249,10 @@ void pmm_free(uintptr_t addr) {
 // @param size the number of physical memory blocks to allocate
 // @return the physical address of the assigned block
 uintptr_t pmm_alloc_series(size_t size) {
-	if (pmm.used_blocks + size >= pmm.usable_blocks) ks.panic("Out of physical memory!");
+	if (pmm.used_blocks + size >= pmm.usable_blocks) pmm_fatal();
 
 	uint32_t block = pmm_map_first_free_series(size);
-	if (block == -1) ks.panic("Out of physical memory!");
+	if (block == -1) pmm_fatal();
 
 	for (uint32_t i=0; i<size; i++) pmm_map_set(block+i);
 	pmm.used_blocks += size;

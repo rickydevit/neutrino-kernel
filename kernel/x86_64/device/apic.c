@@ -1,6 +1,8 @@
 #include "apic.h"
 #include "arch.h"
 #include "smp.h"
+#include "pic.h"
+#include "interrupts.h"
 #include "memory/mem_virt.h"
 #include "device/acpi.h"
 #include "kernel/common/kservice.h"
@@ -104,8 +106,10 @@ void apic_set_raw_redirect(uint8_t vector, uint32_t target_gsi, uint16_t flags, 
 void init_apic() {
     ks.log("Initializing APIC...");
 
+    disable_interrupts();
+
     struct MADT *madt = (struct MADT*)find_sdt_entry("APIC");
-    if (madt->lapic_address == 0) ks.panic("Cannot find LAPIC address");
+    if (madt->lapic_address == 0) ks.fatal(FatalError(NO_LAPIC, "Cannot find LAPIC address"));
     apic.apic_addr = madt->lapic_address;
 
     map_apic_into_space();      // map the LAPIC address into space
@@ -117,7 +121,6 @@ void init_apic() {
 
     apic_setup_IOAPIC();
     apic_setup_IOAPIC_ISO();
-    apic_set_legacy_irq_redirect();
 }
 
 // *Map the LAPIC into the active table
@@ -132,7 +135,7 @@ void enable_apic() {
     apic_write(sivr, apic_read(sivr) | 0x1ff);
 }
 
-// *Redirect a IRQ to the correct IRS. Also checks for overrides from the ISO table: if an override is found, that is used instead.
+// *Redirect a IRQ to the correct ISR. Also checks for overrides from the ISO table: if an override is found, that is used instead.
 // @param cpu the cpu to redirect the IRQ to
 // @param irq the IRQ to redirect. The redirected IRQ will be 32 position ahead of the original IRQ
 // @param status 1 to enable interrupt, 0 to mask interrupt

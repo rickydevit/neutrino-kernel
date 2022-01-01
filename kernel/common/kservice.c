@@ -1,19 +1,18 @@
 #include "kservice.h"
-#include "libs/utils/lock.h"
 #include "stdarg.h"
 #include "string.h"
+#include "stdint.h"
 #include "kernel/common/device/serial.h"
+#include "interrupts.h"
 
 // Private functions declarations
-
-static lock_t logging_lock;
 
 void kput(char* message, ...);
 void kdbg(char* message, ...);
 void klog(char* message, ...);
 void kwarn(char* message, ...);
 void kerr(char* message, ...);
-void kpanic(char* message, ...);
+void kpanic(fatal_t fatal_error, ...);
 
 // Public functions
 
@@ -25,9 +24,7 @@ void init_kservice() {
     ks.dbg = kdbg;
     ks.warn = kwarn;
     ks.err = kerr;
-    ks.panic = kpanic;
-
-    lock_init(&logging_lock);
+    ks.fatal = kpanic;
 
     ks.log("Kernel services initialized.");
 }
@@ -42,7 +39,7 @@ void set_kservice(enum KSERVICE_TYPE type, void (*func)) {
         case KSERVICE_LOG: ks.log = func; break;
         case KSERVICE_WARNING: ks.warn = func; break;
         case KSERVICE_ERROR: ks.err = func; break;
-        case KSERVICE_PANIC: ks.panic = func; break;
+        case KSERVICE_FATAL: ks.fatal = func; break;
         default: break;
     }
 }
@@ -56,54 +53,55 @@ void kput(char* message, ...) {
 }
 
 void klog(char* message, ...) {
-    lock(&logging_lock);
+    disable_interrupts();
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[LOG] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&logging_lock);
+    enable_interrupts();
 }
 
 void kdbg(char* message, ...) {
-    lock(&logging_lock);
+    disable_interrupts();
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[DEBUG] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&logging_lock);
+    enable_interrupts();
 }
 
 void kwarn(char* message, ...) {
-    lock(&logging_lock);
+    disable_interrupts();
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[WARN] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&logging_lock);
+    enable_interrupts();
 }
 
 void kerr(char* message, ...) {
-    lock(&logging_lock);
+    disable_interrupts();
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[ERR] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&logging_lock);
+    enable_interrupts();
 }
 
-void kpanic(char* message, ...) {
-    lock(&logging_lock);
-    va_list args; va_start(args, message);
-    char buf[2048] = {0};
-    ks._helper("[PANIC] ");
-    ks._helper(vstrf(message, buf, args));
+void kpanic(fatal_t fatal_error, ...) {
+    va_list args; va_start(args, fatal_error);
+    char buf[2048] = {0}, cbuf[32] = {0};
+    ltoa((uint64_t)fatal_error.code, 16, cbuf);
+    ks._helper("[FATAL] (0x");
+    ks._helper(cbuf);
+    ks._helper(") ");
+    ks._helper(vstrf(fatal_error.message, buf, args));
     ks._helper("\n");
-    unlock(&logging_lock);
 
-    asm("cli");
-    asm("hlt");
+    asm volatile ("cli");
+    asm volatile ("hlt");
 }

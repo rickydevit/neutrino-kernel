@@ -84,10 +84,6 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     enable_interrupts();
 
     //? Timer initialization
-    init_pit(1000);
-    ks.log("has hpet? %c", has_hpet() ? "yes" : "no");
-    pit_wait(4000);
-    ks.dbg("Waited for 2 seconds.");
 
     //? -----------------------------------------
     for (;;) asm("hlt");
@@ -98,7 +94,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     uint32_t checker_result = check_framebuffer_or_terminal(framebuf_str_tag, term_str_tag);
 
     if (checker_result == CHECKER_NEITHER_AVAILABLE) {
-        ks.panic("The machine could neither provide a framebuffer address or a terminal interface. Cannot continue, halting system.");
+        ks.fatal(FatalError(NO_FRAMEBUFFER, "The machine could neither provide a framebuffer address or a terminal interface. Cannot continue, halting system."));
 
     } else if (checker_result == CHECKER_FRAMEBUFFER_AVAILABLE) {
         ks.dbg("Initializing video driver... ");

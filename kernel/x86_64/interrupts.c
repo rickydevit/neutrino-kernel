@@ -121,10 +121,11 @@ interrupt_stack* exception_handler(interrupt_stack* stack) {
         case 21:    // CP
         case 29:    // VC
         case 30:    // SX
-            ks.err("Neutrino encountered a fatal exception! Cannot proceed.", stack->rip);
+            ks.fatal(FatalError(INTERRUPT_EXCEPTION, "Neutrino encountered a fatal exception!"));
             break;
         case 14:    // PF
             pagefault_handler(stack);
+            break;
     }
 
     apic_eoi();
@@ -132,7 +133,7 @@ interrupt_stack* exception_handler(interrupt_stack* stack) {
 }
 
 interrupt_stack* interrupt_handler(interrupt_stack* stack) {
-    ks.dbg("Got interrupt %u", stack->irq);
+    // ks.dbg("Got interrupt %u", stack->irq);
 
     apic_eoi();
     return stack;
