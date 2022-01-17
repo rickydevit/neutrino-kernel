@@ -79,7 +79,7 @@
         - **`video\`** _implementation of video driver_
 - **`libs\`**
     - **`libc\`** _porting of useful C libraries_
-    - **`utils\`** _kernel useful libraries_
+    - **`neutrino\`** _kernel's libraries_
 - **`limine\`** [_limine bootloader binaries_](https://github.com/limine-bootloader/limine/tree/v2.0-branch-binary)
 - **`thirdparty\`** _implementations of thirdparty headers and libraries_
 - **`utils\`** _file stored as backup or utility_

@@ -1,7 +1,9 @@
 #include "sse.h"
 #include "stdbool.h"
+#include "stdint.h"
 #include "cpuid.h"
 #include "kservice.h"
+#include "neutrino/macros.h"
 
 bool use_xsave = false;
 uint64_t fpu_data[128] __attribute__((aligned(64)));
@@ -27,7 +29,7 @@ bool has_avx() {
 }
 
 // *Enable SSE in the system. Must first check if SSE is available with has_sse()
-void __attribute__((optimize("O0"))) enable_sse() {
+void volatile_fun enable_sse() {
     uint64_t cr0, cr4;
     __asm__("mov %%cr0, %0" : "=g" (cr0) : );
     __asm__("mov %%cr4, %0" : "=g" (cr4) : );
@@ -42,7 +44,7 @@ void __attribute__((optimize("O0"))) enable_sse() {
 }
 
 // *Enable XSAVE instruction in the system. Must first check if XSAVE is supported with has_xsave()
-void __attribute__((optimize("O0"))) enable_xsave() {
+void volatile_fun enable_xsave() {
     uint64_t cr4;
     __asm__("mov %%cr4, %0" : "=g" (cr4) : );   
     cr4 |= (1 << 18);
@@ -52,7 +54,7 @@ void __attribute__((optimize("O0"))) enable_xsave() {
 }
 
 // *Enable AVX instruction set in the system. Must first check if AVX is supported with has_avx()
-void __attribute__((optimize("O0"))) enable_avx() {
+void volatile_fun enable_avx() {
     __asm__("xsetbv" : : "a" (XCR0_X87_STATE | XCR0_ENABLE_SSE | XCR0_ENABLE_AVX), "c" (0), "d" (0));
 }
 
