@@ -2,6 +2,7 @@
 #include "stdbool.h"
 #include "stdint.h"
 #include "../acpi.h"
+#include "neutrino/macros.h"
 
 enum HPET_register_offsets {
     hpet_general_capabilities   = 0x000,
@@ -21,7 +22,7 @@ struct address_structure {
     uint8_t register_bit_offset;
     uint8_t reserved;
     uint64_t address;
-} __attribute__((packed));
+} packed;
 
 struct HPET {
     struct SDT_header header;
@@ -35,7 +36,7 @@ struct HPET {
     uint8_t hpet_number;
     uint16_t minimum_tick;
     uint8_t page_protection;
-} __attribute__((packed));
+} packed;
 
 struct hpet {
     struct HPET* table_pointer;
