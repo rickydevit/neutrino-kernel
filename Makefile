@@ -53,7 +53,7 @@ DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -d cpu_reset,int -D qemu.lo
 
 # gdb settings
 GDB				= gdb
-GDB_FLAGS 		= -ex "target remote localhost:1234"
+GDB_FLAGS 		= -ex "target remote localhost:1234" -ex "layout split"
 
 # === COMMANDS AND BUILD ========================
 
