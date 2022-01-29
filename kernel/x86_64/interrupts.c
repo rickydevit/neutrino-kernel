@@ -98,18 +98,7 @@ void init_idt() {
 	ks.log("Interrupt Descriptor Table loaded successfully.");
 }
 
-void disable_interrupts() {
-    asm volatile ("cli");
-}
-
-void enable_interrupts() {
-    asm volatile ("sti");
-}
-
 interrupt_stack* exception_handler(interrupt_stack* stack) {
-	ks.warn("got exception: %c (%u)", interrupt_exception_name[stack->irq], stack->irq);
-    log_interrupt(stack);
-
     switch (stack->irq) {
         case 8:     // DF
         case 10:    // TS
@@ -121,11 +110,17 @@ interrupt_stack* exception_handler(interrupt_stack* stack) {
         case 21:    // CP
         case 29:    // VC
         case 30:    // SX
+            log_interrupt(stack);
             ks.fatal(FatalError(INTERRUPT_EXCEPTION, "Neutrino encountered a fatal exception!"));
             break;
         case 14:    // PF
+            log_interrupt(stack);
             pagefault_handler(stack);
             break;
+
+        default: 
+           log_interrupt(stack);
+           break; 
     }
 
     apic_eoi();

@@ -7,6 +7,8 @@
 #define KERNEL_CODE     0x18
 #define IDT_SIZE        256
 
+#define APIC_TIMER_IRQ  32
+
 struct IDT_entry {
     uint16_t offset_lowerbits;
     uint16_t selector;
@@ -58,8 +60,13 @@ interrupt_stack* exception_handler(interrupt_stack* stack);
 interrupt_stack* interrupt_handler(interrupt_stack* stack);
 void pagefault_handler(interrupt_stack* stack);
 
-void enable_interrupts();
-void disable_interrupts();
+void inline disable_interrupts() {
+    asm volatile ("cli");
+}
+
+void inline enable_interrupts() {
+    asm volatile ("sti");
+}
 
 extern int load_idt();
 extern uint64_t _interrupt_vector[128];

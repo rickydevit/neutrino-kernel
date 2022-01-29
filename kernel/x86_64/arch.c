@@ -9,7 +9,6 @@
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
 #include "device/acpi.h"
-#include "device/time/pit.h"
 #include "device/time/hpet.h"
 #include "kernel/common/device/serial.h"
 #include "kernel/common/video/display.h"
@@ -79,11 +78,11 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_sse();
     init_acpi();
     init_apic();
+    init_hpet();
+    init_apic_timer();
     init_smp((struct stivale2_struct_tag_smp*)get_rmem_address(smp_str_tag));
 
     enable_interrupts();
-
-    //? Timer initialization
 
     //? -----------------------------------------
     for (;;) asm("hlt");

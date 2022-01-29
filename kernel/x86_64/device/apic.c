@@ -7,6 +7,8 @@
 #include "device/acpi.h"
 #include "kernel/common/kservice.h"
 #include "kernel/common/device/port.h"
+#include "time/hpet.h"
+#include "time/pit.h"
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -176,4 +178,20 @@ uint32_t apic_read(uint32_t reg) {
 // *Send a EOI to the APIC
 void apic_eoi() {
     apic_write(eoi, 0);
+}
+
+// *Initialize the LAPIC timer
+void init_apic_timer() {
+    apic_write(timer_div, apic_timer_divide_by_16);
+    apic_write(timer_init_counter, 0xffffffff);
+
+    if (has_hpet) hpet_sleep(10);
+    else pit_sleep(10);
+
+    apic_write(lvt_timer, LAPIC_TIMER_MASKED);
+    uint64_t elapsed = 0xffffffff - apic_read(timer_current);
+
+    apic_write(lvt_timer, APIC_TIMER_IRQ | (apic_mode_periodic << 17));
+    apic_write(timer_div, apic_timer_divide_by_16);
+    apic_write(timer_init_counter, elapsed / 10);
 }

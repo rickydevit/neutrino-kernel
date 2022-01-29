@@ -44,14 +44,15 @@
         - [ ] **RTC**
         - [ ] **LAPIC timer**
         - [ ] **PIT** `🔻 LOW PRIORITY`
-        - [ ] **HPET**
+        - [x] **HPET**
     - [x] **Memory manager**
         - [x] **Physical memory manager**   
             *Scans the loaded memory and manages it using 4KB blocks. Kernel and other reserved areas are marked accordingly*
         - [x] **Virtual memory manager**   
             *Manages the virtual memory page tables. Can map, remap and unmap pages*
         - [ ] **Kernel Heap manager**
-    - [ ] **Process scheduler** `🔗 Timers`
+    - [ ] **Executable loading**
+    - [ ] **Process scheduler** `🔗 Timers, Executable loading`
 
 - [ ] ⚙ **Advanced drivers**
     - [x] **Video driver**

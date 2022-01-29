@@ -3,6 +3,7 @@
 #include "arch.h"
 #include "interrupts.h"
 #include "device/apic.h"
+#include "device/time/hpet.h"
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
 #include "kernel/common/kservice.h"
@@ -25,6 +26,9 @@ void start_cpu(struct stivale2_smp_info* smp_info) {
     init_sse();
     map_apic_into_space();
     enable_apic();
+
+    if (has_hpet) vmm_map_page_in_active_table(hpet.base, hpet.base, true, false);
+    init_apic_timer();
 
     cpu_started = true;
 
