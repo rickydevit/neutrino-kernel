@@ -42,8 +42,8 @@ void init_pit(uint64_t target_frequency) {
 
 // *Wait for the specified number of milliseconds
 // @param timeout the number of milliseconds to wait
-void pit_wait(uint16_t timeout) {
-    ks.fatal(FatalError(NOT_IMPLEMENTED, "pit_wait() not implemented"));
+void pit_sleep(uint16_t timeout) {
+    ks.fatal(FatalError(NOT_IMPLEMENTED, "pit_sleep() not implemented"));
     
     // port_byte_out(command_port, _COMMAND(select_channel0, low_high_byte, int_on_terminal_count, binary));
     // uint16_t to_wait = (uint16_t)((uint32_t)PIT_FREQ / (timeout * 1000));

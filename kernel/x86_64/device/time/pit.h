@@ -47,4 +47,4 @@ struct pit {
 struct pit pit;
 
 void init_pit(uint64_t target_frequency);
-void pit_wait(uint16_t timeout);
+void pit_sleep(uint16_t timeout);
