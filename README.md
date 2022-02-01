@@ -42,7 +42,7 @@
     - [x] **CPUID** 
     - [ ] **Timers**
         - [ ] **RTC**
-        - [ ] **LAPIC timer**
+        - [x] **LAPIC timer**
         - [ ] **PIT** `🔻 LOW PRIORITY`
         - [x] **HPET**
     - [x] **Memory manager**
