@@ -85,7 +85,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     enable_interrupts();
 
     //? -----------------------------------------
-    for (;;) asm("hlt");
+    for (;;) asm volatile("hlt");
 
     //? Display driver setup
     term_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_TERMINAL_ID);

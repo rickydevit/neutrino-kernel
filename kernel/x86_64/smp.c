@@ -33,7 +33,7 @@ void start_cpu(struct stivale2_smp_info* smp_info) {
     cpu_started = true;
 
     enable_interrupts();
-    asm volatile("hlt");
+    for (;;) asm volatile("hlt");
 }
 
 // === PUBLIC FUNCTIONS =========================
