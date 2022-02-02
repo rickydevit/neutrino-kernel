@@ -39,7 +39,7 @@ void apic_setup_IOAPIC() {
     while (entry_hdr < ((uint64_t)madt + madt->h.Length)) {
         if (entry_hdr->type == IOAPIC) {
             apic.ioapics[apic.ioapics_count] = (MADT_apic_IOAPIC*) entry_hdr;
-            vmm_map_page_in_active_table(apic.ioapics[apic.ioapics_count]->apic_addr, apic.ioapics[apic.ioapics_count]->apic_addr, true, false);
+            vmm_map_mmio(apic.ioapics[apic.ioapics_count]->apic_addr, 1);
             ks.dbg("ioapic #%u addr: %x", apic.ioapics[apic.ioapics_count]->apic_id, apic.ioapics[apic.ioapics_count]->apic_addr);
             apic.ioapics_count++;
         }
@@ -127,8 +127,7 @@ void init_apic() {
 
 // *Map the LAPIC into the active table
 void map_apic_into_space() {
-    for (int i = 0; i < 3; i++) 
-        vmm_map_page_in_active_table((uint64_t)apic.apic_addr + i * PAGE_SIZE, (uint64_t)apic.apic_addr + i * PAGE_SIZE, true, false);
+    vmm_map_mmio((uint64_t)apic.apic_addr, 3);
 }
 
 // *Enable the APIC by writing to its registers

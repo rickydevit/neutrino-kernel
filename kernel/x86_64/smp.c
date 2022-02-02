@@ -27,7 +27,7 @@ void start_cpu(struct stivale2_smp_info* smp_info) {
     map_apic_into_space();
     enable_apic();
 
-    if (has_hpet) vmm_map_page_in_active_table(hpet.base, hpet.base, true, false);
+    if (has_hpet) vmm_map_mmio(hpet.base, 1);
     init_apic_timer();
 
     cpu_started = true;
@@ -57,7 +57,7 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
         smp.cpus[i].stack_interrupt = pmm_alloc_series(CPU_STACK_SIZE / PHYSMEM_BLOCK_SIZE);
         smp.cpus[i].tss.ist1 = (uint64_t)smp.cpus[i].stack_interrupt + CPU_STACK_SIZE;
 
-        vmm_map_page_in_active_table(smp.cpus[i].stack_interrupt, smp.cpus[i].stack_interrupt, true, false);
+        vmm_map_mmio(smp.cpus[i].stack_interrupt, 1);
 
         // skip the bsp
         if (cpu_info.lapic_id == smp_struct->bsp_lapic_id) continue;

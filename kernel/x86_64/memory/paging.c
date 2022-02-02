@@ -1,4 +1,5 @@
 #include "paging.h"
+#include "stdint.h"
 #include "stdbool.h"
  
 // *Check if paging is enabled

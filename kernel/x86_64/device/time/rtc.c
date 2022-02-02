@@ -1,6 +1,6 @@
 #include "rtc.h"
 #include "stdint.h"
-#include "common/device/port.h"
+#include "kernel/common/device/port.h"
 #include "interrupts.h"
 
 // === PRIVATE FUNCTIONS ========================
