@@ -1,5 +1,6 @@
 #pragma once
-#include "stdint.h"
+#include <stdint.h>
+#include <neutrino/macros.h>
 
 //? 0: null descriptor
 //? 1: 32 bit code descriptor
@@ -24,7 +25,7 @@
 struct GDT_pointer {
 	uint16_t size;
 	uint64_t offset;
-} __attribute__((packed));
+} packed;
 
 struct GDT_entry {
 	uint16_t limit0_15;
@@ -61,7 +62,7 @@ struct _tss {
 	uint64_t reserved2;
 	uint16_t reserved3;
 	uint16_t iopb_offset;
-} __attribute__((packed));
+} packed;
 
 typedef struct _tss tss;
 

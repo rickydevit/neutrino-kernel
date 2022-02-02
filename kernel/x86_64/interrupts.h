@@ -1,5 +1,6 @@
 #pragma once
-#include "stdint.h"
+#include <stdint.h>
+#include <neutrino/macros.h>
 
 #define INTERRUPT_GATE  0x8e
 #define TRAP_GATE       0x8f
@@ -23,7 +24,7 @@ struct IDT_entry {
 struct IDT_pointer {
     uint16_t size;   
     uint64_t offset; 
-} __attribute__((packed));
+} packed;
 
 struct interrupt_stack_t {
     uint64_t r15;
@@ -51,7 +52,7 @@ struct interrupt_stack_t {
     uint64_t rflags;
     uint64_t rsp;
     uint64_t ss;
-} __attribute__((packed));
+} packed;
 
 typedef struct interrupt_stack_t interrupt_stack;
 
