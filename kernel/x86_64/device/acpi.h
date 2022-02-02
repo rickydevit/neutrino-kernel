@@ -1,5 +1,6 @@
 #pragma once
-#include "stdint.h"
+#include <stdint.h>
+#include <neutrino/macros.h>
 
 #define RSDP_LOW    0x80000
 #define RSDP_HIGH   0x100000
@@ -10,7 +11,7 @@ struct RSDP_descriptor {
     char OEMID[6];
     uint8_t Revision;
     uint32_t RsdtAddress;
-} __attribute__ ((packed));
+} packed;
 
 struct RSDP_descriptor2 {
     struct RSDP_descriptor firstPart;
@@ -19,7 +20,7 @@ struct RSDP_descriptor2 {
     uint64_t XsdtAddress;
     uint8_t ExtendedChecksum;
     uint8_t reserved[3];
-} __attribute__ ((packed));
+} packed;
 
 struct SDT_header {
     char Signature[4];
@@ -31,17 +32,17 @@ struct SDT_header {
     uint32_t OEMRevision;
     uint32_t CreatorID;
     uint32_t CreatorRevision;
-} __attribute__ ((packed));
+} packed;
 
 struct RSDT {
     struct SDT_header h;
     uint32_t PointerToOtherSDT[];
-} __attribute__ ((packed));
+} packed;
 
 struct XSDT {
     struct SDT_header h;
     uint64_t PointerToOtherSDT[];
-} __attribute__ ((packed)); 
+} packed; 
 
 struct MADT_apic_header {
     uint8_t type;
@@ -53,7 +54,7 @@ struct MADT {
     uint32_t lapic_address;
     uint32_t flags;
     struct MADT_apic_header interrupt_devices_start;
-} __attribute__ ((packed)); 
+} packed; 
 
 struct MADT_apic_IOAPIC_t {
     struct MADT_apic_header h;
