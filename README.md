@@ -41,7 +41,7 @@
         - [x] **Per-CPU initialization (via stivale2)**
     - [x] **CPUID** 
     - [ ] **Timers**
-        - [ ] **RTC**
+        - [x] **RTC** `🚧 WIP`
         - [x] **LAPIC timer**
         - [ ] **PIT** `🔻 LOW PRIORITY`
         - [x] **HPET**
@@ -80,7 +80,7 @@
         - **`video\`** _implementation of video driver_
 - **`libs\`**
     - **`libc\`** _porting of useful C libraries_
-    - **`neutrino\`** _kernel's libraries_
+    - **`neutrino\`** _kernel libraries_
 - **`limine\`** [_limine bootloader binaries_](https://github.com/limine-bootloader/limine/tree/v2.0-branch-binary)
 - **`thirdparty\`** _implementations of thirdparty headers and libraries_
 - **`utils\`** _file stored as backup or utility_
