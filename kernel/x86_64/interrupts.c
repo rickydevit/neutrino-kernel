@@ -140,10 +140,13 @@ void pagefault_handler(interrupt_stack* stack) {
 
 	int present = !(stack->error_code & 0x1);
 	int rw = stack->error_code & 0x2;           // Write operation?
-    int us = stack->error_code& 0x4;           // Processor was in user-mode?
-    int reserved = stack->error_code& 0x8;     // Overwritten CPU-reserved bits of page entry?
-    int id = stack->error_code& 0x10; 
+    int us = stack->error_code & 0x4;           // Processor was in user-mode?
+    int reserved = stack->error_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
+    int id = stack->error_code & 0x10; 
 
-	ks.err("Page fault at address %x", faulting_address); 
+	ks.err("Page fault at address %x. %c, %c, %c, Reserved bits %c", faulting_address, (present == 0) ? "Present" : "Non-present", 
+           (rw == 1) ? "Write" : "Read", (us == 1) ? "User" : "Supervisor", (reserved == 1) ? "set" : "untoched"); 
+
+    asm("cli");
 	asm("hlt");
 }

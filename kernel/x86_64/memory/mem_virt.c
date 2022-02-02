@@ -7,7 +7,7 @@
 #include "kernel/common/kservice.h"
 #include "kernel/common/memory/memory.h"
 #include <stdbool.h>
-#include <thirdparty/stivale2.h>
+#include <libs/limine/stivale2.h>
 
 // === PRIVATE FUNCTIONS ========================
 

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <size_t.h>
 #include <stdbool.h>
-#include <thirdparty/stivale2.h>
+#include <libs/limine/stivale2.h>
 
 #define USE_ACTIVE_PAGE 0x0
 

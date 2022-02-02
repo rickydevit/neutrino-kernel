@@ -50,7 +50,7 @@
             *Scans the loaded memory and manages it using 4KB blocks. Kernel and other reserved areas are marked accordingly*
         - [x] **Virtual memory manager**   
             *Manages the virtual memory page tables. Can map, remap and unmap pages*
-        - [ ] **Kernel Heap manager**
+        - [x] **Kernel Heap manager**
     - [ ] **Executable loading**
     - [ ] **Process scheduler** `🔗 Timers, Executable loading`
 
@@ -79,8 +79,9 @@
         - **`memory\`** _libraries for memory related functions_
         - **`video\`** _implementation of video driver_
 - **`libs\`**
+    - **`liballoc\`** _Durand's Amazing Super Duper Memory allocator_
     - **`libc\`** _porting of useful C libraries_
+    - **`limine\`** _limine bootloader's headers and libraries_
     - **`neutrino\`** _kernel libraries_
 - **`limine\`** [_limine bootloader binaries_](https://github.com/limine-bootloader/limine/tree/v2.0-branch-binary)
-- **`thirdparty\`** _implementations of thirdparty headers and libraries_
 - **`utils\`** _file stored as backup or utility_

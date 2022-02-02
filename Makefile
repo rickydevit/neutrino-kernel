@@ -16,7 +16,7 @@ CC 				:= $(ARCH)-elf-gcc
 LD 				:= $(ARCH)-elf-ld
 
 # flags
-DEFINEFLAGS  	:= -D__$(ARCH:_=-)
+DEFINEFLAGS  	:= -D__$(ARCH)
 
 INCLUDEFLAGS 	:= -I. \
 					-I./kernel/common \

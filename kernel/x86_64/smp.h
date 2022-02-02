@@ -1,7 +1,7 @@
 #pragma once
 #include "gdt.h"
 #include "memory/mem_virt.h"
-#include "thirdparty/stivale2.h"
+#include "libs/limine/stivale2.h"
 #include "stdint.h"
 
 #define MAX_CPU 64
