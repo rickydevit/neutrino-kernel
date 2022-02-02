@@ -313,22 +313,36 @@ bool vmm_unmap_page_in_active_table(uint64_t virt_addr) {
 
 // *Map a physical address to a virtual address. Works with either an offline page table or an active one
 // @param table the table to map the address into
-// @param phys_addr the physical address to map the virtual address to
-// @param virt_addr the virtual address to map the physical address to
+// @param blocks the number of blocks to be mapped
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
-void vmm_allocate_memory(page_table_e* table, size_t blocks, uint64_t virt_addr, bool writable, bool user) {
+uintptr_t vmm_allocate_memory(page_table_e* table, size_t blocks, bool writable, bool user) {
     uint64_t phys_addr = (uint64_t)pmm_alloc_series(blocks);
 
     for (size_t i = 0; i < blocks; i++) {
-        if (table == USE_ACTIVE_PAGE) vmm_map_page_in_active_table(phys_addr + (i*PHYSMEM_BLOCK_SIZE), virt_addr, writable, user);
-        else vmm_map_page(table, phys_addr + (i*PHYSMEM_BLOCK_SIZE), virt_addr, writable, user);
+        if (table == USE_ACTIVE_PAGE) vmm_map_page_in_active_table(phys_addr + (i*PHYSMEM_BLOCK_SIZE), phys_addr + (i*PHYSMEM_BLOCK_SIZE), writable, user);
+        else vmm_map_page(table, phys_addr + (i*PHYSMEM_BLOCK_SIZE), phys_addr + (i*PHYSMEM_BLOCK_SIZE), writable, user);
     }   
+
+    return phys_addr;
+}
+
+// *Unmap a memory area given the virtual address and the blocks. Works with either an offline page table or an active one
+// @param table the table to unmap the address from
+// @param addr the virtual address to unmap
+// @param blocks the number of blocks to be unmapped
+bool vmm_free_memory(page_table_e* table, uint64_t addr, size_t blocks) {
+    for (size_t i = 0; i < blocks; i++) {
+        if (table == USE_ACTIVE_PAGE) vmm_unmap_page_in_active_table(addr + (i*PHYSMEM_BLOCK_SIZE));
+        else vmm_unmap_page(table, addr + (i*PHYSMEM_BLOCK_SIZE));
+    }   
+
+    return true;
 }
 
 // *Map a MMIO physical address to itself. Works with either an offline page table or an active one
-// @param table the table to map the address into
 // @param mmio_addr the memory mapped IO address to map
+// @param blocks the number of blocks to be mapped
 void vmm_map_mmio(uint64_t mmio_addr, size_t blocks) {
     for (size_t i = 0; i < blocks; i++) 
         vmm_map_page_in_active_table(mmio_addr + (i*PHYSMEM_BLOCK_SIZE), mmio_addr + (i*PHYSMEM_BLOCK_SIZE), true, false);

@@ -32,5 +32,6 @@ void vmm_map_page(page_table* table, uint64_t phys_addr, uint64_t virt_addr, boo
 void vmm_map_page_in_active_table(uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user);
 bool vmm_unmap_page_in_active_table(uint64_t virt_addr);
 
-void vmm_allocate_memory(page_table_e* table, size_t blocks, uint64_t virt_addr, bool writable, bool user);
+uintptr_t vmm_allocate_memory(page_table_e* table, size_t blocks, bool writable, bool user);
+bool vmm_free_memory(page_table_e* table, uint64_t addr, size_t blocks);
 void vmm_map_mmio(uint64_t mmio_addr, size_t blocks);
