@@ -9,6 +9,7 @@ extern "C"
 {
 #endif
 #define NULL    0
+#define nullptr 0
 #ifdef __cplusplus
 }
 #else
