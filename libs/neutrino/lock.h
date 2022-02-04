@@ -5,10 +5,10 @@
 
 typedef struct __lock_t {
     int flag;
-} lock_t;
+} Lock;
 
-#define NewLock (lock_t){UNLOCKED}
+#define NewLock (Lock){UNLOCKED}
 
-void lock_init(lock_t *lock);
-void lock(lock_t* lock);
-void unlock(lock_t* lock);
+void lock_init(Lock *lock);
+void lock(Lock* lock);
+void unlock(Lock* lock);

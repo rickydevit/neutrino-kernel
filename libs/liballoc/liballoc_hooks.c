@@ -8,7 +8,7 @@
 #define LIBALLOC_HEAP_START 0xffffffff80000000
 #define LIBALLOC_HEAP_END   0xffffffffffffffff
 
-static lock_t kalloc_lock = NewLock;
+static Lock kalloc_lock = NewLock;
 
 int liballoc_lock() {
     lock(&kalloc_lock);

@@ -12,18 +12,18 @@ int test_and_set(int* old_flag, int new_v) {
 
 //* Initialize the lock to UNLOCKED
 // @param lock the lock to be initialized 
-void lock_init(lock_t *lock) {
+void lock_init(Lock *lock) {
     lock->flag = UNLOCKED;
 }
 
 // *Lock a spinlock, avoiding other threads accessing it
 // @param lock the lock to be locked
-void lock(lock_t* lock) {
+void lock(Lock* lock) {
     while (test_and_set(&lock->flag, LOCKED) == 1);
 }
 
 // *Unlock a spinlock and make it available to other threads
 // @param lock the lock to be unlocked
-void unlock(lock_t* lock) {
+void unlock(Lock* lock) {
     lock->flag = UNLOCKED;
 }
