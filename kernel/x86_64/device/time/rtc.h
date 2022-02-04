@@ -10,6 +10,6 @@ typedef struct __cmosReading {
     uint8_t month;
     uint8_t year;
     uint8_t century;
-} cmosReading;
+} CmosReading;
 
-cmosReading cmos_read();
+CmosReading cmos_read();

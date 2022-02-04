@@ -3,7 +3,7 @@
 #define LOCKED      1
 #define UNLOCKED    0
 
-typedef struct __lock_t {
+typedef struct __lock {
     int flag;
 } Lock;
 

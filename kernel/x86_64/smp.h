@@ -14,8 +14,8 @@ struct cpu {
     uint8_t* stack;             // CPU stack
     uint8_t* stack_interrupt;   // CPU interrupt stack
 
-    page_table* page_table;     // CPU page table physical address
-    tss tss;
+    PageTable* page_table;     // CPU page table physical address
+    Tss tss;
 };
 
 struct smp_t {

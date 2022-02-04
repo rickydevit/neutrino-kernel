@@ -31,8 +31,8 @@ void write_cr3(uint64_t value) {
     __asm__("mov %0, %%cr3" : : "r"(value));
 }
 
-page_table_e page_create(uint64_t addr, bool writable, bool user) {
-    page_table_e pt = addr & ADDRESS_MASK;
+PageTableEntry page_create(uint64_t addr, bool writable, bool user) {
+    PageTableEntry pt = addr & ADDRESS_MASK;
 
     if (writable) page_set_bit(&pt, WRITABLE_BIT_OFFSET);
     if (user) page_set_bit(&pt, USERSPACE_BIT_OFFSET);

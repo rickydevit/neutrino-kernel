@@ -26,7 +26,7 @@ struct IDT_pointer {
     uint64_t offset; 
 } packed;
 
-struct interrupt_stack_t {
+struct __interrupt_stack {
     uint64_t r15;
     uint64_t r14;
     uint64_t r13;
@@ -54,12 +54,12 @@ struct interrupt_stack_t {
     uint64_t ss;
 } packed;
 
-typedef struct interrupt_stack_t interrupt_stack;
+typedef struct __interrupt_stack InterruptStack;
 
 void init_idt();
-interrupt_stack* exception_handler(interrupt_stack* stack);
-interrupt_stack* interrupt_handler(interrupt_stack* stack);
-void pagefault_handler(interrupt_stack* stack);
+InterruptStack* exception_handler(InterruptStack* stack);
+InterruptStack* interrupt_handler(InterruptStack* stack);
+void pagefault_handler(InterruptStack* stack);
 
 void inline disable_interrupts() {
     asm volatile ("cli");

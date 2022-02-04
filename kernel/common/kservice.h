@@ -16,19 +16,19 @@ enum KERNEL_FATAL {
     OUT_OF_MEMORY       = 0x202,
 };
 
-typedef struct __fatal_t {
+typedef struct __fatal {
     enum KERNEL_FATAL code;
     char* message;
-} fatal_t;
+} Fatal;
 
-#define FatalError(code, message) (fatal_t){code, message}
+#define FatalError(code, message) (Fatal){code, message}
 
 struct KernelService {
     void (*dbg)     (char* message, ...);
     void (*log)     (char* message, ...);
     void (*warn)    (char* message, ...);
     void (*err)     (char* message, ...);
-    void (*fatal)   (fatal_t fatal_error, ...);
+    void (*fatal)   (Fatal fatal_error, ...);
 
     void (*_put) (char* message, ...);
     void (*_helper) (char* message);

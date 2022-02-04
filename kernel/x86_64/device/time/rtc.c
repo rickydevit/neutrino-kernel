@@ -22,11 +22,11 @@ void read_from_cmos(uint8_t array []) {
 
 // *Return the CMOS reading
 // @return the reading value of the CMOS
-cmosReading cmos_read() {
+CmosReading cmos_read() {
     uint8_t cmos[128];
     read_from_cmos(cmos);
 
-    cmosReading result;
+    CmosReading result;
     itoa(cmos[0] + cmos[1], 16, result.second);
     itoa(cmos[2] + cmos[3], 16, result.minute);
     itoa(cmos[4] + cmos[5], 16, result.hour); 

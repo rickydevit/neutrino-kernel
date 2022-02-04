@@ -56,7 +56,7 @@ struct MADT {
     struct MADT_apic_header interrupt_devices_start;
 } packed; 
 
-struct MADT_apic_IOAPIC_t {
+struct __MADT_apic_IOAPIC {
     struct MADT_apic_header h;
     uint8_t apic_id;
     uint8_t reserved;
@@ -64,7 +64,7 @@ struct MADT_apic_IOAPIC_t {
     uint32_t gsib;          // global system interrupt base
 };
 
-struct MADT_apic_IOAPIC_ISO_t {
+struct __MADT_apic_IOAPIC_ISO {
     struct MADT_apic_header h;
     uint8_t bus_source;
     uint8_t irq_source;
@@ -72,7 +72,7 @@ struct MADT_apic_IOAPIC_ISO_t {
     uint16_t flags;
 };
 
-struct MADT_apic_IOAPIC_NMI_t {
+struct __MADT_apic_IOAPIC_NMI {
     struct MADT_apic_header h;
     uint8_t nmi_source;
     uint8_t reserved;
@@ -80,9 +80,9 @@ struct MADT_apic_IOAPIC_NMI_t {
     uint32_t gsi;           // global system interrupt
 };
 
-typedef struct MADT_apic_IOAPIC_t MADT_apic_IOAPIC;
-typedef struct MADT_apic_IOAPIC_ISO_t MADT_apic_IOAPIC_ISO;
-typedef struct MADT_apic_IOAPIC_NMI_t MADT_apic_IOAPIC_NMI;
+typedef struct __MADT_apic_IOAPIC MadtApicIOApic;
+typedef struct __MADT_apic_IOAPIC_ISO MadtApicIOApicISO;
+typedef struct __MADT_apic_IOAPIC_NMI MadtApicIOApicNMI;
 
 struct acpi {
     uint8_t version;

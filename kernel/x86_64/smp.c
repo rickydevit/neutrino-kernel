@@ -7,8 +7,9 @@
 #include "memory/mem_virt.h"
 #include "memory/mem_phys.h"
 #include "kernel/common/kservice.h"
-#include "libs/limine/stivale2.h"
-#include "stdbool.h"
+#include <limine/stivale2.h>
+#include <_null.h>
+#include <stdbool.h>
 
 static volatile bool cpu_started = false;
 
@@ -52,7 +53,7 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
         smp.cpus[i].lapic_id = cpu_info.lapic_id;
 
         // setup the tss
-        smp.cpus[i].tss.iopb_offset = sizeof(tss);
+        smp.cpus[i].tss.iopb_offset = sizeof(Tss);
         smp.cpus[i].tss.rsp0 = (uint64_t)smp.cpus[i].stack;
         smp.cpus[i].stack_interrupt = pmm_alloc_series(CPU_STACK_SIZE / PHYSMEM_BLOCK_SIZE);
         smp.cpus[i].tss.ist1 = (uint64_t)smp.cpus[i].stack_interrupt + CPU_STACK_SIZE;
@@ -95,8 +96,9 @@ void setup_bsp(uint8_t* bsp_stack) {
 struct cpu* get_cpu(uint32_t id) {
     if (id != 0 && id >= smp.cpu_count) {
         ks.warn("Cannot find cpu with id %u", id);
-        return (struct cpu*)0x0;
+        return (struct cpu*)NULL;
     }
+
     return &(smp.cpus[id]);
 }
 
@@ -104,4 +106,18 @@ struct cpu* get_cpu(uint32_t id) {
 // @return the pointer to the cpu info structure of the boostrap processor
 struct cpu* get_bootstrap_cpu() {
     return get_cpu(0);
+}
+
+// *Get the cpu info about the current processor
+// @return the pointer to the cpu info structure of the current processor
+struct cpu* get_current_cpu() {
+    uint32_t id = apic_read(lapic_id);
+
+    for (uint32_t i = 0; i < smp.cpu_count; i++) {
+        if (smp.cpus[i].lapic_id == id)
+            return &(smp.cpus[i]);
+    }
+
+    ks.warn("Cannot find cpu with id %u", id);
+    return (struct cpu*)NULL;
 }

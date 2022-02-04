@@ -12,7 +12,7 @@ void kdbg(char* message, ...);
 void klog(char* message, ...);
 void kwarn(char* message, ...);
 void kerr(char* message, ...);
-void kpanic(fatal_t fatal_error, ...);
+void kpanic(Fatal fatal_error, ...);
 
 // Public functions
 
@@ -92,7 +92,7 @@ void kerr(char* message, ...) {
     enable_interrupts();
 }
 
-void kpanic(fatal_t fatal_error, ...) {
+void kpanic(Fatal fatal_error, ...) {
     va_list args; va_start(args, fatal_error);
     char buf[2048] = {0}, cbuf[32] = {0};
     ltoa((uint64_t)fatal_error.code, 16, cbuf);

@@ -15,7 +15,7 @@
 // @param table the page table to search the entry in
 // @param entry the entry to be found
 // @return a pointer to the page entry requested, or 0 if not found
-page_table* vmm_get_entry(page_table* table, uint64_t entry) {
+PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
     if (IS_PRESENT(table->entries[entry])) 
         return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     return 0;
@@ -27,8 +27,8 @@ page_table* vmm_get_entry(page_table* table, uint64_t entry) {
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 // @return the address of the newly created entry
-page_table* vmm_create_entry(page_table* table, uint64_t entry, bool writable, bool user) {
-    page_table* pt = (page_table*)get_mem_address(pmm_alloc());
+PageTable* vmm_create_entry(PageTable* table, uint64_t entry, bool writable, bool user) {
+    PageTable* pt = (PageTable*)get_mem_address(pmm_alloc());
     memory_set(pt, 0, PHYSMEM_BLOCK_SIZE);
     table->entries[entry] = page_create(get_rmem_address(pt), writable, user);
 
@@ -43,7 +43,7 @@ page_table* vmm_create_entry(page_table* table, uint64_t entry, bool writable, b
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 // @return the address of the existing table or the newly created table
-page_table* vmm_get_or_create_entry(page_table* table, uint64_t entry, bool writable, bool user) {
+PageTable* vmm_get_or_create_entry(PageTable* table, uint64_t entry, bool writable, bool user) {
     if (IS_PRESENT(table->entries[entry])) {
         return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     } else {
@@ -55,13 +55,13 @@ page_table* vmm_get_or_create_entry(page_table* table, uint64_t entry, bool writ
 // @param virt the virtual address
 // @return the physical address associated to the virtual address
 uint64_t vmm_get_phys_address(uint64_t virt) {
-    page_table* pdpt = vmm_get_entry(vmm.kernel_page_physaddr, (uint64_t)GET_PL4_INDEX(virt));
+    PageTable* pdpt = vmm_get_entry(vmm.kernel_page_physaddr, (uint64_t)GET_PL4_INDEX(virt));
     if (pdpt == 0) ks.warn("Physical address for virtual address %x is invalid", virt);
     
-    page_table* pdir = vmm_get_entry(pdpt, (uint64_t)GET_DPT_INDEX(virt));
+    PageTable* pdir = vmm_get_entry(pdpt, (uint64_t)GET_DPT_INDEX(virt));
     if (pdir == 0) ks.warn("Physical address for virtual address %x is invalid", virt);
    
-    page_table* ptab = vmm_get_entry(pdir, (uint64_t)GET_DIR_INDEX(virt));
+    PageTable* ptab = vmm_get_entry(pdir, (uint64_t)GET_DIR_INDEX(virt));
     if (ptab == 0) ks.warn("physical address for virtual address %x is invalid", virt);
 
     return GET_PHYSICAL_ADDRESS(ptab->entries[(uint64_t)GET_TAB_INDEX(virt)]) + GET_PAGE_OFFSET(virt);
@@ -69,8 +69,8 @@ uint64_t vmm_get_phys_address(uint64_t virt) {
 
 // *Return a new page table of 512 entries all set to not-present 
 // @return the new page table pointer
-page_table *vmm_new_table() {
-    page_table *pl4 = (page_table*) get_mem_address(pmm_alloc());
+PageTable *vmm_new_table() {
+    PageTable *pl4 = (PageTable*) get_mem_address(pmm_alloc());
     memory_set(pl4, 0, PHYSMEM_BLOCK_SIZE);
     for (int i = 0; i < PAGE_PL4_ENTRIES; i++) pl4->entries[i] = 0;
 
@@ -86,7 +86,7 @@ void vmm_refresh_paging() {
 // *Check if a page table is free in each of its entries
 // @param table the page table to check
 // @return true if the page table is free, false otherwise
-bool vmm_is_table_free(page_table* table) {
+bool vmm_is_table_free(PageTable* table) {
     for (int i = 0; i < 512; i++) {
         if (vmm_get_entry(table, i) != 0) return false;
     }
@@ -98,7 +98,7 @@ bool vmm_is_table_free(page_table* table) {
 // @param table the table to check if is free
 // @param parent the parent page of the table
 // @param parent_index the index of [table] in the [parent] page
-void vmm_free_if_necessary_table(page_table* table, page_table* parent, uint64_t parent_index) {
+void vmm_free_if_necessary_table(PageTable* table, PageTable* parent, uint64_t parent_index) {
     if (vmm_is_table_free(table)) {
         pmm_free(GET_PHYSICAL_ADDRESS(parent->entries[parent_index]));
         page_clear_bit(vmm_get_entry(table, parent_index), PRESENT_BIT_OFFSET);
@@ -108,12 +108,12 @@ void vmm_free_if_necessary_table(page_table* table, page_table* parent, uint64_t
 // *Free all the tables in the pml4 table where the given address is free
 // @param table the pml4 table to check the address in
 // @param address the address unmapped from the pml4 table
-void vmm_free_if_necessary_tables(page_table* table, uint64_t unmapped_addr) {
+void vmm_free_if_necessary_tables(PageTable* table, uint64_t unmapped_addr) {
     uint64_t pl4_entry = GET_PL4_INDEX(unmapped_addr);
     uint64_t dpt_entry = GET_DPT_INDEX(unmapped_addr);
     uint64_t pd_entry = GET_DIR_INDEX(unmapped_addr);
     
-    page_table *pdpt, *pd, *pt;
+    PageTable *pdpt, *pd, *pt;
     pdpt = vmm_get_or_create_entry(table, pl4_entry, true, true);
     pd = vmm_get_or_create_entry(pdpt, dpt_entry, true, true);
     pt = vmm_get_or_create_entry(pd, pd_entry, true, true);
@@ -126,7 +126,7 @@ void vmm_free_if_necessary_tables(page_table* table, uint64_t unmapped_addr) {
 // *Map the physical regions stored in the physical manager to the given page
 // @param phys the physical memory manager
 // @param page the page to map the regions into
-void vmm_map_physical_regions(struct memory_physical* phys, page_table* page) {
+void vmm_map_physical_regions(struct memory_physical* phys, PageTable* page) {
     for (int ind = 0; ind < phys->regions_count; ind++) {
         if (phys->regions[ind].type == MEMORY_REGION_USABLE ||
             phys->regions[ind].type == MEMORY_REGION_INVALID ||
@@ -154,11 +154,11 @@ void init_vmm() {
     ks.log("Initializing VMM...");
 
     vmm.address_size = get_physical_address_length();
-    vmm.stivale2_page_physaddr = (page_table*) read_cr3();
+    vmm.stivale2_page_physaddr = (PageTable*) read_cr3();
     vmm.kernel_page_physaddr = vmm.stivale2_page_physaddr;
 
     // prepare a pml4 table for the kernel address space
-    page_table* kernel_pml4 = vmm_new_table();
+    PageTable* kernel_pml4 = vmm_new_table();
     ks.dbg("New pml4 created at %x", kernel_pml4);
 
     // identity map the first 2M of physical memory
@@ -194,7 +194,7 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
     ks.log("Initializing VMM on CPU #%u...", info->processor_id);
 
     // prepare a pml4 table for the kernel address space
-    page_table* kernel_pml4 = vmm_new_table();
+    PageTable* kernel_pml4 = vmm_new_table();
     ks.dbg("New pml4 created at %x for CPU #%u", kernel_pml4, info->processor_id);
 
     // identity map the first 2M of physical memory
@@ -240,10 +240,10 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
 // @param virt_addr the virtual address to map the physical address to
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
-void vmm_map_page(page_table* table, uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
-    pagingPath path = GetPagingPath(virt_addr);
+void vmm_map_page(PageTable* table, uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
+    PagingPath path = GetPagingPath(virt_addr);
 
-    page_table *pdpt, *pd, *pt;
+    PageTable *pdpt, *pd, *pt;
     pdpt = vmm_get_or_create_entry(table, path.pl4, true, true);
     pd = vmm_get_or_create_entry(pdpt, path.dpt, true, true);
     pt = vmm_get_or_create_entry(pd, path.pd, true, true);
@@ -255,15 +255,15 @@ void vmm_map_page(page_table* table, uint64_t phys_addr, uint64_t virt_addr, boo
 // @param table the pml4 table the virtual address resides in
 // @param virt_addr the virtual address in the page
 // @return true if the page was successfully unmapped, false otherwise
-bool vmm_unmap_page(page_table* table, uint64_t virt_addr) {
-    pagingPath path = GetPagingPath(virt_addr);
+bool vmm_unmap_page(PageTable* table, uint64_t virt_addr) {
+    PagingPath path = GetPagingPath(virt_addr);
     
-    page_table *pdpt, *pd, *pt;
+    PageTable *pdpt, *pd, *pt;
     pdpt = vmm_get_or_create_entry(table, path.pl4, true, true);
     pd = vmm_get_or_create_entry(pdpt, path.dpt, true, true);
     pt = vmm_get_or_create_entry(pd, path.pd, true, true);
 
-    page_table *to_free = vmm_get_entry(pt, path.pt);
+    PageTable *to_free = vmm_get_entry(pt, path.pt);
     if (to_free == 0) return false;
 
     page_clear_bit(to_free, PRESENT_BIT_OFFSET);
@@ -279,8 +279,8 @@ bool vmm_unmap_page(page_table* table, uint64_t virt_addr) {
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 void vmm_map_page_in_active_table(uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
-    pagingPath path = GetPagingPath(virt_addr);
-    volatile page_table_e* p;
+    PagingPath path = GetPagingPath(virt_addr);
+    volatile PageTableEntry* p;
 
     p = GET_RECURSIVE_ADDRESS(RECURSE, RECURSE, RECURSE, path.pl4);
     if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
@@ -301,8 +301,8 @@ void vmm_map_page_in_active_table(uint64_t phys_addr, uint64_t virt_addr, bool w
 // @param virt_addr the virtual address in the page
 // @return true if the page was successfully unmapped, false otherwise
 bool vmm_unmap_page_in_active_table(uint64_t virt_addr) {
-    pagingPath path = GetPagingPath(virt_addr);
-    volatile page_table_e* to_free = GET_RECURSIVE_ADDRESS(path.pl4, path.dpt, path.pd, path.pt); 
+    PagingPath path = GetPagingPath(virt_addr);
+    volatile PageTableEntry* to_free = GET_RECURSIVE_ADDRESS(path.pl4, path.dpt, path.pd, path.pt); 
     if (to_free == 0) return false;
 
     page_clear_bit(to_free, PRESENT_BIT_OFFSET);
@@ -316,7 +316,7 @@ bool vmm_unmap_page_in_active_table(uint64_t virt_addr) {
 // @param blocks the number of blocks to be mapped
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
-uintptr_t vmm_allocate_memory(page_table_e* table, size_t blocks, bool writable, bool user) {
+uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, bool writable, bool user) {
     uint64_t phys_addr = (uint64_t)pmm_alloc_series(blocks);
 
     for (size_t i = 0; i < blocks; i++) {
@@ -331,7 +331,7 @@ uintptr_t vmm_allocate_memory(page_table_e* table, size_t blocks, bool writable,
 // @param table the table to unmap the address from
 // @param addr the virtual address to unmap
 // @param blocks the number of blocks to be unmapped
-bool vmm_free_memory(page_table_e* table, uint64_t addr, size_t blocks) {
+bool vmm_free_memory(PageTableEntry* table, uint64_t addr, size_t blocks) {
     for (size_t i = 0; i < blocks; i++) {
         if (table == USE_ACTIVE_PAGE) vmm_unmap_page_in_active_table(addr + (i*PHYSMEM_BLOCK_SIZE));
         else vmm_unmap_page(table, addr + (i*PHYSMEM_BLOCK_SIZE));

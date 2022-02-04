@@ -3,7 +3,7 @@
 #include "stdint.h"
 #include "libs/_null.h"
 
-display_info_t info;
+DisplayInfo info;
 
 // === PUBLIC FUNCTIONS =================================
 

@@ -50,7 +50,7 @@ struct cpu_GDT {
 	struct TSS_entry TSS;
 };
 
-struct _tss {
+struct __tss {
 	uint32_t reserved0 __attribute__((aligned(16)));
 	uint64_t rsp0;
 	uint64_t rsp1;
@@ -64,7 +64,7 @@ struct _tss {
 	uint16_t iopb_offset;
 } packed;
 
-typedef struct _tss tss;
+typedef struct __tss Tss;
 
 #include "smp.h"
 

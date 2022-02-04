@@ -38,7 +38,7 @@ void apic_setup_IOAPIC() {
 
     while (entry_hdr < ((uint64_t)madt + madt->h.Length)) {
         if (entry_hdr->type == IOAPIC) {
-            apic.ioapics[apic.ioapics_count] = (MADT_apic_IOAPIC*) entry_hdr;
+            apic.ioapics[apic.ioapics_count] = (MadtApicIOApic*) entry_hdr;
             vmm_map_mmio(apic.ioapics[apic.ioapics_count]->apic_addr, 1);
             ks.dbg("ioapic #%u addr: %x", apic.ioapics[apic.ioapics_count]->apic_id, apic.ioapics[apic.ioapics_count]->apic_addr);
             apic.ioapics_count++;
@@ -55,7 +55,7 @@ void apic_setup_IOAPIC_ISO() {
 
     while (entry_hdr < ((uint64_t)madt + madt->h.Length)) {
         if (entry_hdr->type == IOAPIC_ISO) {
-            apic.ioapics_iso[apic.ioapics_iso_count] = (MADT_apic_IOAPIC_ISO*) entry_hdr;
+            apic.ioapics_iso[apic.ioapics_iso_count] = (MadtApicIOApicISO*) entry_hdr;
             ks.dbg("ioapic iso bus: %u interrupt: %u", apic.ioapics_iso[apic.ioapics_iso_count]->bus_source, 
                     apic.ioapics_iso[apic.ioapics_iso_count]->irq_source);
             apic.ioapics_iso_count++;
@@ -170,7 +170,7 @@ void apic_write(uint32_t reg, uint32_t value) {
 // *Read a value from the specified APIC register
 // @param reg the APIC register to read from
 // @return the value read from the specified APIC register
-uint32_t apic_read(uint32_t reg) {
+uint32_t apic_read(enum apic_register reg) {
     return *((volatile uint32_t *)((uint64_t)apic.apic_addr + reg));
 }
 

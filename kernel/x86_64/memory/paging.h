@@ -5,7 +5,7 @@
 #define PAGE_SIZE       0x1000
 #define RECURSE         510UL
 #define RECURSE_PML4    (0xffffff0000000000UL)
-#define GET_RECURSIVE_ADDRESS(p3, p2, p1, offset) (page_table_e*)((RECURSE_PML4) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
+#define GET_RECURSIVE_ADDRESS(p3, p2, p1, offset) (PageTableEntry*)((RECURSE_PML4) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
 
 #define PAGE_PL4_ENTRIES 512
 #define PAGE_DPT_ENTRIES 512
@@ -34,18 +34,18 @@
 #define GET_TAB_INDEX(x)    ((x & 0x0000001ff000) >> 12)
 #define GET_PAGE_OFFSET(x)  (x & 0x000000000fff)
 
-typedef uint64_t page_table_e;
+typedef uint64_t PageTableEntry;
 
-typedef struct _page_table {
-    page_table_e entries[PAGE_TAB_ENTRIES];
-} page_table;
+typedef struct __page_table {
+    PageTableEntry entries[PAGE_TAB_ENTRIES];
+} PageTable;
 
 bool is_paging_enabled();
 void disable_paging();
 uint64_t read_cr3();
 void write_cr3(uint64_t value);
 
-inline void page_set_bit(page_table_e* page, uint64_t offset) { *page |= (offset); }
-inline void page_clear_bit(page_table_e* page, uint64_t offset) { *page &= ~(offset); }
+inline void page_set_bit(PageTableEntry* page, uint64_t offset) { *page |= (offset); }
+inline void page_clear_bit(PageTableEntry* page, uint64_t offset) { *page &= ~(offset); }
 
-page_table_e page_create(uint64_t addr, bool writable, bool user);
+PageTableEntry page_create(uint64_t addr, bool writable, bool user);

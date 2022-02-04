@@ -63,7 +63,7 @@ void set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t type_attr) {
 
 // *Log the interrupt stack passed to the function. Useful for debugging interrupts stack frames
 // @param stack the pointer to the interrupt stack to be logged
-void log_interrupt(interrupt_stack* stack) {
+void log_interrupt(InterruptStack* stack) {
     ks.dbg(" ========== INTERRUPT FRAME LOG ==========");
     ks.dbg("interrupt: %u error code: %x", stack->irq, stack->error_code);
     ks.dbg("rax: %x rbx: %x rcx: %x rdx: %x", stack->rax, stack->rbx, stack->rcx, stack->rdx);
@@ -98,7 +98,7 @@ void init_idt() {
 	ks.log("Interrupt Descriptor Table loaded successfully.");
 }
 
-interrupt_stack* exception_handler(interrupt_stack* stack) {
+InterruptStack* exception_handler(InterruptStack* stack) {
     switch (stack->irq) {
         case 8:     // DF
         case 10:    // TS
@@ -127,14 +127,14 @@ interrupt_stack* exception_handler(interrupt_stack* stack) {
     return stack;
 }
 
-interrupt_stack* interrupt_handler(interrupt_stack* stack) {
+InterruptStack* interrupt_handler(InterruptStack* stack) {
     // ks.dbg("Got interrupt %u", stack->irq);
 
     apic_eoi();
     return stack;
 }
 
-void pagefault_handler(interrupt_stack* stack) {
+void pagefault_handler(InterruptStack* stack) {
 	uint64_t faulting_address;
    	asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
 
