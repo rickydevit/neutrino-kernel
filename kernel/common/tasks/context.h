@@ -8,11 +8,10 @@
 #error "Unsupported platform"
 #endif
 
+typedef struct __context Context;
 typedef uint64_t ContextFlags;
 
 #define IsUserTask(flags) ((flags) & (1<<0))
-
-typedef struct __context Context;
 
 Context* NewContext();
 void DestroyContext(Context* context);

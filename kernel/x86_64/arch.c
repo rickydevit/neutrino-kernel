@@ -69,10 +69,8 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_idt();
     init_cpuid();
 
-    //? Memory manager initialization 
     kinit_mem_manager(memmap_str_tag, entries);
 
-    //? 2nd stage initialization
     init_tss(get_bootstrap_cpu());
     init_pic();
     init_sse();
