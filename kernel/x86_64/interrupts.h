@@ -55,6 +55,7 @@ struct __interrupt_stack {
 } packed;
 
 typedef struct __interrupt_stack InterruptStack;
+typedef struct __interrupt_stack Registers;
 
 void init_idt();
 InterruptStack* exception_handler(InterruptStack* stack);
