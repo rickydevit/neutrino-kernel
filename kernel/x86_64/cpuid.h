@@ -91,3 +91,4 @@ bool get_cpuid_availability();
 bool get_cpu_feature(CPU_FEATURE feature, bool use_ecx);
 uint8_t get_physical_address_length();
 void get_cpu_vendor(char* vendor);
+size_t get_xsave_size();

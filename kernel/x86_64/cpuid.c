@@ -1,5 +1,6 @@
 #include "cpuid.h"
-#include "stdbool.h"
+#include <stdbool.h>
+#include <size_t.h>
 #include "kservice.h"
 
 //* Marks if the CPUID is available in the current configuration
@@ -43,6 +44,12 @@ uint8_t get_physical_address_length() {
     execute_cpuid(0x80000008, &eax, &_, &_, &_);
 
     return (uint8_t)(eax & 0xff);
+}
+
+size_t get_xsave_size() {
+    uint32_t ecx, _;
+    execute_cpuid(13, &_, &_, &ecx, &_);
+    return (size_t)ecx;
 }
 
 // *Get the specified [feature] from the CPU
