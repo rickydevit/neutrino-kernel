@@ -3,6 +3,8 @@
 #ifdef __x86_64
 #include "kernel/x86_64/memory/mem_virt.h"
 #include "kernel/x86_64/memory/mem_phys.h"
+#else 
+#error "Unsupported platform"
 #endif
 
 #define LIBALLOC_HEAP_START 0xffffffff80000000
