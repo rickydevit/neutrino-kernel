@@ -8,8 +8,14 @@
 #include "kernel/common/memory/memory.h"
 #include <stdbool.h>
 #include <libs/limine/stivale2.h>
+#include <size_t.h>
+#include <liballoc.h>
+
+static bool early = true;
 
 // === PRIVATE FUNCTIONS ========================
+
+// --- Early utilities --------------------------
 
 // *Get a page entry in the given page table
 // @param table the page table to search the entry in
@@ -123,6 +129,37 @@ void vmm_free_if_necessary_tables(PageTable* table, uint64_t unmapped_addr) {
     vmm_free_if_necessary_table(pdpt, table, pl4_entry);
 }
 
+void vmm_map_page_early(PageTable* table, uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
+    PagingPath path = GetPagingPath(virt_addr);
+
+    PageTable *pdpt, *pd, *pt;
+    pdpt = vmm_get_or_create_entry(table, path.pl4, true, true);
+    pd = vmm_get_or_create_entry(pdpt, path.dpt, true, true);
+    pt = vmm_get_or_create_entry(pd, path.pd, true, true);
+
+    pt->entries[path.pt] = page_create(phys_addr, writable, user);
+}
+
+bool vmm_unmap_page_early(PageTable* table, uint64_t virt_addr) {
+    PagingPath path = GetPagingPath(virt_addr);
+    
+    PageTable *pdpt, *pd, *pt;
+    pdpt = vmm_get_or_create_entry(table, path.pl4, true, true);
+    pd = vmm_get_or_create_entry(pdpt, path.dpt, true, true);
+    pt = vmm_get_or_create_entry(pd, path.pd, true, true);
+
+    PageTable *to_free = vmm_get_entry(pt, path.pt);
+    if (to_free == 0) return false;
+
+    page_clear_bit(to_free, PRESENT_BIT_OFFSET);
+
+    vmm_free_if_necessary_tables(table, virt_addr);
+    vmm_refresh_paging();
+    return true;
+}
+
+// --- Special mappings -------------------------
+
 // *Map the physical regions stored in the physical manager to the given page
 // @param phys the physical memory manager
 // @param page the page to map the regions into
@@ -140,12 +177,117 @@ void vmm_map_physical_regions(struct memory_physical* phys, PageTable* page) {
 
         for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
             uint64_t addr = aligned_base + i * PAGE_SIZE;
-            vmm_map_page(page, addr, addr, true, false);
+            vmm_map_page_early(page, addr, addr, true, false);
             if (phys->regions[ind].type == MEMORY_REGION_KERNEL) {
-                vmm_map_page(page, addr, get_kern_address(addr), true, false);
+                vmm_map_page_early(page, addr, get_kern_address(addr), true, false);
             } 
         } 
     }
+}
+
+void vmm_map_kernel_region(struct memory_physical* phys, PageTable* page) {
+        for (int ind = 0; ind < phys->regions_count; ind++) {
+        if (phys->regions[ind].type != MEMORY_REGION_KERNEL) continue;
+
+        uint64_t aligned_base = phys->regions[ind].base - phys->regions[ind].base % PAGE_SIZE;
+        uint64_t aligned_size = ((phys->regions[ind].size / PAGE_SIZE) + 1) * PAGE_SIZE;
+
+        for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
+            uint64_t addr = aligned_base + i * PAGE_SIZE;
+            MAP_EARLY_FUNC(page, addr, addr, true, false);
+            MAP_EARLY_FUNC(page, addr, get_kern_address(addr), true, false);
+        } 
+    }
+}
+
+// *Identity map a region of physical memory
+// @param table the PageTable pointer to the table to map addresses to
+// @param base the base address of the memory region
+// @param size the size of the memory region 
+void vmm_identity_map_region(PageTable* table, uintptr_t base, size_t size) {
+    for (int i = 0; i * PAGE_SIZE < size; i++) {
+        uint64_t addr = base + i * PAGE_SIZE;
+        MAP_EARLY_FUNC(table, get_rmem_address(addr), addr, true, false);
+    }
+}
+
+// --- Mapping and unmapping --------------------
+
+void vmm_map_page_internal(uint64_t phys_addr, PagingPath* path, uint64_t recurse_gate, bool writable, bool user) {
+    volatile PageTableEntry* p;
+
+    p = GET_RECURSIVE_ADDRESS(recurse_gate, recurse_gate, recurse_gate, path->pl4);
+    if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
+
+    p = GET_RECURSIVE_ADDRESS(recurse_gate, recurse_gate, path->pl4, path->dpt);
+    if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
+
+    p = GET_RECURSIVE_ADDRESS(recurse_gate, path->pl4, path->dpt, path->pd);
+    if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
+
+    p = GET_RECURSIVE_ADDRESS(path->pl4, path->dpt, path->pd, path->pt); 
+    *p = page_create(phys_addr, writable, user); 
+}
+
+bool vmm_unmap_page_internal(PageTableEntry* unmapping) {
+    if (unmapping == 0) return false;
+
+    page_clear_bit(unmapping, PRESENT_BIT_OFFSET);
+    vmm_refresh_paging();
+
+    return true;
+}
+
+// *Map a physical address to a virtual page address in the current table and refresh the TLB
+// @param phys_addr the physical address to map the virtual address to
+// @param virt_addr the virtual address to map the physical address to
+// @param writable flag to indicate whether the newly created entry should be writable or not
+// @param user flags to indicate whether the newly created entry should be accessible from userspace or not
+void vmm_map_page_active(uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
+    PagingPath path = GetPagingPath(virt_addr);
+
+    vmm_map_page_internal(phys_addr, &path, RECURSE_ACTIVE, writable, user);
+    vmm_refresh_paging();
+}
+
+// *Unmap a page given the virtual address in the page in the active table
+// @param virt_addr the virtual address in the page
+// @return true if the page was successfully unmapped, false otherwise
+bool vmm_unmap_page_active(uint64_t virt_addr) {
+    PagingPath path = GetPagingPath(virt_addr);
+    return vmm_unmap_page_internal(GET_RECURSIVE_ADDRESS(path.pl4, path.dpt, path.pd, path.pt));
+}
+
+void vmm_map_page_other(PageTable* original, uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
+    PagingPath path = GetPagingPath(virt_addr);
+
+    // set the page table to the OTHER gate
+    vmm_map_page_active(original, RECURSE_PML4_OTHER, writable, false);
+    ((PageTable*)RECURSE_PML4_OTHER)->entries[RECURSE_OTHER] = page_create(original, true, false);
+
+    // do the map magic stuff
+    vmm_map_page_internal(phys_addr, &path, RECURSE_OTHER, writable, user);
+
+    // clear the OTHER gate in the original page and unmap the OTHER gate
+    ((PageTable*)RECURSE_PML4_OTHER)->entries[RECURSE_OTHER] = 0;
+    vmm_unmap_page_active(RECURSE_PML4_OTHER);
+    vmm_refresh_paging();
+}
+
+bool vmm_unmap_page_other(PageTable* original, uint64_t virt_addr) {
+    PagingPath path = GetPagingPath(virt_addr);
+
+    // set the page table to the OTHER gate
+    vmm_map_page_active(original, RECURSE_PML4_OTHER, true, false);
+    ((PageTable*)RECURSE_PML4_OTHER)->entries[RECURSE_OTHER] = page_create(original, true, false);
+
+    bool result = vmm_unmap_page_internal(GET_RECOTHER_ADDRESS(path.pl4, path.dpt, path.pd, path.pt));
+
+    // clear the OTHER gate in the original page and unmap the OTHER gate
+    ((PageTable*)RECURSE_PML4_OTHER)->entries[RECURSE_OTHER] = 0;
+    vmm_unmap_page_active(RECURSE_PML4_OTHER);
+    vmm_refresh_paging();
+    return result;
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -159,28 +301,21 @@ void init_vmm() {
 
     // prepare a pml4 table for the kernel address space
     PageTable* kernel_pml4 = vmm_new_table();
-    ks.dbg("New pml4 created at %x", kernel_pml4);
+    ks.dbg("New pml4 created at %x, size of PageTable %u", kernel_pml4, sizeof(PageTable));
 
     // identity map the first 2M of physical memory
     for (int i = 0; i < PHYSMEM_2MEGS / PAGE_SIZE; i++)
-        vmm_map_page(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, true, false);
+        vmm_map_page_early(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, true, false);
 
     // map the page itself in the 510st pml4 entry
     ks.dbg("mapping page map inside itself: %x (%x) to %x", kernel_pml4, get_rmem_address((uint64_t)kernel_pml4), RECURSE_PML4);
-    kernel_pml4->entries[RECURSE] = page_create(get_rmem_address((uint64_t)kernel_pml4), true, false);
+    kernel_pml4->entries[RECURSE_ACTIVE] = page_create(get_rmem_address((uint64_t)kernel_pml4), true, false);
 
     // map physical regions in the page
     vmm_map_physical_regions(&pmm, kernel_pml4);
 
     // map the pmm map
-    uint64_t aligned_base = (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE;
-    uint64_t aligned_size = ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE;
-    ks.dbg("Aligned base is %x, aligned length is %x", aligned_base, aligned_size);
-
-    for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
-        uint64_t addr = aligned_base + i * PAGE_SIZE;
-        vmm_map_page(kernel_pml4, get_rmem_address(addr), addr, true, false);
-    }
+    vmm_identity_map_region(kernel_pml4, (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
     
     // give CR3 the kernel pml4 address
     ks.dbg("Preparing to load pml4...");
@@ -199,11 +334,11 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
 
     // identity map the first 2M of physical memory
     for (int i = 0; i < PHYSMEM_2MEGS / PAGE_SIZE; i++)
-        vmm_map_page(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, true, false);
+        vmm_map_page_early(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, true, false);
 
     // map the page itself in the 510th pml4 entry
     ks.dbg("mapping page map inside itself: %x (%x) to %x", kernel_pml4, get_rmem_address((uint64_t)kernel_pml4), RECURSE_PML4);
-    kernel_pml4->entries[RECURSE] = page_create(get_rmem_address((uint64_t)kernel_pml4), true, false);
+    kernel_pml4->entries[RECURSE_ACTIVE] = page_create(get_rmem_address((uint64_t)kernel_pml4), true, false);
 
     // map kernel in the page
     vmm_map_physical_regions(&pmm, kernel_pml4); 
@@ -214,18 +349,11 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
     ks.dbg("Mapping CPU stack starting %x, length %x", stack_base, stack_size);
     for (int i = 0; i * PAGE_SIZE < stack_size; i++) {
         uint64_t addr = stack_base + i * PAGE_SIZE;
-        vmm_map_page(kernel_pml4, get_rmem_address(addr), addr, true, false);
+        vmm_map_page_early(kernel_pml4, get_rmem_address(addr), addr, true, false);
     }
 
     // map the pmm map
-    uint64_t aligned_base = (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE;
-    uint64_t aligned_size = ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE;
-    ks.dbg("Aligned base is %x, aligned length is %x", aligned_base, aligned_size);
-
-    for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
-        uint64_t addr = aligned_base + i * PAGE_SIZE;
-        vmm_map_page(kernel_pml4, get_rmem_address(addr), addr, true, false);
-    }
+    vmm_identity_map_region(kernel_pml4, (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
     
     // give CR3 the kernel pml4 address
     ks.dbg("Preparing to load pml4... %x %x", kernel_pml4, get_rmem_address((uint64_t)kernel_pml4));
@@ -241,14 +369,10 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 void vmm_map_page(PageTable* table, uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
-    PagingPath path = GetPagingPath(virt_addr);
-
-    PageTable *pdpt, *pd, *pt;
-    pdpt = vmm_get_or_create_entry(table, path.pl4, true, true);
-    pd = vmm_get_or_create_entry(pdpt, path.dpt, true, true);
-    pt = vmm_get_or_create_entry(pd, path.pd, true, true);
-
-    pt->entries[path.pt] = page_create(phys_addr, writable, user);
+    if (read_cr3() == table || table == 0)                // if cr3 is the given table physical address
+        vmm_map_page_active(phys_addr, virt_addr, writable, user);          // then it's the active page table
+    else 
+        vmm_map_page_other(table, phys_addr, virt_addr, writable, user);    // else it's another page table
 }
 
 // *Unmap a page given the table and a virtual address in the page
@@ -256,87 +380,35 @@ void vmm_map_page(PageTable* table, uint64_t phys_addr, uint64_t virt_addr, bool
 // @param virt_addr the virtual address in the page
 // @return true if the page was successfully unmapped, false otherwise
 bool vmm_unmap_page(PageTable* table, uint64_t virt_addr) {
-    PagingPath path = GetPagingPath(virt_addr);
-    
-    PageTable *pdpt, *pd, *pt;
-    pdpt = vmm_get_or_create_entry(table, path.pl4, true, true);
-    pd = vmm_get_or_create_entry(pdpt, path.dpt, true, true);
-    pt = vmm_get_or_create_entry(pd, path.pd, true, true);
-
-    PageTable *to_free = vmm_get_entry(pt, path.pt);
-    if (to_free == 0) return false;
-
-    page_clear_bit(to_free, PRESENT_BIT_OFFSET);
-
-    vmm_free_if_necessary_tables(table, virt_addr);
-    vmm_refresh_paging();
-    return true;
-}
-
-// *Map a physical address to a virtual page address in the current table and refresh the TLB
-// @param phys_addr the physical address to map the virtual address to
-// @param virt_addr the virtual address to map the physical address to
-// @param writable flag to indicate whether the newly created entry should be writable or not
-// @param user flags to indicate whether the newly created entry should be accessible from userspace or not
-void vmm_map_page_in_active_table(uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
-    PagingPath path = GetPagingPath(virt_addr);
-    volatile PageTableEntry* p;
-
-    p = GET_RECURSIVE_ADDRESS(RECURSE, RECURSE, RECURSE, path.pl4);
-    if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
-
-    p = GET_RECURSIVE_ADDRESS(RECURSE, RECURSE, path.pl4, path.dpt);
-    if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
-
-    p = GET_RECURSIVE_ADDRESS(RECURSE, path.pl4, path.dpt, path.pd);
-    if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
-
-    p = GET_RECURSIVE_ADDRESS(path.pl4, path.dpt, path.pd, path.pt); 
-    *p = page_create(phys_addr, writable, user); 
-
-    vmm_refresh_paging();
-}
-
-// *Unmap a page given the virtual address in the page in the active table
-// @param virt_addr the virtual address in the page
-// @return true if the page was successfully unmapped, false otherwise
-bool vmm_unmap_page_in_active_table(uint64_t virt_addr) {
-    PagingPath path = GetPagingPath(virt_addr);
-    volatile PageTableEntry* to_free = GET_RECURSIVE_ADDRESS(path.pl4, path.dpt, path.pd, path.pt); 
-    if (to_free == 0) return false;
-
-    page_clear_bit(to_free, PRESENT_BIT_OFFSET);
-    vmm_refresh_paging();
-
-    return true;
+    if (read_cr3() == table || table == 0)    // if cr3 is the given table physical address
+        vmm_unmap_page_active(virt_addr);                       // then it's the active page table
+    else 
+        vmm_unmap_page_other(table, virt_addr);                 // else it's another page table
 }
 
 // *Map a physical address to a virtual address. Works with either an offline page table or an active one
-// @param table the table to map the address into
+// @param table the table to map the address into. 0 if current
 // @param blocks the number of blocks to be mapped
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, bool writable, bool user) {
     uint64_t phys_addr = (uint64_t)pmm_alloc_series(blocks);
 
-    for (size_t i = 0; i < blocks; i++) {
-        if (table == USE_ACTIVE_PAGE) vmm_map_page_in_active_table(phys_addr + (i*PHYSMEM_BLOCK_SIZE), phys_addr + (i*PHYSMEM_BLOCK_SIZE), writable, user);
-        else vmm_map_page(table, phys_addr + (i*PHYSMEM_BLOCK_SIZE), phys_addr + (i*PHYSMEM_BLOCK_SIZE), writable, user);
-    }   
+    for (size_t i = 0; i < blocks; i++) 
+        vmm_map_page(table, phys_addr + (i*PHYSMEM_BLOCK_SIZE), phys_addr + (i*PHYSMEM_BLOCK_SIZE), writable, user);  
 
     return phys_addr;
 }
 
 // *Unmap a memory area given the virtual address and the blocks. Works with either an offline page table or an active one
-// @param table the table to unmap the address from
+// @param table the table to unmap the address from. 0 if current
 // @param addr the virtual address to unmap
 // @param blocks the number of blocks to be unmapped
 bool vmm_free_memory(PageTableEntry* table, uint64_t addr, size_t blocks) {
-    for (size_t i = 0; i < blocks; i++) {
-        if (table == USE_ACTIVE_PAGE) vmm_unmap_page_in_active_table(addr + (i*PHYSMEM_BLOCK_SIZE));
-        else vmm_unmap_page(table, addr + (i*PHYSMEM_BLOCK_SIZE));
-    }   
+    uintptr_t phys_addr = vmm_get_phys_address(addr);
+    for (size_t i = 0; i < blocks; i++) vmm_unmap_page(table, addr + (i*PHYSMEM_BLOCK_SIZE));
 
+    pmm_free_series(phys_addr, blocks);
     return true;
 }
 
@@ -345,5 +417,23 @@ bool vmm_free_memory(PageTableEntry* table, uint64_t addr, size_t blocks) {
 // @param blocks the number of blocks to be mapped
 void vmm_map_mmio(uint64_t mmio_addr, size_t blocks) {
     for (size_t i = 0; i < blocks; i++) 
-        vmm_map_page_in_active_table(mmio_addr + (i*PHYSMEM_BLOCK_SIZE), mmio_addr + (i*PHYSMEM_BLOCK_SIZE), true, false);
+        vmm_map_page(0, mmio_addr + (i*PHYSMEM_BLOCK_SIZE), mmio_addr + (i*PHYSMEM_BLOCK_SIZE), true, false);
 }
+
+// === SPACE FUNCTIONS ==========================
+
+#include <liballoc.h>
+
+PageTable* NewPageTable() {
+    PageTable* p = (PageTable*)kmalloc(sizeof(PageTable));
+    memory_set(p, 0, sizeof(PageTable));
+
+    vmm_map_kernel_region(&pmm, p);
+    vmm_identity_map_region(p, (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
+
+    return p;
+}
+
+void DestroyPageTable(PageTable* page_table) {
+    kfree(page_table);
+} 

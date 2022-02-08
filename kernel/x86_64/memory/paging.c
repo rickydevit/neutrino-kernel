@@ -17,7 +17,7 @@ void disable_paging() {
     __asm__("mov %%rbx, %%cr0" :  : "b" (~(1 << 31) & result));
 }
 
-// *Read the current value of the CR3 register
+// *Read the current value of the CR3 register (the physical address of the active PageTable)
 // @return the current value of the CR3 register
 uint64_t read_cr3() {
     uint64_t value;
