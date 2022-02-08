@@ -294,6 +294,7 @@ bool vmm_unmap_page_other(PageTable* original, uint64_t virt_addr) {
 
 void init_vmm() {
     ks.log("Initializing VMM...");
+    early = true;
 
     vmm.address_size = get_physical_address_length();
     vmm.stivale2_page_physaddr = (PageTable*) read_cr3();
@@ -322,11 +323,13 @@ void init_vmm() {
     vmm.kernel_page_physaddr = get_rmem_address((uint64_t)kernel_pml4); 
     get_bootstrap_cpu()->page_table = get_rmem_address((uint64_t)kernel_pml4);
     write_cr3(get_rmem_address((uint64_t)kernel_pml4));
+    early = false;
     ks.log("VMM has been initialized.");
 }
 
 void init_vmm_on_ap(struct stivale2_smp_info* info) {
     ks.log("Initializing VMM on CPU #%u...", info->processor_id);
+    early = true;
 
     // prepare a pml4 table for the kernel address space
     PageTable* kernel_pml4 = vmm_new_table();
@@ -359,6 +362,7 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
     ks.dbg("Preparing to load pml4... %x %x", kernel_pml4, get_rmem_address((uint64_t)kernel_pml4));
     get_cpu(info->processor_id)->page_table = get_rmem_address((uint64_t)kernel_pml4);
     write_cr3(get_rmem_address((uint64_t)kernel_pml4));
+    early = false;
     ks.log("VMM has been initialized.");
 }
 
