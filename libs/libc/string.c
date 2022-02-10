@@ -2,6 +2,7 @@
 #include "integer.h"
 #include "stdbool.h"
 #include "stdarg.h"
+#include <_null.h>
 #include "kernel/common/device/serial.h"
 
 char tbuf[32] = {0};
@@ -16,7 +17,7 @@ unsigned int strlen(const char str[]) {
     return l;
 }
 
-// *Comapre two strings [s1, s2] and return if they are equal
+// *Compare two strings [s1, s2] and return if they are equal
 // @param s1 the first string to compare
 // @param s2 the second string to compare
 // @return true if the strings are equal, false otherwise
@@ -44,6 +45,17 @@ int32_t strncmp(const char* s1, const char* s2, size_t len) {
     }
     if (len == 0) return 0;
     else return (*(unsigned char *)s1 - *(unsigned char *)s2);
+}
+
+// *Copy the [src] string to the [dest] char pointer
+// @param src the string to be copied
+// @param dest the destination string
+// @return true if the copy was successful, false otherwise
+bool strcpy(const char *src, char *dest) {
+    if (dest == NULL || src == NULL) return false;
+    char *temp = dest;
+    while(*dest++ = *src++); 
+    return true;
 }
 
 // *Convert an unsigned integer to its string equivalent
