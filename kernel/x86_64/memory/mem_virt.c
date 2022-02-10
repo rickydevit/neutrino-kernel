@@ -441,3 +441,7 @@ PageTable* NewPageTable() {
 void DestroyPageTable(PageTable* page_table) {
     kfree(page_table);
 } 
+
+void vmm_switch_space(PageTable* page_table) {
+    write_cr3(page_table);
+}

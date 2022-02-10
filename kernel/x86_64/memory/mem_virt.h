@@ -27,3 +27,4 @@ void vmm_map_mmio(uint64_t mmio_addr, size_t blocks);
 
 PageTable* NewPageTable();
 void DestroyPageTable(PageTable* page_table);
+void vmm_switch_space(PageTable* page_table);
