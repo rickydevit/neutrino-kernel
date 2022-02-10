@@ -1,12 +1,14 @@
 #include "sse.h"
-#include "stdbool.h"
-#include "stdint.h"
 #include "cpuid.h"
 #include "kservice.h"
-#include "neutrino/macros.h"
+#include "kernel/common/memory/memory.h"
+#include <neutrino/macros.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <size_t.h>
 
 bool use_xsave = false;
-uint64_t fpu_data[128] __attribute__((aligned(64)));
+uint64_t fpu_data[128] aligned(64);
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -93,4 +95,17 @@ void save_sse_context(uint8_t* context) {
 void load_sse_context(uint8_t* context) {
     if (use_xsave) _avx_load((uintptr_t)context);
     else _sse_load((uintptr_t)context);
+}
+
+// *Get the SIMD context size
+// @return the size of the SIMD context
+size_t get_sse_context_size() {
+    if (use_xsave) return get_xsave_size();
+    else return (size_t)512;
+}
+
+// *Set the given context to the initial SSE context
+// @param p the pointer to the SIMD context to initialize
+void set_initial_sse_context(void* p) {
+    memory_copy(p, fpu_data, get_sse_context_size());
 }

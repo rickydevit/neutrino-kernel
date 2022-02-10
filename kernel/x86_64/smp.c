@@ -93,10 +93,10 @@ void setup_bsp(uint8_t* bsp_stack) {
 // *Get the cpu info given the cpu id
 // @param id the cpu id to get the info from
 // @return the pointer to the cpu info structure
-struct cpu* get_cpu(uint32_t id) {
+Cpu* get_cpu(uint32_t id) {
     if (id != 0 && id >= smp.cpu_count) {
         ks.warn("Cannot find cpu with id %u", id);
-        return (struct cpu*)NULL;
+        return (Cpu*)NULL;
     }
 
     return &(smp.cpus[id]);
@@ -104,13 +104,13 @@ struct cpu* get_cpu(uint32_t id) {
 
 // *Get the cpu info about the boostrap processor
 // @return the pointer to the cpu info structure of the boostrap processor
-struct cpu* get_bootstrap_cpu() {
+Cpu* get_bootstrap_cpu() {
     return get_cpu(0);
 }
 
 // *Get the cpu info about the current processor
 // @return the pointer to the cpu info structure of the current processor
-struct cpu* get_current_cpu() {
+Cpu* get_current_cpu() {
     uint32_t id = apic_read(lapic_id);
 
     for (uint32_t i = 0; i < smp.cpu_count; i++) {
@@ -119,5 +119,5 @@ struct cpu* get_current_cpu() {
     }
 
     ks.warn("Cannot find cpu with id %u", id);
-    return (struct cpu*)NULL;
+    return (Cpu*)NULL;
 }

@@ -94,4 +94,4 @@ struct TSS_entry inline tss_entry_create(uint64_t base, uint64_t limit, uint64_t
 
 void init_gdt();
 void init_gdt_on_ap(uint32_t cpu_id);
-void init_tss(struct cpu* cpu);
+void init_tss(Cpu* cpu);

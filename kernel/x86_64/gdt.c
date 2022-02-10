@@ -61,7 +61,7 @@ void init_gdt_on_ap(uint32_t cpu_id) {
 
 // *Setup the TSS
 // @param cpu the structure information of the cpu
-void init_tss(struct cpu* cpu) {
+void init_tss(Cpu* cpu) {
     ks.dbg("Setting up TSS...");
     // tss descriptor 0x28
     struct TSS_entry entry = tss_entry_create(&(cpu->tss), (uint64_t)&(cpu->tss) + sizeof(cpu->tss), GDT_TSS_PRESENT | GDT_TSS, GDT_FLAGS_TSS);
