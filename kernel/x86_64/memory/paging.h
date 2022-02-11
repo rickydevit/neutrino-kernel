@@ -7,8 +7,10 @@
 #define RECURSE_OTHER   509UL
 #define RECURSE_PML4        (0xffffff0000000000UL)
 #define RECURSE_PML4_OTHER  (0xfffffe8000000000UL)
-#define GET_RECURSIVE_ADDRESS(p3, p2, p1, offset) (PageTableEntry*)((RECURSE_PML4) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
-#define GET_RECOTHER_ADDRESS(p3, p2, p1, offset) (PageTableEntry*)((RECURSE_OTHER) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
+
+// #define GET_RECURSIVE_ADDRESS(p3, p2, p1, offset) (PageTableEntry*)((RECURSE_PML4) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
+// #define GET_RECOTHER_ADDRESS(p3, p2, p1, offset) (PageTableEntry*)((RECURSE_OTHER) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
+#define GetRecursiveAddress(gate, p3, p2, p1, offset) (PageTableEntry*)((0xffffUL<<48) | (gate<<39) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
 
 #define PAGE_PL4_ENTRIES 512
 #define PAGE_DPT_ENTRIES 512

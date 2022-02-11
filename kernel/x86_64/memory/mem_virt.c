@@ -23,7 +23,7 @@ static bool early = true;
 // @return a pointer to the page entry requested, or 0 if not found
 PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
     if (IS_PRESENT(table->entries[entry])) 
-        return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
+        return EARLY_SHIFT(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     return 0;
 }
 
@@ -34,7 +34,7 @@ PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 // @return the address of the newly created entry
 PageTable* vmm_create_entry(PageTable* table, uint64_t entry, bool writable, bool user) {
-    PageTable* pt = (PageTable*)get_mem_address(pmm_alloc());
+    PageTable* pt = (PageTable*)EARLY_SHIFT(pmm_alloc());
     memory_set(pt, 0, PHYSMEM_BLOCK_SIZE);
     table->entries[entry] = page_create(get_rmem_address(pt), writable, user);
 
@@ -51,7 +51,7 @@ PageTable* vmm_create_entry(PageTable* table, uint64_t entry, bool writable, boo
 // @return the address of the existing table or the newly created table
 PageTable* vmm_get_or_create_entry(PageTable* table, uint64_t entry, bool writable, bool user) {
     if (IS_PRESENT(table->entries[entry])) {
-        return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
+        return EARLY_SHIFT(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     } else {
         return vmm_create_entry(table, entry, writable, user);
     }
@@ -61,7 +61,7 @@ PageTable* vmm_get_or_create_entry(PageTable* table, uint64_t entry, bool writab
 // @param virt the virtual address
 // @return the physical address associated to the virtual address
 uint64_t vmm_get_phys_address(uint64_t virt) {
-    PageTable* pdpt = vmm_get_entry(vmm.kernel_page_physaddr, (uint64_t)GET_PL4_INDEX(virt));
+    PageTable* pdpt = vmm_get_entry(read_cr3(), (uint64_t)GET_PL4_INDEX(virt));
     if (pdpt == 0) ks.warn("Physical address for virtual address %x is invalid", virt);
     
     PageTable* pdir = vmm_get_entry(pdpt, (uint64_t)GET_DPT_INDEX(virt));
@@ -76,7 +76,7 @@ uint64_t vmm_get_phys_address(uint64_t virt) {
 // *Return a new page table of 512 entries all set to not-present 
 // @return the new page table pointer
 PageTable *vmm_new_table() {
-    PageTable *pl4 = (PageTable*) get_mem_address(pmm_alloc());
+    PageTable *pl4 = (PageTable*) EARLY_SHIFT(pmm_alloc());
     memory_set(pl4, 0, PHYSMEM_BLOCK_SIZE);
     for (int i = 0; i < PAGE_PL4_ENTRIES; i++) pl4->entries[i] = 0;
 
@@ -216,16 +216,16 @@ void vmm_identity_map_region(PageTable* table, uintptr_t base, size_t size) {
 void vmm_map_page_internal(uint64_t phys_addr, PagingPath* path, uint64_t recurse_gate, bool writable, bool user) {
     volatile PageTableEntry* p;
 
-    p = GET_RECURSIVE_ADDRESS(recurse_gate, recurse_gate, recurse_gate, path->pl4);
+    p = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, recurse_gate, path->pl4);
     if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
 
-    p = GET_RECURSIVE_ADDRESS(recurse_gate, recurse_gate, path->pl4, path->dpt);
+    p = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, recurse_gate, path->pl4, path->dpt);
     if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
 
-    p = GET_RECURSIVE_ADDRESS(recurse_gate, path->pl4, path->dpt, path->pd);
+    p = GetRecursiveAddress(RECURSE_ACTIVE, recurse_gate, path->pl4, path->dpt, path->pd);
     if (!*p) *p = page_create((uint64_t)pmm_alloc(), writable, user);
 
-    p = GET_RECURSIVE_ADDRESS(path->pl4, path->dpt, path->pd, path->pt); 
+    p = GetRecursiveAddress(recurse_gate, path->pl4, path->dpt, path->pd, path->pt); 
     *p = page_create(phys_addr, writable, user); 
 }
 
@@ -255,15 +255,16 @@ void vmm_map_page_active(uint64_t phys_addr, uint64_t virt_addr, bool writable, 
 // @return true if the page was successfully unmapped, false otherwise
 bool vmm_unmap_page_active(uint64_t virt_addr) {
     PagingPath path = GetPagingPath(virt_addr);
-    return vmm_unmap_page_internal(GET_RECURSIVE_ADDRESS(path.pl4, path.dpt, path.pd, path.pt));
+    return vmm_unmap_page_internal(GetRecursiveAddress(RECURSE_ACTIVE, path.pl4, path.dpt, path.pd, path.pt));
 }
 
 void vmm_map_page_other(PageTable* original, uint64_t phys_addr, uint64_t virt_addr, bool writable, bool user) {
     PagingPath path = GetPagingPath(virt_addr);
 
     // set the page table to the OTHER gate
-    vmm_map_page_active(original, RECURSE_PML4_OTHER, writable, false);
+    vmm_map_page_active(original, RECURSE_PML4_OTHER, true, false);
     ((PageTable*)RECURSE_PML4_OTHER)->entries[RECURSE_OTHER] = page_create(original, true, false);
+    vmm_refresh_paging();
 
     // do the map magic stuff
     vmm_map_page_internal(phys_addr, &path, RECURSE_OTHER, writable, user);
@@ -281,7 +282,7 @@ bool vmm_unmap_page_other(PageTable* original, uint64_t virt_addr) {
     vmm_map_page_active(original, RECURSE_PML4_OTHER, true, false);
     ((PageTable*)RECURSE_PML4_OTHER)->entries[RECURSE_OTHER] = page_create(original, true, false);
 
-    bool result = vmm_unmap_page_internal(GET_RECOTHER_ADDRESS(path.pl4, path.dpt, path.pd, path.pt));
+    bool result = vmm_unmap_page_internal(GetRecursiveAddress(RECURSE_OTHER, path.pl4, path.dpt, path.pd, path.pt));
 
     // clear the OTHER gate in the original page and unmap the OTHER gate
     ((PageTable*)RECURSE_PML4_OTHER)->entries[RECURSE_OTHER] = 0;
@@ -431,9 +432,10 @@ void vmm_map_mmio(uint64_t mmio_addr, size_t blocks) {
 PageTable* NewPageTable() {
     PageTable* p = (PageTable*)kmalloc(sizeof(PageTable));
     memory_set(p, 0, sizeof(PageTable));
+    p->entries[RECURSE_ACTIVE] = page_create(vmm_get_phys_address(p), true, false);
 
-    vmm_map_kernel_region(&pmm, p);
-    vmm_identity_map_region(p, (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
+    vmm_map_kernel_region(&pmm, vmm_get_phys_address(p));
+    vmm_identity_map_region(vmm_get_phys_address(p), (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
 
     return p;
 }

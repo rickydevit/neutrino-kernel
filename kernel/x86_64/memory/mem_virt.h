@@ -6,6 +6,7 @@
 #include <libs/limine/stivale2.h>
 
 #define MAP_EARLY_FUNC(page, paddr, vaddr, wr, us) (early) ? vmm_map_page_early(page, paddr, vaddr, wr, us) : vmm_map_page(page, paddr, vaddr, wr, us);
+#define EARLY_SHIFT(addr)                          (early) ? get_mem_address(addr) : addr
 
 struct memory_virtual {
     uint8_t address_size; 
