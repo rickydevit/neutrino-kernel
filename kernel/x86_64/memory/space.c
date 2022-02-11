@@ -32,7 +32,7 @@ void DestroySpace(Space* space) {
 
 void space_switch(Space* space) {
     lock(&space->lock);
-    vmm_space_switch(space->page_table);
+    vmm_switch_space(space->page_table);
     unlock(&space->lock);
 }
 
