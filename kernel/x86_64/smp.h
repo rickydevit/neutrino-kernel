@@ -5,8 +5,6 @@
 #include <limine/stivale2.h>
 #include <stdint.h>
 
-#define CPU_STACK_SIZE 0x2000
-
 struct __cpu {
     uint32_t id;                // CPU id
     uint32_t lapic_id;          // CPU lapic id
