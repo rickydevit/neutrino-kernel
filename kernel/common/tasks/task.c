@@ -16,12 +16,12 @@ void task_set_stack(Task* task) {
 
 // === PUBLIC FUNCTIONS =========================
 
-Task* NewTask(const char* name, bool user) {
+Task* NewTask(char* name, bool user) {
     Task* task = (Task*)kmalloc(sizeof(Task));
 
     if (strlen(name) > TASK_NAME_MAX) {
         ks.warn("Task name is longer than the maximum allowed (%i). The name will be truncated.", TASK_NAME_MAX);
-        memory_copy(name, task->name, TASK_NAME_MAX);
+        memory_copy((uint8_t*)name, (uint8_t*)task->name, TASK_NAME_MAX);
     } else {
         strcpy(name, task->name);
     }

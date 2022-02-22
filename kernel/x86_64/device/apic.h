@@ -83,3 +83,5 @@ uint32_t apic_read(enum apic_register reg);
 void map_apic_into_space();
 void apic_redirect_irq(uint32_t cpu, uint8_t irq, uint32_t status);
 void apic_set_legacy_irq_redirect();
+
+void init_apic_timer();

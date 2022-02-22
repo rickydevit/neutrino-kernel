@@ -41,5 +41,5 @@ typedef struct __task {
 
 #define IsTaskRunnable(task)    ((task)->status == TASK_READY || (task)->status == TASK_SYSCALL)
 
-Task* NewTask(const char* name, bool user);
+Task* NewTask(char* name, bool user);
 void DestroyTask(Task* task);

@@ -1,9 +1,9 @@
 #include "kservice.h"
-#include "stdarg.h"
-#include "string.h"
-#include "stdint.h"
 #include "kernel/common/device/serial.h"
 #include "interrupts.h"
+#include <stdarg.h>
+#include <string.h>
+#include <stdint.h>
 #include <neutrino/lock.h>
 
 // Private functions declarations
