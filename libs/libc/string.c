@@ -54,7 +54,7 @@ int32_t strncmp(const char* s1, const char* s2, size_t len) {
 bool strcpy(const char *src, char *dest) {
     if (dest == NULL || src == NULL) return false;
     char *temp = dest;
-    while(*dest++ = *src++); 
+    while(*temp++ = *src++); 
     return true;
 }
 
@@ -71,7 +71,7 @@ char* itoa(unsigned i, unsigned base, char* buf) {
     if (i == 0 || base > 16) {
         buf[0] = '0';
         buf[1] = '\0';
-        return;
+        return nullptr;
     }
 
     while (i != 0) {
@@ -116,7 +116,7 @@ char* ltoa(uint64_t i, unsigned base, char* buf) {
     if (i == 0 || base > 16) {
         buf[0] = '0';
         buf[1] = '\0';
-        return;
+        return nullptr;
     }
 
     while (i != 0) {
@@ -240,7 +240,7 @@ char* vstrf(const char* istr, char buffer[], va_list args) {
                     }
                     default:
                         va_end(args);
-                        return 1;
+                        return (char*)1;
                 }
                 break;
 
