@@ -4,6 +4,7 @@
 #include "stdint.h"
 #include "kernel/common/device/serial.h"
 #include "interrupts.h"
+#include <neutrino/lock.h>
 
 // Private functions declarations
 
@@ -13,6 +14,8 @@ void klog(char* message, ...);
 void kwarn(char* message, ...);
 void kerr(char* message, ...);
 void kpanic(Fatal fatal_error, ...);
+
+static Lock l = NewLock;
 
 // Public functions
 
@@ -53,6 +56,7 @@ void kput(char* message, ...) {
 }
 
 void klog(char* message, ...) {
+    lock(&l);
     disable_interrupts();
     va_list args; va_start(args, message);
     char buf[2048] = {0};
@@ -60,9 +64,11 @@ void klog(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
     enable_interrupts();
+    unlock(&l);
 }
 
 void kdbg(char* message, ...) {
+    lock(&l);
     disable_interrupts();
     va_list args; va_start(args, message);
     char buf[2048] = {0};
@@ -70,9 +76,11 @@ void kdbg(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
     enable_interrupts();
+    unlock(&l);
 }
 
 void kwarn(char* message, ...) {
+    lock(&l);
     disable_interrupts();
     va_list args; va_start(args, message);
     char buf[2048] = {0};
@@ -80,9 +88,11 @@ void kwarn(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
     enable_interrupts();
+    unlock(&l);
 }
 
 void kerr(char* message, ...) {
+    lock(&l);
     disable_interrupts();
     va_list args; va_start(args, message);
     char buf[2048] = {0};
@@ -90,9 +100,11 @@ void kerr(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
     enable_interrupts();
+    unlock(&l);
 }
 
 void kpanic(Fatal fatal_error, ...) {
+    lock(&l);
     va_list args; va_start(args, fatal_error);
     char buf[2048] = {0}, cbuf[32] = {0};
     ltoa((uint64_t)fatal_error.code, 16, cbuf);
