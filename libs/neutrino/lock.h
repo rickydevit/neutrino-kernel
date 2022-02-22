@@ -7,7 +7,10 @@ typedef struct __lock {
     int flag;
 } Lock;
 
-#define NewLock (Lock){UNLOCKED}
+#define NewLock         (Lock){UNLOCKED}
+#define LockOperation(l, operation)         lock(&l);           \
+                                            operation;          \
+                                            unlock(&l);
 
 void lock_init(Lock *lock);
 void lock(Lock* lock);
