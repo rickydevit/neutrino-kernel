@@ -10,6 +10,7 @@
 
 void task_set_stack(Task* task) {
     task->stack = (uintptr_t)kmalloc(PROCESS_STACK_SIZE);
+    task->context->regs.rsp = task->stack;
     space_map(task->space, task->stack, PROCESS_STACK_SIZE, PROCESS_STACK_BASE);
 }
 

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <neutrino/lock.h>
+#include <neutrino/macros.h>
 #include <_null.h>
 #include "context.h"
 #include "../memory/space.h"
@@ -23,12 +24,17 @@ typedef enum __task_status {
 typedef struct __task {
     uint32_t pid;
     char name[TASK_NAME_MAX];
+
     TaskStatus status;
+    struct {
+        uint16_t cpu_id;
+        bool affinity_ignored;
+    } packed cpu_affinity;
 
     Lock lock;
     bool user;
-    Context* context;
-    Space* space;
+    Context* context;       // ! must SAVE before every scheduler cycle and RESTORE thereafter
+    Space* space;           // ! must SWITCH after every scheduler cycle
 
     uintptr_t stack;
 } Task;
