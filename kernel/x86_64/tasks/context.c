@@ -1,5 +1,6 @@
 #include "context.h"
 #include "../sse.h"
+#include "../memory/mem_virt.h"
 #include "kernel/common/memory/memory.h"
 #include "kernel/common/tasks/context.h"
 #include <liballoc.h>
@@ -21,7 +22,7 @@ void DestroyContext(Context* context) {
     kfree(context);
 }
 
-void context_init(Context* context, uintptr_t ip, uintptr_t sp, uintptr_t ksp, ContextFlags cflags) {
+void volatile_fun context_init(Context* context, uintptr_t ip, uintptr_t sp, uintptr_t ksp, ContextFlags cflags) {
     Registers regs;
 
     regs.rip = ip;
@@ -35,7 +36,7 @@ void context_init(Context* context, uintptr_t ip, uintptr_t sp, uintptr_t ksp, C
         regs.rbp = 0;
     }
 
-    regs.rsp = sp;
+    regs.rsp = (uint64_t)sp;
     context->regs = regs;
     // context->syscall_kstack = ksp; // todo implement syscalls
 }
