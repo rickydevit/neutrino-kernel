@@ -1,9 +1,12 @@
 #pragma once
-#include "stdint.h"
+#include <stdint.h>
+#include <stdbool.h>
 #include "acpi.h"
 
 #define LAPIC_ENABLE (1 << 10)
 #define LAPIC_TIMER_MASKED (1 << 16)
+
+#define LapicIDCorrection(val) (apic.x2apic_enabled) ? (val) : (val > 24)
 
 enum apic_register {
     lapic_id =  0x20,
@@ -65,6 +68,7 @@ struct io_apic_version_table {
 
 struct apic_t {
     uint64_t apic_addr;
+    bool x2apic_enabled;
 
     uint16_t ioapics_count;
     MadtApicIOApic* ioapics[64];

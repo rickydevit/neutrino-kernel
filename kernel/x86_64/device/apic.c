@@ -9,6 +9,7 @@
 #include "kernel/common/device/port.h"
 #include "time/hpet.h"
 #include "time/pit.h"
+#include <neutrino/macros.h>
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -105,7 +106,7 @@ void apic_set_raw_redirect(uint8_t vector, uint32_t target_gsi, uint16_t flags, 
 // === PUBLIC FUNCTIONS =========================
 
 // *Intialize the APIC
-void init_apic() {
+void volatile_fun init_apic() {
     ks.log("Initializing APIC...");
 
     disable_interrupts();
@@ -113,6 +114,8 @@ void init_apic() {
     struct MADT *madt = (struct MADT*)find_sdt_entry("APIC");
     if (madt->lapic_address == 0) ks.fatal(FatalError(NO_LAPIC, "Cannot find LAPIC address"));
     apic.apic_addr = madt->lapic_address;
+
+    apic.x2apic_enabled = false;
 
     map_apic_into_space();      // map the LAPIC address into space
     enable_apic();              // enable the APIC
@@ -126,7 +129,7 @@ void init_apic() {
 }
 
 // *Map the LAPIC into the active table
-void map_apic_into_space() {
+void volatile_fun map_apic_into_space() {
     vmm_map_mmio((uint64_t)apic.apic_addr, 3);
 }
 
@@ -171,7 +174,7 @@ void apic_write(uint32_t reg, uint32_t value) {
 // @param reg the APIC register to read from
 // @return the value read from the specified APIC register
 uint32_t apic_read(enum apic_register reg) {
-    return *((volatile uint32_t *)((uint64_t)apic.apic_addr + reg));
+    return *((volatile uint32_t *)((uintptr_t)apic.apic_addr + reg));
 }
 
 // *Send a EOI to the APIC
@@ -184,7 +187,7 @@ void init_apic_timer() {
     apic_write(timer_div, apic_timer_divide_by_16);
     apic_write(timer_init_counter, 0xffffffff);
 
-    if (has_hpet) hpet_sleep(10);
+    if (has_hpet()) hpet_sleep(10);
     else pit_sleep(10);
 
     apic_write(lvt_timer, LAPIC_TIMER_MASKED);

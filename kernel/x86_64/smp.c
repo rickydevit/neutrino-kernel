@@ -28,7 +28,7 @@ void start_cpu(struct stivale2_smp_info* smp_info) {
     map_apic_into_space();
     enable_apic();
 
-    if (has_hpet) vmm_map_mmio(hpet.base, 1);
+    if (has_hpet()) vmm_map_mmio(hpet.base, 1);
     init_apic_timer();
 
     cpu_started = true;
@@ -43,6 +43,7 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
     ks.log("Initializing other CPUs...");
     ks.dbg("Found %i CPUs. x2APIC is %c", smp_struct->cpu_count, smp_struct->flags & 1 ? "enabled" : "disabled");
 
+    apic.x2apic_enabled = smp_struct->flags & 1;
     smp.cpu_count = (smp_struct->cpu_count > MAX_CPU ? MAX_CPU : smp_struct->cpu_count);
 
     // save cpus
@@ -58,7 +59,7 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
         smp.cpus[i].stack_interrupt = pmm_alloc_series(CPU_STACK_SIZE / PHYSMEM_BLOCK_SIZE);
         smp.cpus[i].tss.ist1 = (uint64_t)smp.cpus[i].stack_interrupt + CPU_STACK_SIZE;
 
-        vmm_map_mmio(smp.cpus[i].stack_interrupt, 1);
+        // vmm_map_page(smp.cpus[i].stack_interrupt, 1);
 
         // skip the bsp
         if (cpu_info.lapic_id == smp_struct->bsp_lapic_id) continue;
@@ -111,13 +112,13 @@ Cpu* get_bootstrap_cpu() {
 // *Get the cpu info about the current processor
 // @return the pointer to the cpu info structure of the current processor
 Cpu* get_current_cpu() {
-    uint32_t id = apic_read(lapic_id);
+    uint32_t id = LapicIDCorrection(apic_read(lapic_id));
 
     for (uint32_t i = 0; i < smp.cpu_count; i++) {
         if (smp.cpus[i].lapic_id == id)
             return &(smp.cpus[i]);
     }
 
-    ks.warn("Cannot find cpu with id %u", id);
+    ks.warn("Cannot find cpu with lapic id %u", id);
     return (Cpu*)NULL;
 }
