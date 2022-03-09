@@ -13,10 +13,11 @@
 #include "kernel/common/device/serial.h"
 #include "kernel/common/video/display.h"
 #include "kernel/common/kservice.h"
+#include "kernel/common/tasks/scheduler.h"
 #include <size_t.h>
 #include <libs/limine/stivale2hdr.h>
 
-void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, struct memory_physical_region* entries) {
+void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, MemoryPhysicalRegion* entries) {
     uint32_t memmap_entries = memmap_str_tag->entries;
     int i = 0, lookahead = 1;
     
@@ -53,11 +54,9 @@ void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, struct
 }
 
 void _kstart(struct stivale2_struct *stivale2_struct) {
-    struct stivale2_struct_tag_terminal *term_str_tag;
-    struct stivale2_struct_tag_framebuffer *framebuf_str_tag;
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     struct stivale2_struct_tag_smp *smp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
-    struct memory_physical_region entries[memmap_str_tag->entries];
+    MemoryPhysicalRegion entries[memmap_str_tag->entries];
 
     disable_interrupts();
 
@@ -78,16 +77,17 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_apic();
     init_hpet();
     init_apic_timer();
-    init_smp((struct stivale2_struct_tag_smp*)get_rmem_address(smp_str_tag));
+    init_smp((struct stivale2_struct_tag_smp*)get_rmem_address((uintptr_t)smp_str_tag));
 
     enable_interrupts();
 
     //? -----------------------------------------
     for (;;) asm volatile("hlt");
 
+    /*
     //? Display driver setup
-    term_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_TERMINAL_ID);
-    framebuf_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
+    struct stivale2_struct_tag_terminal *term_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_TERMINAL_ID);
+    struct stivale2_struct_tag_framebuffer *framebuf_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
     uint32_t checker_result = check_framebuffer_or_terminal(framebuf_str_tag, term_str_tag);
 
     if (checker_result == CHECKER_NEITHER_AVAILABLE) {
@@ -120,4 +120,5 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
 
     //TODO: implement user-space (final goal)
     for (;;) asm("hlt");
+    */
 }

@@ -7,6 +7,8 @@
 
 // === PRIVATE FUNCTIONS ========================
 
+// --- Bitmap functions -------------------------
+
 // *Set a bit in the memory bitmap
 // @param bit the bit to set
 void pmm_map_set(int bit) {
@@ -22,54 +24,51 @@ void pmm_map_unset(int bit) {
 // *Get the value of the memory bitmap at the position [bit]
 // @param bit the bit to get the value from
 // @return true if the bit is set, false otherwise
-bool pmm_map_get(int bit) {
+BlockState pmm_map_get(int bit) {
     return (pmm._map[bit / 32] & (1 << (bit % 32)));
 }
 
 // *Find the first free slot in the memory starting from the specified block, and return it
 // @param from_block the block to start searching from
 // @return the number of the bit representing first free slot in the memory
-int32_t pmm_map_first_free_starting_from(uint64_t from_block) {
-	for (uint32_t i= from_block; i < pmm.total_blocks/32; i++)
+BlockPosition pmm_map_first_free_starting_from(BlockPosition from_block) {
+	for (BlockPosition i= from_block; i < pmm.total_blocks/32; i++)
 		if (pmm._map[i] != 0xffffffff)
 			for (int j=0; j<32; j++) {		//! test each bit in the dword
  				if (!(pmm._map[i] & 1 << j)) return i*4*8+j;
 			}
  
-	return -1;
+	return BLOCKPOSITION_INVALID;
 }
 
 // *Find the first free slot in the memory, and return it
 // @return the number of the bit representing first free slot in the memory
-int32_t pmm_map_first_free() {
-	// int32_t free_after_map = pmm_map_first_free_starting_from(((uint64_t)pmm._map + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
-	// if (free_after_map != -1) return free_after_map;
-
-	int32_t free_from_start = pmm_map_first_free_starting_from(0);
+BlockPosition pmm_map_first_free() {
+	BlockPosition free_from_start = pmm_map_first_free_starting_from(0);
 	if (free_from_start != -1) return free_from_start;
  
-	return -1;
+	return BLOCKPOSITION_INVALID;
 }
 
 // *Find the first free series of slots in the memory starting from the specified block, and return the first of them 
 // @param size the size of the series to find
 // @param from_block the block to start searching from
 // @return the first free bit of the series
-int32_t pmm_map_first_free_series_starting_from(size_t size, uint32_t from_block) {
-	for (uint32_t i=from_block; i < pmm.total_blocks/32; i++)
+BlockPosition pmm_map_first_free_series_starting_from(size_t size, BlockPosition from_block) {
+	for (BlockPosition i=from_block; i < pmm.total_blocks/32; i++)
 		if (pmm._map[i] != 0xffffffff)
 			for (int j=0; j<32; j++) {	//! test each bit in the dword
 
 				int bit = 1<<j;
-				if (! (pmm._map[i] & bit) ) {
+				if (!(pmm._map[i] & bit)) {
 
 					int startingBit = i*32;
 					startingBit+=bit;		//get the free bit in the dword at index i
 
 					uint32_t free=0; //loop through each bit to see if its enough space
-					for (uint32_t count=0; count<=size;count++) {
+					for (BlockPosition count=0; count<=size;count++) {
 
-						if (! pmm_map_get (startingBit+count) )
+						if (! pmm_map_get(startingBit+count))
 							free++;	// this bit is clear (free frame)
 
 						if (free==size)
@@ -78,52 +77,55 @@ int32_t pmm_map_first_free_series_starting_from(size_t size, uint32_t from_block
 				}
 			}
 
-	return -1;
+	return 	BLOCKPOSITION_INVALID;
 }
 
 // *Find the first free series of slots in the memory, and return the first of them 
 // @param size the size of the series to find
 // @return the first free bit of the series
-int32_t pmm_map_first_free_series(size_t size) {
+BlockPosition pmm_map_first_free_series(size_t size) {
     if (size==0) return -1;
 	if (size==1) return pmm_map_first_free();
 
-	int32_t free_after_map = pmm_map_first_free_series_starting_from(size, (((uint64_t)pmm._map) + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
-	if (free_after_map != -1) return free_after_map;
+	BlockPosition free_after_map = pmm_map_first_free_series_starting_from(size, (((uint64_t)pmm._map) + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
+	if (free_after_map != BLOCKPOSITION_INVALID) return free_after_map;
 
-	int32_t free_from_start = pmm_map_first_free_series_starting_from(size, 0);
-	if (free_from_start != -1) return free_from_start;
+	BlockPosition free_from_start = pmm_map_first_free_series_starting_from(size, 0);
+	if (free_from_start != BLOCKPOSITION_INVALID) return free_from_start;
 
 	return -1;
 }
+
+void pmm_update_blocks(uint32_t used_block_increment) {
+	pmm.used_blocks += used_block_increment;
+	pmm.usable_blocks -= used_block_increment;
+}
+
+// --- Region functions -------------------------
 
 // *Mark a region starting at [base_addr] of size [size] as free
 // @param base_addr the base address of the region to be marked as free
 // @param size the size of the region to be marked as free
 void pmm_mark_region_free(uint64_t base_addr, size_t size) {
-	int align = base_addr / PHYSMEM_BLOCK_SIZE;
-	int blocks = size / PHYSMEM_BLOCK_SIZE;
+	int align = Align(base_addr);
+	int blocks = Align(size);
  
 	for (; blocks>0; blocks--) {
 		pmm_map_unset(align++);
-		pmm.used_blocks--;
-		pmm.usable_blocks++;
+		pmm_update_blocks(-1);
 	}
- 
-	pmm_map_set(0);	//first block is always set. This insures allocs cant be 0
 }
 
 // *Mark a region starting at [base_addr] of size [size] as allocated
 // @param base_addr the base address of the region to be marked as allocated
 // @param size the size of the region to be marked as allocated
 void pmm_mark_region_used(uint64_t base_addr, size_t size) {
-	int align = base_addr / PHYSMEM_BLOCK_SIZE;
-	int blocks = size / PHYSMEM_BLOCK_SIZE;
+	int align = Align(base_addr);
+	int blocks = Align(size);
  
 	for (; blocks>0; blocks--) {
 		pmm_map_set(align++);
-		pmm.used_blocks++;
-		pmm.usable_blocks--;
+		pmm_update_blocks(+1);
 	}
 }
 
@@ -142,14 +144,21 @@ char* pmm_region_type_string(memory_physical_region_type type) {
 }
 
 void pmm_print_memory_map(uint64_t base_addr, size_t size) {
-	int align = base_addr / PHYSMEM_BLOCK_SIZE;
+	int align = Align(base_addr);
 
 	ks.dbg("Memory map from %x", base_addr);
- 	ks._put("%x\t", base_addr);
+ 	ks._put("{%x - %x}\t", base_addr, base_addr+64*PHYSMEM_BLOCK_SIZE);
 	for (int block = 0; block < size; block++) {
-		if (block % 64 == 0 && block != 0) ks._put("\n%x\t%b", base_addr+block*PHYSMEM_BLOCK_SIZE, pmm_map_get(align+block));
-		else if (block % 32 == 0 && block != 0) ks._put("\t%b", pmm_map_get(align+block));
-		else ks._put("%b", pmm_map_get(align+block));
+		if (block % 64 == 0 && block != 0) 
+			ks._put("\n{%x - %x}\t%b", 
+					base_addr+(block*PHYSMEM_BLOCK_SIZE), 
+					base_addr+(block*PHYSMEM_BLOCK_SIZE)+(64*PHYSMEM_BLOCK_SIZE), 
+					pmm_map_get(align+block)
+					);
+		else if (block % 32 == 0 && block != 0) 
+			ks._put("\t%b", pmm_map_get(align+block));
+		else
+			ks._put("%b", pmm_map_get(align+block));
 	}
 
 	ks._put("\n");
@@ -165,7 +174,7 @@ void inline pmm_fatal() {
 // *Initialize the physical memory manager
 // @param entries a valid array of memory_physical_region entries
 // @param size the size of the array of memory_physical_region
-void init_pmm(struct memory_physical_region *entries, uint32_t size) {
+void init_pmm(MemoryPhysicalRegion* entries, uint32_t size) {
     ks.log("Initializing PMM...");
     
     pmm.regions = entries;
@@ -177,9 +186,9 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
 	pmm._map_size = pmm.total_blocks / PHYSMEM_MAP_BLOCKS_PER_UNIT;
 
     for (int i = 0; i < size; i++) {
-        struct memory_physical_region entry = entries[i];
+        MemoryPhysicalRegion entry = entries[i];
 
-		ks.dbg("%i: base %x length %u type %c", i, entry.base, entry.size, pmm_region_type_string(entry.type));
+		ks.dbg("Region #%i: base: %x length: %u type: %c", i, entry.base, entry.size, pmm_region_type_string(entry.type));
         
 		// find the first usable region and set it as the base address of the memory bitmap
         if (entry.type == MEMORY_REGION_USABLE && pmm._map == 0 && entry.size >= pmm._map_size && entry.base >= PHYSMEM_2MEGS) {
@@ -196,6 +205,7 @@ void init_pmm(struct memory_physical_region *entries, uint32_t size) {
 
 	// mark the memory bitmap itself as used
 	pmm_mark_region_used(get_rmem_address((uint64_t)pmm._map), pmm._map_size);
+	pmm_map_set(0);	//first block is always set. This insures allocs cant be 0
 
 	// mark non-usable regions as used
 	for (int i = 0; i < size; i++) {
@@ -218,10 +228,7 @@ uintptr_t pmm_alloc() {
 	if (block == -1) pmm_fatal();
 	
 	pmm_map_set(block);
-	pmm.used_blocks++;
-	pmm.usable_blocks--;
-
-	// ks.dbg("pmm_alloc() : first_free_block: %u return_address: %x", block, (uintptr_t)(block*PHYSMEM_BLOCK_SIZE));
+	pmm_update_blocks(+1);
 
 	return (uintptr_t)(block*PHYSMEM_BLOCK_SIZE);
 }
@@ -238,11 +245,10 @@ uintptr_t pmm_alloc_zero() {
 // @param addr the address of the physical memory block to free
 void pmm_free(uintptr_t addr) {
 	uint32_t p = (uint32_t)addr;
-	uint32_t block = p / PHYSMEM_BLOCK_SIZE;
+	uint32_t block = Align(p);
 
 	pmm_map_unset(block);
-	pmm.used_blocks--;
-	pmm.usable_blocks++;
+	pmm_update_blocks(-1);
 }
 
 // *Allocate a series physical memory blocks and return the physical address of the assigned region
@@ -255,10 +261,8 @@ uintptr_t pmm_alloc_series(size_t size) {
 	if (block == -1) pmm_fatal();
 
 	for (uint32_t i=0; i<size; i++) pmm_map_set(block+i);
-	pmm.used_blocks += size;
-	pmm.usable_blocks -= size;
+	pmm_update_blocks(size);
 
-	// ks.dbg("pmm_alloc_series() : size: %u first_free_block: %u return_address: %x", size, block, (uintptr_t)(block*PHYSMEM_BLOCK_SIZE));
 	return (uintptr_t)(block*PHYSMEM_BLOCK_SIZE);
 }
 
@@ -267,20 +271,19 @@ uintptr_t pmm_alloc_series(size_t size) {
 // @param addr the address of the physical memory block to free
 void pmm_free_series(uintptr_t addr, size_t size) {
 	uint32_t p = (uint32_t)addr;
-	uint32_t block = p / PHYSMEM_BLOCK_SIZE;
+	uint32_t block = Align(p);
 
 	for (uint32_t i=0; i<size; i++) pmm_map_unset(block+i);
-	pmm.used_blocks -= size;
-	pmm.usable_blocks += size;
+	pmm_update_blocks(-size);
 }
 
 // *Get the base address of a memory region given the type. Only return the first region found
 // @param type the type of memory region to get
 // @return the base address of the memory region, 0 if not found 
-struct memory_physical_region pmm_get_region_by_type(memory_physical_region_type type) {
+MemoryPhysicalRegion pmm_get_region_by_type(memory_physical_region_type type) {
 	for (uint32_t i = 0; i < pmm.regions_count; i++) {
 		if (pmm.regions[i].type != type) continue;
-		return (struct memory_physical_region)pmm.regions[i];
+		return (MemoryPhysicalRegion)pmm.regions[i];
 	}
 
 	return pmm.regions[0];
