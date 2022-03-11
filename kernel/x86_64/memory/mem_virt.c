@@ -60,7 +60,7 @@ PageTable* vmm_get_or_create_entry(PageTable* table, uint64_t entry, bool writab
 // *Return the physical address given a virtual address
 // @param virt the virtual address
 // @return the physical address associated to the virtual address
-uint64_t vmm_get_phys_address(uint64_t virt) {
+uint64_t vmm_virt_to_phys(uint64_t virt) {
     PageTable* pdpt = vmm_get_entry(read_cr3(), (uint64_t)GET_PL4_INDEX(virt));
     if (pdpt == 0) ks.warn("Physical address for virtual address %x is invalid", virt);
     
@@ -185,7 +185,7 @@ void vmm_map_physical_regions(struct memory_physical* phys, PageTable* page) {
     }
 }
 
-void vmm_map_kernel_region(struct memory_physical* phys, PageTable* page) {
+void volatile_fun vmm_map_kernel_region(struct memory_physical* phys, PageTable* page) {
         for (int ind = 0; ind < phys->regions_count; ind++) {
         if (phys->regions[ind].type != MEMORY_REGION_KERNEL) continue;
 
@@ -204,7 +204,7 @@ void vmm_map_kernel_region(struct memory_physical* phys, PageTable* page) {
 // @param table the PageTable pointer to the table to map addresses to
 // @param base the base address of the memory region
 // @param size the size of the memory region 
-void vmm_identity_map_region(PageTable* table, uintptr_t base, size_t size) {
+void volatile_fun vmm_identity_map_region(PageTable* table, uintptr_t base, size_t size) {
     for (int i = 0; i * PAGE_SIZE < size; i++) {
         uint64_t addr = base + i * PAGE_SIZE;
         MAP_EARLY_FUNC(table, get_rmem_address(addr), addr, true, false);
@@ -396,6 +396,7 @@ bool vmm_unmap_page(PageTable* table, uint64_t virt_addr) {
 // @param blocks the number of blocks to be mapped
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
+// @return the physical address of the newly allocated memory
 uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, bool writable, bool user) {
     uint64_t phys_addr = (uint64_t)pmm_alloc_series(blocks);
 
@@ -410,7 +411,7 @@ uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, bool writabl
 // @param addr the virtual address to unmap
 // @param blocks the number of blocks to be unmapped
 bool vmm_free_memory(PageTableEntry* table, uint64_t addr, size_t blocks) {
-    uintptr_t phys_addr = vmm_get_phys_address(addr);
+    uintptr_t phys_addr = vmm_virt_to_phys(addr);
     for (size_t i = 0; i < blocks; i++) vmm_unmap_page(table, addr + (i*PHYSMEM_BLOCK_SIZE));
 
     pmm_free_series(phys_addr, blocks);
@@ -429,19 +430,22 @@ void vmm_map_mmio(uint64_t mmio_addr, size_t blocks) {
 
 #include <liballoc.h>
 
-PageTable* NewPageTable() {
-    PageTable* p = (PageTable*)kmalloc(sizeof(PageTable));
+PageTable* volatile_fun NewPageTable() {
+    PageTable* p = (PageTable*)vmm_allocate_memory(get_current_cpu()->page_table, 1, true, false);
     memory_set(p, 0, sizeof(PageTable));
-    p->entries[RECURSE_ACTIVE] = page_create(vmm_get_phys_address(p), true, false);
+    p->entries[RECURSE_ACTIVE] = page_create(p, true, false);
 
-    vmm_map_kernel_region(&pmm, vmm_get_phys_address(p));
-    vmm_identity_map_region(vmm_get_phys_address(p), (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
+    vmm_map_kernel_region(&pmm, vmm_virt_to_phys(p));
+    vmm_identity_map_region(p, (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
+
+    for (uint32_t i = 0; i < PAGE_TAB_ENTRIES; i++)
+        ks.dbg("%x - page[%u]: %x",&p->entries[i], i, p->entries[i]);
 
     return p;
 }
 
 void DestroyPageTable(PageTable* page_table) {
-    kfree(page_table);
+    vmm_free_memory(get_current_cpu()->page_table, page_table, 1);
 } 
 
 void vmm_switch_space(PageTable* page_table) {

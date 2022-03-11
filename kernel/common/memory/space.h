@@ -8,6 +8,8 @@ typedef struct __memory_range {
     size_t size;
 } MemoryRange;
 
+#define RangeEnd(range)  (range.base + range.size)
+
 typedef struct __memory_range_node {
         MemoryRange range;
         struct __memory_range_node* next;
