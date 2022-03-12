@@ -461,9 +461,6 @@ PageTable* volatile_fun NewPageTable() {
         
     p->entries[RECURSE_ACTIVE] = page_create(vmm_virt_to_phys(p), true, false);
 
-    for (uint32_t i = 256; i < PAGE_ENTRIES; i++)
-        ks.dbg("%x - page[%u]: %x",&p->entries[i], i, p->entries[i]);
-
     return vmm_virt_to_phys(p);
 }
 
