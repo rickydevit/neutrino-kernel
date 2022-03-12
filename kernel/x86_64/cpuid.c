@@ -48,7 +48,7 @@ uint8_t get_physical_address_length() {
 
 size_t get_xsave_size() {
     uint32_t ecx, _;
-    execute_cpuid(13, &_, &_, &ecx, &_);
+    asm volatile("cpuid" : "=c"(ecx) : "a"(0xd), "c"(0));
     return (size_t)ecx;
 }
 
@@ -60,8 +60,8 @@ bool get_cpu_feature(CPU_FEATURE feature, bool use_ecx) {
     uint32_t eax, ebx, ecx, edx;
     execute_cpuid(1, &eax, &ebx, &ecx, &edx);
 
-    if (use_ecx) return (bool)(ecx && feature);
-    else return (bool)(edx && feature);
+    if (use_ecx) return (bool)((ecx & feature) != 0);
+    else return (bool)((edx & feature) != 0);
     
     return false;
 }
