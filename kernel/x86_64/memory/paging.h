@@ -49,6 +49,7 @@ typedef struct __paging_path {
 } PagingPath;
 
 #define GetPagingPath(virt_addr) (PagingPath){GET_PL4_INDEX(virt_addr), GET_DPT_INDEX(virt_addr), GET_DIR_INDEX(virt_addr), GET_TAB_INDEX(virt_addr)}
+#define GetAddress(paging_path, page)  (uintptr_t)((0xffffUL<<48) | (paging_path.pl4<<39) | (paging_path.dpt<<30) | (paging_path.pd<<21) | (paging_path.pt<<12)) + page
 
 // PageProperties
 

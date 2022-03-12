@@ -13,7 +13,7 @@
 
 // === PRIVATE FUNCTIONS ========================
 
-// -- Uutilities --------------------------------
+// -- Utilities ---------------------------------
 
 // *Get a page entry in the given page table
 // @param table the page table to search the entry in
@@ -21,7 +21,7 @@
 // @return a pointer to the page entry requested, or 0 if not found
 PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
     if (IS_PRESENT(table->entries[entry])) 
-        return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
+        return GET_PHYSICAL_ADDRESS(table->entries[entry]);
     return 0;
 }
 
@@ -58,7 +58,7 @@ PageTable* vmm_get_or_create_entry(PageTable* table, uint64_t entry, bool writab
 // *Return the physical address given a virtual address
 // @param virt the virtual address
 // @return the physical address associated to the virtual address
-uint64_t vmm_virt_to_phys(uint64_t virt) {
+uintptr_t vmm_virt_to_phys(uintptr_t virt) {
     PageTable* pdpt = vmm_get_entry(read_cr3(), (uint64_t)GET_PL4_INDEX(virt));
     if (pdpt == 0) ks.warn("Physical address for virtual address %x is invalid", virt);
     
@@ -95,6 +95,34 @@ bool vmm_is_table_free(PageTable* table) {
     }
 
     return true;
+}
+
+// *Find a free table entry in the given table and return its index
+// @param table the page table to check
+// @return the index of the free table entry. -1 if not found
+int64_t vmm_find_table_free(PageTable* table) {
+    for (int i = 0; i < 512; i++) {
+        if (vmm_get_entry(table, i) != 0) continue;
+        else return i;
+    }
+
+    return -1;
+}
+
+int64_t vmm_find_table_free_series(PageTable* table, size_t size){
+    for (int i = 0; i < 512; i++) {
+        if (vmm_get_entry(table, i) != 0) continue;
+        
+        bool bad = false;
+        for (int j = i+1; j < size; j++) {
+            if (vmm_get_entry(table, j) != 0) bad = true;
+        }
+
+        if (bad) continue;
+        else return i;
+    }
+
+    return -1;
 }
 
 // *Free a physical memory block if the page pointing to it is free
@@ -222,6 +250,35 @@ static inline uintptr_t vmm_get_other_recurse_link() {
     return GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_OTHER, 0);
 }
 
+uintptr_t vmm_find_free_heap_series(size_t size) {
+    uint64_t pl4 = GET_PL4_INDEX(HEAP_OFFSET);
+    
+    PageTable* pl4_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET));
+    for (int dpt = 0; dpt < 512; dpt++) {
+        
+        PageTable* dpt_addr = vmm_get_or_create_entry(pl4_addr, dpt, true, false);
+        for (int pd = 0; pd < 512; pd++) {
+        
+            PageTable* pd_addr = vmm_get_or_create_entry(dpt_addr, pd, true, false);
+            for (int pt = 0; pt < 512; pt++) {
+                if (vmm_get_entry(pd_addr, pt) != 0) continue;
+                    
+                bool bad = false;
+                for (int j = pt+1; j < size; j++) {
+                    if (vmm_get_entry(pd_addr, j) != 0) bad = true;
+                }
+
+                if (bad) continue;
+                PagingPath path = (PagingPath){GET_PL4_INDEX(HEAP_OFFSET), dpt, pd, pt};
+                return GetAddress(path, 0);
+            }
+        }
+    }
+
+    ks.fatal(FatalError(OUT_OF_HEAP, "Out of Kernel heap!"));
+    return nullptr;
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 void init_vmm() {
@@ -304,6 +361,7 @@ void vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, bo
     
     } else {
         vmm_map_page_impl(vmm_get_active_recurse_link(), table, RECURSE_PML4_OTHER, (PageProperties){true, false});
+        vmm_refresh_paging();
         ((PageTable*)RECURSE_PML4_OTHER)->entries[RECURSE_OTHER] = page_create(table, true, false);
         vmm_refresh_paging();
 
@@ -356,6 +414,16 @@ uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, bool writabl
     return get_mem_address(phys_addr);
 }
 
+uintptr_t vmm_allocate_heap(PageTableEntry* table, size_t blocks) {
+    uintptr_t phys_addr = pmm_alloc_series(blocks);
+    uintptr_t virt_addr = vmm_find_free_heap_series(blocks);
+
+    for (size_t i = 0; i < blocks; i++) 
+        vmm_map_page(table, phys_addr + (i*PHYSMEM_BLOCK_SIZE), virt_addr + (i*PHYSMEM_BLOCK_SIZE), true, false);  
+
+    return virt_addr;
+}
+
 // *Unmap a memory area given the virtual address and the blocks. Works with either an offline page table or an active one
 // @param table the table to unmap the address from. 0 if current
 // @param addr the virtual address to unmap
@@ -384,17 +452,19 @@ uintptr_t vmm_map_mmio(uintptr_t mmio_addr, size_t blocks) {
 #include <liballoc.h>
 
 PageTable* volatile_fun NewPageTable() {
-    PageTable* p = (PageTable*)vmm_allocate_memory(get_current_cpu()->page_table, 1, true, false);
+    PageTable* p = (PageTable*)vmm_allocate_heap(0, 1);
     memory_set(p, 0, sizeof(PageTable));
-    p->entries[RECURSE_ACTIVE] = page_create(p, true, false);
 
-    vmm_map_kernel_region(&pmm, vmm_virt_to_phys(p));
-    vmm_identity_map_region(p, (uint64_t)pmm._map - (uint64_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
+    // clone 256-511 entries
+    for (uint32_t entry = 256; entry < PAGE_ENTRIES; entry++) 
+        p->entries[entry] = get_current_cpu()->page_table->entries[entry];
+        
+    p->entries[RECURSE_ACTIVE] = page_create(vmm_virt_to_phys(p), true, false);
 
-    for (uint32_t i = 0; i < PAGE_ENTRIES; i++)
+    for (uint32_t i = 256; i < PAGE_ENTRIES; i++)
         ks.dbg("%x - page[%u]: %x",&p->entries[i], i, p->entries[i]);
 
-    return p;
+    return vmm_virt_to_phys(p);
 }
 
 void DestroyPageTable(PageTable* page_table) {

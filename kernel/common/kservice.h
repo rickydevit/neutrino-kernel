@@ -14,6 +14,7 @@ enum KERNEL_FATAL {
     GENERIC_EXCEPTION   = 0x200,
     INTERRUPT_EXCEPTION = 0x201,
     OUT_OF_MEMORY       = 0x202,
+    OUT_OF_HEAP         = 0x203,
 };
 
 typedef struct __fatal {

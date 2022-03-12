@@ -22,3 +22,4 @@ with 0x? being the error code (described below) and message being the error mess
 | 0x200         | Generic exception | *A generic fatal exception occurred and the system couldn't recover.* |
 | 0x201         | Interrupt exception | *A fatal interrupt exception occurred and the system couldn't recover.* |
 | 0x202         | Out of memory   | *The physical memory of the system has saturated and no more memory is available.* |
+| 0x203         | Out of heap   | *The heap memory of the system has saturated. Probably caused by a kernel memory leak.* |
