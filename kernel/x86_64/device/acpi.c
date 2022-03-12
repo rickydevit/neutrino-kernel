@@ -7,6 +7,7 @@
 #include "kernel/common/kservice.h"
 #include "kernel/common/memory/memory.h"
 #include "../memory/mem_virt.h"
+#include "arch.h"
 
 // === PRIVATE FUNCTIONS ========================
 

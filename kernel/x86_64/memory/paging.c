@@ -1,6 +1,7 @@
 #include "paging.h"
-#include "stdint.h"
-#include "stdbool.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include "../arch.h"
  
 // *Check if paging is enabled
 // @return true if paging is enabled, false otherwise
@@ -39,4 +40,8 @@ PageTableEntry page_create(uint64_t addr, bool writable, bool user) {
     page_set_bit(&pt, PRESENT_BIT_OFFSET);
 
     return pt;
+}
+
+PageTableEntry page_self(PageTable* table) {
+    return page_create(get_rmem_address((uintptr_t)table), true, false);
 }

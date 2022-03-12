@@ -25,10 +25,10 @@ void start_cpu(struct stivale2_smp_info* smp_info) {
     init_tss(get_cpu(smp_info->processor_id));
     
     init_sse();
-    map_apic_into_space();
+    map_apic_on_ap();
     enable_apic();
 
-    if (has_hpet()) vmm_map_mmio(hpet.base, 1);
+    if (has_hpet()) vmm_map_mmio(get_rmmio_address(hpet.base), 1);
     init_apic_timer();
 
     cpu_started = true;

@@ -1,13 +1,19 @@
 #pragma once
-#include "stdint.h"
+#include <stdint.h>
 
 #define MEMV_OFFSET 0xffff800000000000
+#define MMIO_OFFSET 0xfffff00000000000
+#define HEAP_OFFSET 0xfffffe0000000000
 #define KERN_OFFSET 0xffffffff80000000
 
-static inline uint64_t get_mem_address(uintptr_t addr) { return (uintptr_t)addr + MEMV_OFFSET; }
-static inline uint64_t get_rmem_address(uintptr_t addr) { return (uintptr_t)addr - MEMV_OFFSET; }
-static inline uint64_t get_kern_address(uintptr_t addr) { return (uintptr_t)addr + KERN_OFFSET; }
-static inline uint64_t get_rkern_address(uintptr_t addr) { return (uintptr_t)addr - KERN_OFFSET; }
+static inline uintptr_t get_mem_address(uintptr_t addr) { return (uintptr_t)addr + MEMV_OFFSET; }
+static inline uintptr_t get_rmem_address(uintptr_t addr) { return (uintptr_t)addr - MEMV_OFFSET; }
+static inline uintptr_t get_kern_address(uintptr_t addr) { return (uintptr_t)addr + KERN_OFFSET; }
+static inline uintptr_t get_rkern_address(uintptr_t addr) { return (uintptr_t)addr - KERN_OFFSET; }
+static inline uintptr_t get_mmio_address(uintptr_t addr) { return (uintptr_t)addr + MMIO_OFFSET; }
+static inline uintptr_t get_rmmio_address(uintptr_t addr) { return (uintptr_t)addr - MMIO_OFFSET; }
+static inline uintptr_t get_heap_address(uintptr_t addr) { return (uintptr_t)addr + HEAP_OFFSET; }
+static inline uintptr_t get_rheap_address(uintptr_t addr) { return (uintptr_t)addr - HEAP_OFFSET; }
 
 enum MSR_REGISTERS {
     APIC =              0x1B,

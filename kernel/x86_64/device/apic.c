@@ -117,7 +117,7 @@ void volatile_fun init_apic() {
 
     apic.x2apic_enabled = false;
 
-    map_apic_into_space();      // map the LAPIC address into space
+    map_apic();      // map the LAPIC address into space
     enable_apic();              // enable the APIC
     ks.dbg("APIC enabled");
 
@@ -129,8 +129,13 @@ void volatile_fun init_apic() {
 }
 
 // *Map the LAPIC into the active table
-void volatile_fun map_apic_into_space() {
-    vmm_map_mmio((uint64_t)apic.apic_addr, 3);
+void volatile_fun map_apic() {
+    apic.apic_addr = vmm_map_mmio((uintptr_t)apic.apic_addr, 3);
+}
+
+// *Map the LAPIC into the active table for an AP
+void volatile_fun map_apic_on_ap() {
+    vmm_map_mmio(get_rmmio_address((uintptr_t)apic.apic_addr), 3);
 }
 
 // *Enable the APIC by writing to its registers

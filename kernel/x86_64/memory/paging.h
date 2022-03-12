@@ -7,15 +7,9 @@
 #define RECURSE_OTHER   509UL
 #define RECURSE_PML4        (0xffffff0000000000UL)
 #define RECURSE_PML4_OTHER  (0xfffffe8000000000UL)
+#define PAGE_ENTRIES 512
 
-// #define GET_RECURSIVE_ADDRESS(p3, p2, p1, offset) (PageTableEntry*)((RECURSE_PML4) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
-// #define GET_RECOTHER_ADDRESS(p3, p2, p1, offset) (PageTableEntry*)((RECURSE_OTHER) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
 #define GetRecursiveAddress(gate, p3, p2, p1, offset) (PageTableEntry*)((0xffffUL<<48) | (gate<<39) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
-
-#define PAGE_PL4_ENTRIES 512
-#define PAGE_DPT_ENTRIES 512
-#define PAGE_DIR_ENTRIES 512
-#define PAGE_TAB_ENTRIES 512
 
 #define PRESENT_BIT_OFFSET      0b1
 #define WRITABLE_BIT_OFFSET     0b10
@@ -42,8 +36,10 @@
 typedef uint64_t PageTableEntry;
 
 typedef struct __page_table {
-    PageTableEntry entries[PAGE_TAB_ENTRIES];
+    PageTableEntry entries[PAGE_ENTRIES];
 } PageTable;
+
+// PagingPath
 
 typedef struct __paging_path {
     uint64_t pl4;
@@ -54,6 +50,13 @@ typedef struct __paging_path {
 
 #define GetPagingPath(virt_addr) (PagingPath){GET_PL4_INDEX(virt_addr), GET_DPT_INDEX(virt_addr), GET_DIR_INDEX(virt_addr), GET_TAB_INDEX(virt_addr)}
 
+// PageProperties
+
+typedef struct __page_properties {
+    bool writable;
+    bool user;
+} PageProperties;
+
 bool is_paging_enabled();
 void disable_paging();
 uint64_t read_cr3();
@@ -63,3 +66,4 @@ inline void page_set_bit(PageTableEntry* page, uint64_t offset) { *page |= (offs
 inline void page_clear_bit(PageTableEntry* page, uint64_t offset) { *page &= ~(offset); }
 
 PageTableEntry page_create(uint64_t addr, bool writable, bool user);
+PageTableEntry page_self(PageTable* table);

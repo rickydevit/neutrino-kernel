@@ -5,6 +5,7 @@
 #include <liballoc.h>
 #include "mem_virt.h"
 #include "kernel/common/memory/space.h"
+#include "kernel/common/memory/memory.h"
 
 struct __space {
     Lock lock;

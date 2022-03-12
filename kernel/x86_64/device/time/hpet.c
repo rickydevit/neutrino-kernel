@@ -47,7 +47,7 @@ void volatile_fun init_hpet() {
 
     // map the HPET registers to address space
     ks.dbg("hpet registers at %x", hpet.base);
-    vmm_map_mmio(hpet.base, 1);
+    hpet.base = vmm_map_mmio((uintptr_t)hpet.base, 1);
 
     if (hpet.table_pointer->address.address_space_id == 1) {// check for io address space, unsupported 
         ks.err("Unsupported HPET address space");

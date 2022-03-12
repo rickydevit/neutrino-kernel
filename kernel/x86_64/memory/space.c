@@ -1,6 +1,7 @@
 #include "space.h"
 #include "mem_virt.h"
 #include "kernel/common/memory/space.h"
+#include "kernel/common/memory/memory.h"
 #include <liballoc.h>
 #include <_null.h>
 

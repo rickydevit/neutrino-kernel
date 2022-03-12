@@ -3,18 +3,6 @@
 #include <size_t.h>
 #include <stdint.h>
 
-typedef struct __memory_range {
-    uintptr_t base;
-    size_t size;
-} MemoryRange;
-
-#define RangeEnd(range)  (range.base + range.size)
-
-typedef struct __memory_range_node {
-        MemoryRange range;
-        struct __memory_range_node* next;
-} MemoryRangeNode;
-
 #ifdef __x86_64
 #include "kernel/x86_64/memory/space.h"
 #else

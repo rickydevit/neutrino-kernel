@@ -87,7 +87,7 @@ BlockPosition pmm_map_first_free_series(size_t size) {
     if (size==0) return -1;
 	if (size==1) return pmm_map_first_free();
 
-	BlockPosition free_after_map = pmm_map_first_free_series_starting_from(size, (((uint64_t)pmm._map) + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
+	BlockPosition free_after_map = pmm_map_first_free_series_starting_from(size, get_rmem_address(((uint64_t)pmm._map) + pmm._map_size) / PHYSMEM_BLOCK_SIZE);
 	if (free_after_map != BLOCKPOSITION_INVALID) return free_after_map;
 
 	BlockPosition free_from_start = pmm_map_first_free_series_starting_from(size, 0);
