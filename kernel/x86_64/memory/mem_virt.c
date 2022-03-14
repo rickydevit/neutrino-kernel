@@ -15,6 +15,12 @@
 
 // -- Utilities ---------------------------------
 
+// *Refresh paging by reloading the CR3 register
+void volatile_fun vmm_refresh_paging() {
+    asm volatile("mov %%cr3, %%rax" : : );
+    asm volatile("mov %%rax, %%cr3" : : );
+}
+
 // *Get a page entry in the given page table
 // @param table the page table to search the entry in
 // @param entry the entry to be found
@@ -33,7 +39,7 @@ PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
 // @return the address of the newly created entry
 PageTable* volatile_fun vmm_create_entry(PageTable* table, uint64_t entry, bool writable, bool user) {
     PageTable* pt = (PageTable*)get_mem_address(pmm_alloc());
-    memory_set(get_rmem_address(pt), 0, PHYSMEM_BLOCK_SIZE);
+    // memory_set(get_rmem_address(pt), 0, PHYSMEM_BLOCK_SIZE);
     table->entries[entry] = page_create(get_rmem_address(pt), writable, user);
     vmm_refresh_paging();
 
@@ -78,12 +84,6 @@ PageTable* vmm_new_table() {
     memory_set(table, 0, PHYSMEM_BLOCK_SIZE);
 
     return table;
-}
-
-// *Refresh paging by reloading the CR3 register
-void volatile_fun vmm_refresh_paging() {
-    __asm__("mov %%cr3, %%rax" : : );
-    __asm__("mov %%rax, %%cr3" : : );
 }
 
 // *Check if a page table is free in each of its entries
@@ -154,6 +154,26 @@ void vmm_free_if_necessary_tables(PageTable* table, uint64_t unmapped_addr) {
     vmm_free_if_necessary_table(pdpt, table, pl4_entry);
 }
 
+PageTable* vmm_get_most_nested_table(PageTable* table_addr, uintptr_t virt_addr) {
+    PagingPath path = GetPagingPath(virt_addr);
+    PagingPath tpath = GetPagingPath((uintptr_t)table_addr);
+    bool isRecursive = tpath.pl4 == RECURSE_ACTIVE || tpath.pl4 == RECURSE_OTHER;
+
+    PageTable *pdpt, *pd, *pt;
+    pdpt = vmm_get_or_create_entry(table_addr, path.pl4, true, false);
+    
+    if (isRecursive) {
+        vmm_get_or_create_entry(GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, true, false);
+        vmm_get_or_create_entry(GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, true, false);
+        pt = GetRecursiveAddress(tpath.pt, path.pl4, path.dpt, path.pd, 0);
+    } else {
+        pd = vmm_get_or_create_entry(pdpt, path.dpt, true, false);
+        pt = vmm_get_or_create_entry(pd, path.pd, true, false);
+    }
+
+    return pt;
+}
+
 // --- Special mappings -------------------------
 
 // *Map the physical regions stored in the physical manager to the given page
@@ -173,7 +193,7 @@ void vmm_map_physical_regions(PageTable* page) {
 
         for (int i = 0; i * PAGE_SIZE < aligned_size; i++) {
             uintptr_t addr = aligned_base + i * PAGE_SIZE;
-            vmm_map_page_impl(page, addr, addr, (PageProperties){true, false});
+            // vmm_map_page_impl(page, addr, addr, (PageProperties){true, false});
             vmm_map_page_impl(page, addr, get_mem_address(addr), (PageProperties){true, false});
             if (pmm.regions[ind].type == MEMORY_REGION_KERNEL) 
                 vmm_map_page_impl(page, addr, get_kern_address(addr), (PageProperties){true, false});
@@ -211,22 +231,14 @@ void volatile_fun vmm_identity_map_region(PageTable* table, uintptr_t base, size
 
 void vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
     PagingPath path = GetPagingPath(virt_addr);
-
-    PageTable *pdpt, *pd, *pt;
-    pdpt = vmm_get_or_create_entry(table_addr, path.pl4, true, false);
-    pd = vmm_get_or_create_entry(pdpt, path.dpt, true, false);
-    pt = vmm_get_or_create_entry(pd, path.pd, true, false);
+    PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr);
 
     pt->entries[path.pt] = page_create(phys_addr, prop.writable, prop.user);
 }
 
 bool vmm_unmap_page_impl(PageTable* table_addr, uintptr_t virt_addr) {
     PagingPath path = GetPagingPath(virt_addr);
-    
-    PageTable *pdpt, *pd, *pt;
-    pdpt = vmm_get_or_create_entry(table_addr, path.pl4, true, true);
-    pd = vmm_get_or_create_entry(pdpt, path.dpt, true, true);
-    pt = vmm_get_or_create_entry(pd, path.pd, true, true);
+    PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr);
 
     PageTable *to_free = vmm_get_entry(pt, path.pt);
     if (to_free == 0) return false;
@@ -262,15 +274,20 @@ uintptr_t vmm_find_free_heap_series(size_t size) {
             PageTable* pd_addr = vmm_get_or_create_entry(dpt_addr, pd, true, false);
             for (int pt = 0; pt < 512; pt++) {
                 if (vmm_get_entry(pd_addr, pt) != 0) continue;
-                    
-                bool bad = false;
-                for (int j = pt+1; j < size; j++) {
-                    if (vmm_get_entry(pd_addr, j) != 0) bad = true;
-                }
 
-                if (bad) continue;
-                PagingPath path = (PagingPath){GET_PL4_INDEX(HEAP_OFFSET), dpt, pd, pt};
-                return GetAddress(path, 0);
+                PageTable* pt_addr = vmm_get_or_create_entry(pd_addr, pt, true, false);
+                for (int page = 0; page < 512; page++) {
+                    if (vmm_get_entry(pt_addr, page) != 0) continue;
+
+                    bool bad = false;
+                    for (int j = page+1; j < size; j++) {
+                        if (vmm_get_entry(pd_addr, j) != 0) bad = true;
+                    }
+
+                    if (bad) continue;
+                    PagingPath path = (PagingPath){GET_PL4_INDEX(HEAP_OFFSET), dpt, pd, page};
+                    return GetAddress(path, page);
+                }
             }
         }
     }
@@ -319,16 +336,18 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
     PageTable* kernel_pml4 = vmm_new_table();
     ks.dbg("New pml4 created at %x for CPU #%u", kernel_pml4, info->processor_id);
     
-    // identity map the first 2M of physical memory
-    for (int i = 0; i < PHYSMEM_2MEGS / PAGE_SIZE; i++)
-        vmm_map_page_impl(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, (PageProperties){true, false});
+    // clone 256-511 entries
+    ks.dbg("Cloning BSP page table...");
+    for (uint32_t entry = 256; entry < PAGE_ENTRIES; entry++) 
+        kernel_pml4->entries[entry] = get_bootstrap_cpu()->page_table->entries[entry];
 
     // map the page itself in the 510st pml4 entry
     ks.dbg("Mapping page table inside itself: %x (%x) to %x", kernel_pml4, get_rmem_address((uintptr_t)kernel_pml4), RECURSE_PML4);
     kernel_pml4->entries[RECURSE_ACTIVE] = page_self(kernel_pml4);
-    
-    // map kernel in the page
-    vmm_map_physical_regions(kernel_pml4); 
+
+    // clear mmio pages
+    for (uint32_t i = 480; i < 484; i++)
+        kernel_pml4->entries[i] = 0;
 
     // map the cpu stack in the page
     uint64_t stack_base = (uint64_t)(info->target_stack-CPU_STACK_SIZE) - (uint64_t)(info->target_stack - CPU_STACK_SIZE) % PAGE_SIZE;
@@ -338,9 +357,6 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
         uintptr_t addr = stack_base + i * PAGE_SIZE;
         vmm_map_page_impl(kernel_pml4, get_rmem_address(addr), addr, (PageProperties){true, false});
     }
-
-    // map the pmm map
-    vmm_identity_map_region(kernel_pml4, (uintptr_t)pmm._map - (uintptr_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
     
     // give CR3 the kernel pml4 address
     ks.dbg("Preparing to load pml4... %x %x", kernel_pml4, get_rmem_address((uintptr_t)kernel_pml4));
@@ -452,7 +468,7 @@ uintptr_t vmm_map_mmio(uintptr_t mmio_addr, size_t blocks) {
 #include <liballoc.h>
 
 PageTable* volatile_fun NewPageTable() {
-    PageTable* p = (PageTable*)vmm_allocate_heap(0, 1);
+    PageTable* p = (PageTable*)vmm_allocate_memory(get_current_cpu()->page_table, 1, true, false);
     memory_set(p, 0, sizeof(PageTable));
 
     // clone 256-511 entries

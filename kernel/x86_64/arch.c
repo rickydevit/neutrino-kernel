@@ -77,7 +77,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_apic();
     init_hpet();
     init_apic_timer();
-    init_smp((struct stivale2_struct_tag_smp*)get_rmem_address((uintptr_t)smp_str_tag));
+    init_smp(smp_str_tag);
 
     enable_interrupts();
 

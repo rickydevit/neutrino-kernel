@@ -22,7 +22,7 @@ void start_cpu(struct stivale2_smp_info* smp_info) {
     init_idt();
 
     init_vmm_on_ap(smp_info);
-    init_tss(get_cpu(smp_info->processor_id));
+    init_tss(get_cpu(((struct stivale2_smp_info*)get_mem_address(smp_info))->processor_id));
     
     init_sse();
     map_apic_on_ap();

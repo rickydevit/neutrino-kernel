@@ -37,7 +37,7 @@ bool do_checksum(void* start, size_t length) {
 // === PUBLIC FUNCTIONS =========================
 
 void init_acpi() {
-    struct RSDP_descriptor2* descriptor = (struct RSDP_descriptor2*) find_rsdp();
+    struct RSDP_descriptor2* descriptor = (struct RSDP_descriptor2*) get_mem_address(find_rsdp());
     if (descriptor == 0) {
         ks.err("Cannot find RSDP descriptor. ACPI functionalities may not be available");
         return;
@@ -51,13 +51,13 @@ void init_acpi() {
         if (!do_checksum((uint8_t*)descriptor, sizeof(struct RSDP_descriptor))) 
             ks.warn("Error while validating the RSDP. It may be corrupted");
 
-        acpi.rsdt = (struct RSDT*) descriptor->firstPart.RsdtAddress;
+        acpi.rsdt = (struct RSDT*)get_mem_address(descriptor->firstPart.RsdtAddress);
     } else {
         if (!do_checksum((uint8_t*)descriptor, sizeof(struct RSDP_descriptor)) || 
             !do_checksum(((uint8_t*)descriptor + sizeof(struct RSDP_descriptor)), sizeof(struct RSDP_descriptor2) - sizeof(struct RSDP_descriptor))) 
             ks.warn("Error while validating the RSDP. It may be corrupted");
 
-        acpi.xsdt = (struct XSDT*) descriptor->XsdtAddress;
+        acpi.xsdt = (struct XSDT*)get_mem_address(descriptor->XsdtAddress);
     }
 }
 
@@ -75,7 +75,7 @@ void *find_sdt_entry(const char* entry_sign) {
             ks.warn("Error while validating the RSDT. It may be corrupted");
         
         for (int i = 0; i < entries; i++) {
-            struct SDT_header *h = (struct SDT_header *) acpi.rsdt->PointerToOtherSDT[i];
+            struct SDT_header *h = (struct SDT_header *)get_mem_address(acpi.rsdt->PointerToOtherSDT[i]);
             if (!strncmp(h->Signature, entry_sign, 4))
                 return (void *) h;
         }
