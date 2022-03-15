@@ -15,18 +15,19 @@
 384 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   415
 416 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   447
 448 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   479
-480 🟦🟦🟦🟦⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛🟩🟧🟧🟩   511
+480 🟦🟦🟦🟦⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ 🟥⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛🟩🟧🟧🟩   511
 ```
 
 | Region name | Region type | Region virtual address range | Size | Description | 
 | :--- | :---: | :--- | :---: | :--- |
-| 🟪 Process space | Process | `0xffff080000000000` - `0xffff08ffffffffff` | *Undefined* | MMIO mapped devices
+| 🟪 Process space | Process | `0xffff080000000000` - `0xffff08ffffffffff` | *Undefined* | Everything reserved for userspace and process related data and code
 | Available low half | | `0x0000000000000000` - `0xffff7fffffffffff` | *A lot* | Low memory area available for future use
 | **System reserved** 
 | ⬜ Physical memory mirror | System | `0xffff800000000000` - `0xfff8fffffffffff` | Same as physical memory. Potentially ≃1,152PB | Load point of the kernel. Functions and local variables should all have this base address
 | RSDP probing area | System | `0xffff800000080000` - `0xffff800000100000` | 524,288kB | Area where the RSDP could be located according to its specification
 | **Kernel reserved** 
 | 🟦 MMIO devices | MMIO | `0xfffff00000000000` - `0xfffff1ffffffffff` | *Undefined* | MMIO mapped devices
+| 🟥 CPU interrupt stack | MMIO | `0xfffff80000000000` - `0xfffff80000002000` | 8,192kB | CPU interrupt stack for 0x0e and 0x20
 | 🟩 Kernel heap | Dynamic | `0xfffffe0000000000` - `0xfffffe007fffffff` | 2,147GB | Kernel heap area
 | 🟧 Inactive recursive page edit | Recurse point | `0xfffffe8000000000` - `undefined` | *Undefined* | Address used to perform recursive page editing on another page
 | 🟧 Active recursive page edit | Recurse point | `0xffffff0000000000` - `undefined` | *Undefined* | Address used to perform recursive page editing on the active page
