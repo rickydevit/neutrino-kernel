@@ -4,6 +4,7 @@
 #include "kernel/common/memory/memory.h"
 #include "stdbool.h"
 #include "size_t.h"
+#include <neutrino/macros.h>
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -24,7 +25,7 @@ void pmm_map_unset(int bit) {
 // *Get the value of the memory bitmap at the position [bit]
 // @param bit the bit to get the value from
 // @return true if the bit is set, false otherwise
-BlockState pmm_map_get(int bit) {
+BlockState volatile_fun pmm_map_get(int bit) {
     return (pmm._map[bit / 32] & (1 << (bit % 32)));
 }
 
@@ -62,13 +63,13 @@ BlockPosition pmm_map_first_free_series_starting_from(size_t size, BlockPosition
 				int bit = 1<<j;
 				if (!(pmm._map[i] & bit)) {
 
-					int startingBit = i*32;
-					startingBit+=bit;		//get the free bit in the dword at index i
+					uint32_t startingBit = i*32;
+					startingBit+=j;		//get the free bit in the dword at index i
 
 					uint32_t free=0; //loop through each bit to see if its enough space
-					for (BlockPosition count=0; count<=size;count++) {
+					for (BlockPosition count=0; count<=size; count++) {
 
-						if (! pmm_map_get(startingBit+count))
+						if (!pmm_map_get(startingBit+count))
 							free++;	// this bit is clear (free frame)
 
 						if (free==size)
