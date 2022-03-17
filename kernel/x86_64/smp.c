@@ -49,21 +49,13 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
     // save cpus
     for (int i = 0; i < smp.cpu_count; i++) {
         struct stivale2_smp_info cpu_info = smp_struct->smp_info[i];
+        // skip the bsp
+        if (cpu_info.lapic_id == smp_struct->bsp_lapic_id) continue;               
+        
         ks.dbg("cpu id: %d lapic id: %d", cpu_info.processor_id, cpu_info.lapic_id);
         smp.cpus[i].id = cpu_info.processor_id;
         smp.cpus[i].lapic_id = cpu_info.lapic_id;
-
-        // setup the tss
-        smp.cpus[i].tss.iopb_offset = sizeof(Tss);
-        smp.cpus[i].tss.rsp0 = (uint64_t)smp.cpus[i].stack;
-        smp.cpus[i].stack_interrupt = pmm_alloc_series(CPU_STACK_SIZE / PHYSMEM_BLOCK_SIZE);
-        smp.cpus[i].tss.ist1 = (uint64_t)smp.cpus[i].stack_interrupt + CPU_STACK_SIZE;
-
-        // vmm_map_page(smp.cpus[i].stack_interrupt, 1);
-
-        // skip the bsp
-        if (cpu_info.lapic_id == smp_struct->bsp_lapic_id) continue;
-
+        
         // prepare the stack
         smp.cpus[i].stack = pmm_alloc_series(CPU_STACK_SIZE/PHYSMEM_BLOCK_SIZE);
         smp_struct->smp_info[i].target_stack = get_mem_address(smp.cpus[i].stack) + CPU_STACK_SIZE;

@@ -2,6 +2,7 @@
 #include "smp.h"
 #include "kservice.h"
 #include "memory/mem_phys.h"
+#include "memory/mem_virt.h"
 
 struct cpu_GDT gdt_array[MAX_CPU];
 
@@ -66,6 +67,15 @@ void init_tss(Cpu* cpu) {
     // tss descriptor 0x28
     struct TSS_entry entry = tss_entry_create(&(cpu->tss), (uint64_t)&(cpu->tss) + sizeof(cpu->tss), GDT_TSS_PRESENT | GDT_TSS, GDT_FLAGS_TSS);
     gdt_array[cpu->id].TSS = entry;
+
+    // setup tss.ist1
+    cpu->tss.iopb_offset = sizeof(Tss);
+    cpu->tss.rsp0 = (uint64_t)cpu->stack;
+    cpu->stack_interrupt = pmm_alloc_series(CPU_STACK_SIZE / PAGE_SIZE);
+    cpu->tss.ist1 = CPU_STACK_BASE + CPU_STACK_SIZE;
+
+    for (uint32_t i = 0; i < CPU_STACK_SIZE / PAGE_SIZE; i++)
+        vmm_map_page(cpu->page_table, cpu->stack_interrupt + i*PAGE_SIZE, CPU_STACK_BASE + i*PAGE_SIZE, true, false);
 
     install_tss();
     ks.dbg("TSS set up for CPU #%u", cpu->id);
