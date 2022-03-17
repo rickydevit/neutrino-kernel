@@ -154,7 +154,7 @@ void vmm_free_if_necessary_tables(PageTable* table, uint64_t unmapped_addr) {
     vmm_free_if_necessary_table(pdpt, table, pl4_entry);
 }
 
-PageTable* vmm_get_most_nested_table(PageTable* table_addr, uintptr_t virt_addr) {
+PageTable* volatile_fun vmm_get_most_nested_table(PageTable* table_addr, uintptr_t virt_addr) {
     PagingPath path = GetPagingPath(virt_addr);
     PagingPath tpath = GetPagingPath((uintptr_t)table_addr);
     bool isRecursive = tpath.pl4 == RECURSE_ACTIVE || tpath.pl4 == RECURSE_OTHER;
@@ -229,7 +229,7 @@ void volatile_fun vmm_identity_map_region(PageTable* table, uintptr_t base, size
 
 // --- Mapping and unmapping --------------------
 
-void vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
+void volatile_fun vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
     PagingPath path = GetPagingPath(virt_addr);
     PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr);
 
@@ -371,7 +371,7 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
 // @param virt_addr the virtual address to map the physical address to
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
-void vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, bool writable, bool user) {
+void volatile_fun vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, bool writable, bool user) {
     if (read_cr3() == table || table == 0) {               //  cr3 is the given table physical address
         vmm_map_page_impl(vmm_get_active_recurse_link(), phys_addr, virt_addr, (PageProperties){writable, user});
     
@@ -430,7 +430,7 @@ uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, bool writabl
     return get_mem_address(phys_addr);
 }
 
-uintptr_t vmm_allocate_heap(PageTableEntry* table, size_t blocks) {
+uintptr_t volatile_fun vmm_allocate_heap(PageTableEntry* table, size_t blocks) {
     uintptr_t phys_addr = pmm_alloc_series(blocks);
     uintptr_t virt_addr = vmm_find_free_heap_series(blocks);
 
@@ -475,9 +475,9 @@ PageTable* volatile_fun NewPageTable() {
     for (uint32_t entry = 256; entry < PAGE_ENTRIES; entry++) 
         p->entries[entry] = get_current_cpu()->page_table->entries[entry];
         
-    p->entries[RECURSE_ACTIVE] = page_create(vmm_virt_to_phys(p), true, false);
+    p->entries[RECURSE_ACTIVE] = page_create(get_rmem_address(p), true, false);
 
-    return vmm_virt_to_phys(p);
+    return get_rmem_address(p);
 }
 
 void DestroyPageTable(PageTable* page_table) {
