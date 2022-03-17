@@ -12,8 +12,6 @@ static inline uintptr_t get_kern_address(uintptr_t addr) { return (uintptr_t)add
 static inline uintptr_t get_rkern_address(uintptr_t addr) { return (uintptr_t)addr - KERN_OFFSET; }
 static inline uintptr_t get_mmio_address(uintptr_t addr) { return (uintptr_t)addr + MMIO_OFFSET; }
 static inline uintptr_t get_rmmio_address(uintptr_t addr) { return (uintptr_t)addr - MMIO_OFFSET; }
-static inline uintptr_t get_heap_address(uintptr_t addr) { return (uintptr_t)addr + HEAP_OFFSET; }
-static inline uintptr_t get_rheap_address(uintptr_t addr) { return (uintptr_t)addr - HEAP_OFFSET; }
 
 enum MSR_REGISTERS {
     APIC =              0x1B,

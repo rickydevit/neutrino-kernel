@@ -79,6 +79,8 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_apic_timer();
     init_smp(smp_str_tag);
 
+    init_scheduler();
+
     enable_interrupts();
 
     //? -----------------------------------------
