@@ -3,6 +3,8 @@
 #include "../memory/mem_virt.h"
 #include "kernel/common/memory/memory.h"
 #include "kernel/common/tasks/context.h"
+#include "kernel/common/tasks/task.h"
+#include "kernel/common/kservice.h"
 #include <liballoc.h>
 
 // === PRIVATE FUNCTIONS ========================
@@ -11,7 +13,8 @@
 
 // *Create a new Context
 Context* NewContext() {
-    Context* context = (Context*)kmalloc(sizeof(Context) + get_sse_context_size());
+    Context* context = (Context*)kmalloc(sizeof(Context));
+    context->simd = (uint8_t*)kmalloc(get_sse_context_size());
     set_initial_sse_context(context->simd);
     return context;
 }
@@ -33,7 +36,7 @@ void volatile_fun context_init(Context* context, uintptr_t ip, uintptr_t sp, uin
     } else {
         regs.cs = 0x18; // code selector
         regs.ss = 0x20; // data selector
-        regs.rbp = 0;
+        regs.rbp = PROCESS_STACK_BASE;
     }
 
     regs.rsp = (uint64_t)sp;

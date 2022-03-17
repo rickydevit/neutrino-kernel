@@ -42,7 +42,7 @@ uintptr_t space_map(Space* space, uintptr_t phys_addr, size_t size, uintptr_t vi
 
     // map all the required pages
     for (uint32_t i = 0; i < size; i++) {
-        vmm_map_page(space->page_table, phys_addr, virt_addr, true, true);
+        vmm_map_page(space->page_table, phys_addr + (i*PAGE_SIZE), virt_addr + (i*PAGE_SIZE), true, true);
     }
 
     // create a new node and attach it to the list 

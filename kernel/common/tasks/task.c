@@ -8,10 +8,14 @@
 
 // === PRIVATE FUNCTIONS ========================
 
-void task_set_stack(Task* task) {
-    task->stack = (uintptr_t)kmalloc(PROCESS_STACK_SIZE);
-    task->context->regs.rsp = task->stack;
-    space_map(task->space, task->stack, PROCESS_STACK_SIZE, PROCESS_STACK_BASE);
+void task_set_name(Task* task, char* name) {
+    if (strlen(name) > TASK_NAME_MAX) {
+        ks.warn("Task name is longer than the maximum allowed (%i). The name will be truncated.", TASK_NAME_MAX);
+        memory_copy((uint8_t*)name, (uint8_t*)task->name, TASK_NAME_MAX);
+        task->name[TASK_NAME_MAX] = '\0';
+    } else {
+        strcpy(name, task->name);
+    }
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -19,12 +23,7 @@ void task_set_stack(Task* task) {
 Task* NewTask(char* name, bool user) {
     Task* task = (Task*)kmalloc(sizeof(Task));
 
-    if (strlen(name) > TASK_NAME_MAX) {
-        ks.warn("Task name is longer than the maximum allowed (%i). The name will be truncated.", TASK_NAME_MAX);
-        memory_copy((uint8_t*)name, (uint8_t*)task->name, TASK_NAME_MAX);
-    } else {
-        strcpy(name, task->name);
-    }
+    task_set_name(task, name);
 
     task->status = TASK_EMBRYO;
     task->user = user;
@@ -37,6 +36,7 @@ Task* NewTask(char* name, bool user) {
 }
 
 void DestroyTask(Task* task) {
+    kfree(task->stack_base);
     DestroySpace(task->space);
     DestroyContext(task->context);
     kfree(task);

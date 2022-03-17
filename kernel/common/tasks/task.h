@@ -19,11 +19,11 @@ typedef enum __task_status {
 
 #define TASK_NAME_MAX 64
 #define PROCESS_STACK_SIZE  0x4000
-#define PROCESS_STACK_BASE  0xc0000000
+#define PROCESS_STACK_BASE  0xffff080000000000
 
 typedef struct __task {
     uint32_t pid;
-    char name[TASK_NAME_MAX];
+    char name[TASK_NAME_MAX+1];
 
     TaskStatus status;
     struct {
@@ -36,10 +36,18 @@ typedef struct __task {
     Context* context;       // ! must SAVE before every scheduler cycle and RESTORE thereafter
     Space* space;           // ! must SWITCH after every scheduler cycle
 
-    uintptr_t stack;
+    uintptr_t stack_base;
 } Task;
 
 #define IsTaskRunnable(task)    ((task)->status == TASK_READY || (task)->status == TASK_SYSCALL)
 
 Task* NewTask(char* name, bool user);
 void DestroyTask(Task* task);
+
+#ifdef __x86_64
+#include "kernel/x86_64/tasks/task.h"
+#else
+#error "Unsupported platform"
+#endif
+
+void task_set_stack(Task* task);
