@@ -1,9 +1,15 @@
 #include "interrupts.h"
 #include "kservice.h"
 #include "pic.h"
+#include "device/apic.h"
 #include "device/time/pit.h"
 #include "kernel/common/device/port.h"
-#include "stdint.h"
+#include "kernel/common/tasks/context.h"
+#include "kernel/common/memory/space.h"
+#include "kernel/common/tasks/scheduler.h"
+#include "kernel/common/cpu.h"
+#include <stdint.h>
+#include <neutrino/macros.h>
 
 struct IDT_entry IDT[IDT_SIZE];
 
@@ -49,7 +55,7 @@ const char *interrupt_exception_name[] = {
 // @param isr the pointer to the Interrupt Service Routine
 // @param ist the offset of the interrupt stack table stored in the TSS
 // @param type_attr the attributes for the newly added idt entry
-void set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t type_attr) {
+void volatile_fun set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t type_attr) {
 	uint64_t irq_address = (uint64_t)isr;
 	IDT[irq].offset_lowerbits = (irq_address) & 0xffff;
 	IDT[irq].selector = KERNEL_CODE;
@@ -65,7 +71,7 @@ void set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t type_attr) {
 // @param stack the pointer to the interrupt stack to be logged
 void log_interrupt(InterruptStack* stack) {
     ks.dbg(" ========== INTERRUPT FRAME LOG ==========");
-    ks.dbg("interrupt: %u error code: %x", stack->irq, stack->error_code);
+    ks.dbg("Got interrupt %u with error_code %x on cpu #%d", stack->irq, stack->error_code, get_current_cpu()->id);
     ks.dbg("rax: %x rbx: %x rcx: %x rdx: %x", stack->rax, stack->rbx, stack->rcx, stack->rdx);
     ks.dbg("rsi: %x rdi: %x rbp: %x", stack->rsi, stack->rdi, stack->rbp);
     ks.dbg("r8: %x r9: %x r10: %x", stack->r8, stack->r9, stack->r10);
@@ -82,8 +88,8 @@ void log_interrupt(InterruptStack* stack) {
 // *Initialize the Interrupt Descriptor Table
 void init_idt() {
 	for (uint64_t i = 0; i < 48; i++) {
-		if (i == 14 || i == 32) 
-			set_idt_entry(i, _interrupt_vector[i], 0, INTERRUPT_GATE);
+		if (i == 0x0e || i == 0x08) 
+			set_idt_entry(i, _interrupt_vector[i], 1, INTERRUPT_GATE);
 		else
 			set_idt_entry(i, _interrupt_vector[i], 0, INTERRUPT_GATE);
 	}
@@ -127,8 +133,24 @@ InterruptStack* exception_handler(InterruptStack* stack) {
     return stack;
 }
 
-InterruptStack* interrupt_handler(InterruptStack* stack) {
-    // ks.dbg("Got interrupt %u", stack->irq);
+InterruptStack* volatile_fun interrupt_handler(InterruptStack* stack) {
+
+    if (stack->irq == APIC_TIMER_IRQ) {     // timer interrupt, do task switch
+        if (scheduler.ready) {
+            volatile Cpu* current = get_current_cpu();
+            // context_save(current->tasks.current->context, stack);     // save context to task
+            sched_cycle(current);
+            // ks.dbg("cpu %u: now running %c entry_point at %x, stack at %x (%x)", 
+            //         current->id, current->tasks.current->name, current->tasks.current->context->regs.rip,
+            //         current->tasks.current->context->regs.rsp, current->tasks.current->stack);
+
+            context_load(current->tasks.current->context, stack);     // load context from task
+            // ks.dbg("context switched");
+
+            space_switch(current->tasks.current->space);              // switch space
+            // ks.dbg("space switched");
+        }
+    }
 
     apic_eoi();
     return stack;
