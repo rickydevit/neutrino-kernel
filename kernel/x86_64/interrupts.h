@@ -62,11 +62,11 @@ InterruptStack* exception_handler(InterruptStack* stack);
 InterruptStack* interrupt_handler(InterruptStack* stack);
 void pagefault_handler(InterruptStack* stack);
 
-void inline disable_interrupts() {
+static inline void disable_interrupts() {
     asm volatile ("cli");
 }
 
-void inline enable_interrupts() {
+static inline void enable_interrupts() {
     asm volatile ("sti");
 }
 
