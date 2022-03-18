@@ -267,15 +267,18 @@ uintptr_t vmm_find_free_heap_series(size_t size) {
     
     PageTable* pl4_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET));
     for (int dpt = 0; dpt < 512; dpt++) {
-        
-        PageTable* dpt_addr = vmm_get_or_create_entry(pl4_addr, dpt, true, false);
+            
+        vmm_get_or_create_entry(pl4_addr, dpt, true, false);
+        PageTable* dpt_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt);
         for (int pd = 0; pd < 512; pd++) {
         
-            PageTable* pd_addr = vmm_get_or_create_entry(dpt_addr, pd, true, false);
+            vmm_get_or_create_entry(dpt_addr, pd, true, false);
+            PageTable* pd_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd);
             for (int pt = 0; pt < 512; pt++) {
                 if (vmm_get_entry(pd_addr, pt) != 0) continue;
-
-                PageTable* pt_addr = vmm_get_or_create_entry(pd_addr, pt, true, false);
+        
+                vmm_get_or_create_entry(pd_addr, pt, true, false);
+                PageTable* pt_addr = GetRecursiveAddress(RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd, pt);
                 for (int page = 0; page < 512; page++) {
                     if (vmm_get_entry(pt_addr, page) != 0) continue;
 
@@ -426,12 +429,12 @@ uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, bool writabl
     return get_mem_address(phys_addr);
 }
 
-uintptr_t volatile_fun vmm_allocate_heap(PageTableEntry* table, size_t blocks) {
+uintptr_t volatile_fun vmm_allocate_heap(size_t blocks) {
     uintptr_t phys_addr = pmm_alloc_series(blocks);
     uintptr_t virt_addr = vmm_find_free_heap_series(blocks);
 
     for (size_t i = 0; i < blocks; i++) 
-        vmm_map_page(table, phys_addr + (i*PHYSMEM_BLOCK_SIZE), virt_addr + (i*PHYSMEM_BLOCK_SIZE), true, false);  
+        vmm_map_page(0, phys_addr + (i*PHYSMEM_BLOCK_SIZE), virt_addr + (i*PHYSMEM_BLOCK_SIZE), true, false);  
 
     return virt_addr;
 }
@@ -465,7 +468,7 @@ uintptr_t vmm_map_mmio(uintptr_t mmio_addr, size_t blocks) {
 
 PageTable* volatile_fun NewPageTable() {
     PageTable* p = (PageTable*)vmm_allocate_memory(get_current_cpu()->page_table, 1, true, false);
-    memory_set(p, 0, sizeof(PageTable));
+    memory_set(p, 0, PAGE_SIZE);
 
     // clone 256-511 entries
     for (uint32_t entry = 256; entry < PAGE_ENTRIES; entry++) 
@@ -474,7 +477,7 @@ PageTable* volatile_fun NewPageTable() {
     p->entries[RECURSE_ACTIVE] = page_self(p);
     vmm_identity_map_region(p, (uintptr_t)pmm._map - (uintptr_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
 
-    return get_rmem_address(p);
+    return p;
 }
 
 void DestroyPageTable(PageTable* page_table) {
@@ -482,5 +485,5 @@ void DestroyPageTable(PageTable* page_table) {
 } 
 
 void vmm_switch_space(PageTable* page_table) {
-    write_cr3(page_table);
+    write_cr3(get_rmem_address(page_table));
 }

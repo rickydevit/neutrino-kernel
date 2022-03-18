@@ -23,7 +23,7 @@ int liballoc_unlock() {
 }
 
 void* liballoc_alloc(size_t pages) {
-    uintptr_t addr = vmm_allocate_heap(0, pages);
+    uintptr_t addr = vmm_allocate_heap(pages);
     return addr;
 }
 
