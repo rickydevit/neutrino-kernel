@@ -1,6 +1,7 @@
 #include "paging.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include <neutrino/macros.h>
 #include "../arch.h"
  
 // *Check if paging is enabled
@@ -20,7 +21,7 @@ void disable_paging() {
 
 // *Read the current value of the CR3 register (the physical address of the active PageTable)
 // @return the current value of the CR3 register
-uint64_t read_cr3() {
+uint64_t volatile_fun read_cr3() {
     uint64_t value;
     __asm__("mov %%cr3, %%rax" : "=a"(value)); 
     return value;

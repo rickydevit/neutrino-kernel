@@ -27,7 +27,7 @@ void volatile_fun vmm_refresh_paging() {
 // @return a pointer to the page entry requested, or 0 if not found
 PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
     if (IS_PRESENT(table->entries[entry])) 
-        return GET_PHYSICAL_ADDRESS(table->entries[entry]);
+        return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     return 0;
 }
 
@@ -43,7 +43,7 @@ PageTable* volatile_fun vmm_create_entry(PageTable* table, uint64_t entry, bool 
     table->entries[entry] = page_create(get_rmem_address(pt), writable, user);
     vmm_refresh_paging();
 
-    return get_rmem_address(pt);
+    return pt;
 }
 
 // *Get or create the entry in the given page table. If the entry already exists in the page table, its address
@@ -55,7 +55,7 @@ PageTable* volatile_fun vmm_create_entry(PageTable* table, uint64_t entry, bool 
 // @return the address of the existing table or the newly created table
 PageTable* vmm_get_or_create_entry(PageTable* table, uint64_t entry, bool writable, bool user) {
     if (IS_PRESENT(table->entries[entry])) {
-        return GET_PHYSICAL_ADDRESS(table->entries[entry]);
+        return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     } else {
         return vmm_create_entry(table, entry, writable, user);
     }
@@ -125,6 +125,33 @@ int64_t vmm_find_table_free_series(PageTable* table, size_t size){
     return -1;
 }
 
+PageTable* volatile_fun vmm_get_table_address(PageTable* table_addr, uintptr_t virt_addr, uint16_t depth) {
+    if (depth == 0) return table_addr;
+    if (depth > 3) depth = 3;
+
+    PagingPath path = GetPagingPath(virt_addr);
+    PagingPath tpath = GetPagingPath((uintptr_t)table_addr);
+    bool isRecursive = tpath.pl4 == RECURSE_ACTIVE || tpath.pl4 == RECURSE_OTHER;
+
+    PageTable *pdpt;
+
+    if (isRecursive) {
+        pdpt = GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0);
+        if (depth == 1) return GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0);
+        vmm_get_or_create_entry(GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, true, false);
+        if (depth == 2) return GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0);
+        vmm_get_or_create_entry(GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, true, false);
+        if (depth == 3) return GetRecursiveAddress(tpath.pt, path.pl4, path.dpt, path.pd, 0);
+    } else {
+        pdpt = vmm_get_or_create_entry(table_addr, path.pl4, true, false);
+        PageTable* pd = vmm_get_or_create_entry(pdpt, path.dpt, true, false);
+        if (depth == 2) return pd;
+        else return vmm_get_or_create_entry(pd, path.pd, true, false);
+    }
+
+    return (PageTable*)nullptr;
+}
+
 // *Free a physical memory block if the page pointing to it is free
 // @param table the table to check if is free
 // @param parent the parent page of the table
@@ -140,18 +167,16 @@ void vmm_free_if_necessary_table(PageTable* table, PageTable* parent, uint64_t p
 // @param table the pml4 table to check the address in
 // @param address the address unmapped from the pml4 table
 void vmm_free_if_necessary_tables(PageTable* table, uint64_t unmapped_addr) {
-    uint64_t pl4_entry = GET_PL4_INDEX(unmapped_addr);
-    uint64_t dpt_entry = GET_DPT_INDEX(unmapped_addr);
-    uint64_t pd_entry = GET_DIR_INDEX(unmapped_addr);
+    PagingPath path = GetPagingPath(unmapped_addr);
     
     PageTable *pdpt, *pd, *pt;
-    pdpt = vmm_get_or_create_entry(table, pl4_entry, true, true);
-    pd = vmm_get_or_create_entry(pdpt, dpt_entry, true, true);
-    pt = vmm_get_or_create_entry(pd, pd_entry, true, true);
+    pdpt = vmm_get_table_address(table, unmapped_addr, 1);
+    pd = vmm_get_table_address(table, unmapped_addr, 2);
+    pt = vmm_get_table_address(table, unmapped_addr, 3);
 
-    vmm_free_if_necessary_table(pt, pd, pd_entry);
-    vmm_free_if_necessary_table(pd, pdpt, dpt_entry);
-    vmm_free_if_necessary_table(pdpt, table, pl4_entry);
+    vmm_free_if_necessary_table(pt, pd, path.pd);
+    vmm_free_if_necessary_table(pd, pdpt, path.dpt);
+    vmm_free_if_necessary_table(pdpt, table, path.pl4);
 }
 
 PageTable* volatile_fun vmm_get_most_nested_table(PageTable* table_addr, uintptr_t virt_addr) {
@@ -216,17 +241,6 @@ void volatile_fun vmm_map_kernel_region(struct memory_physical* phys, PageTable*
     }
 }
 
-// *Identity map a region of physical memory
-// @param table the PageTable pointer to the table to map addresses to
-// @param base the base address of the memory region
-// @param size the size of the memory region 
-void volatile_fun vmm_identity_map_region(PageTable* table, uintptr_t base, size_t size) {
-    for (int i = 0; i * PAGE_SIZE < size; i++) {
-        uint64_t addr = base + i * PAGE_SIZE;
-        vmm_map_page_impl(table, get_rmem_address(addr), addr, (PageProperties){true, false});
-    }
-}
-
 // --- Mapping and unmapping --------------------
 
 void volatile_fun vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
@@ -245,7 +259,7 @@ bool vmm_unmap_page_impl(PageTable* table_addr, uintptr_t virt_addr) {
 
     page_clear_bit(to_free, PRESENT_BIT_OFFSET);
 
-    vmm_free_if_necessary_tables(table_addr, virt_addr);
+    vmm_free_if_necessary_tables(table_addr, virt_addr); // todo: reimplement this
     vmm_refresh_paging();
     return true;
 }
@@ -317,8 +331,9 @@ void init_vmm() {
     // map physical regions in the page
     vmm_map_physical_regions(kernel_pml4);
 
-    // map the pmm map
-    vmm_identity_map_region(kernel_pml4, (uintptr_t)pmm._map - (uintptr_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
+    // map the physical memory bitmap 
+    for (int i = 0; i * PAGE_SIZE < PHYSMEM_MAP_SIZE; i++) 
+        vmm_map_page_impl(kernel_pml4, get_rmem_address(PHYSMEM_MAP_BASE + (i * PAGE_SIZE)), PHYSMEM_MAP_BASE + (i * PAGE_SIZE), (PageProperties){true, false});
     
     // give CR3 the kernel pml4 address
     ks.dbg("Preparing to load pml4...");
@@ -371,7 +386,7 @@ void init_vmm_on_ap(struct stivale2_smp_info* info) {
 // @param writable flag to indicate whether the newly created entry should be writable or not
 // @param user flags to indicate whether the newly created entry should be accessible from userspace or not
 void volatile_fun vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, bool writable, bool user) {
-    if (read_cr3() == table || table == 0) {               //  cr3 is the given table physical address
+    if (table == read_cr3() || table == 0) {               //  cr3 is the given table physical address
         vmm_map_page_impl(vmm_get_active_recurse_link(), phys_addr, virt_addr, (PageProperties){writable, user});
     
     } else {
@@ -472,12 +487,10 @@ PageTable* volatile_fun NewPageTable() {
 
     // clone 256-511 entries
     for (uint32_t entry = 256; entry < PAGE_ENTRIES; entry++) 
-        p->entries[entry] = get_current_cpu()->page_table->entries[entry];
-        
-    p->entries[RECURSE_ACTIVE] = page_self(p);
-    vmm_identity_map_region(p, (uintptr_t)pmm._map - (uintptr_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
+        p->entries[entry] = vmm_get_entry(vmm_get_active_recurse_link(), entry);
 
-    return p;
+    p->entries[RECURSE_ACTIVE] = page_self(p);
+    return get_rmem_address(p);
 }
 
 void DestroyPageTable(PageTable* page_table) {

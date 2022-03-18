@@ -6,6 +6,8 @@
 #define PHYSMEM_BLOCK_SIZE 0x1000
 #define PHYSMEM_2MEGS      0x200000
 #define PHYSMEM_MAP_BLOCKS_PER_UNIT (8*sizeof(*pmm._map))
+#define PHYSMEM_MAP_BASE    (uintptr_t)pmm._map - (uintptr_t)pmm._map % PHYSMEM_BLOCK_SIZE
+#define PHYSMEM_MAP_SIZE    (size_t)((pmm._map_size / PAGE_SIZE) + 1) * PHYSMEM_BLOCK_SIZE
 
 typedef bool BlockState;
 typedef int64_t BlockPosition;
