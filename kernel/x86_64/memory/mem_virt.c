@@ -307,10 +307,6 @@ void init_vmm() {
     PageTable* kernel_pml4 = vmm_new_table();
     ks.dbg("New pml4 created at %x", kernel_pml4);
 
-    // identity map the first 2M of physical memory
-    for (int i = 0; i < PHYSMEM_2MEGS / PAGE_SIZE; i++)
-        vmm_map_page_impl(kernel_pml4, i*PAGE_SIZE, i*PAGE_SIZE, (PageProperties){true, false});
-
     // map the page itself in the 510st pml4 entry
     ks.dbg("Mapping page table inside itself: %x (%x) to %x", kernel_pml4, get_rmem_address((uintptr_t)kernel_pml4), RECURSE_PML4);
     kernel_pml4->entries[RECURSE_ACTIVE] = page_self(kernel_pml4);
@@ -475,7 +471,8 @@ PageTable* volatile_fun NewPageTable() {
     for (uint32_t entry = 256; entry < PAGE_ENTRIES; entry++) 
         p->entries[entry] = get_current_cpu()->page_table->entries[entry];
         
-    p->entries[RECURSE_ACTIVE] = page_create(get_rmem_address(p), true, false);
+    p->entries[RECURSE_ACTIVE] = page_self(p);
+    vmm_identity_map_region(p, (uintptr_t)pmm._map - (uintptr_t)pmm._map % PAGE_SIZE, ((pmm._map_size / PAGE_SIZE) + 1) * PAGE_SIZE);
 
     return get_rmem_address(p);
 }

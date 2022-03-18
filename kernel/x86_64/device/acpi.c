@@ -8,13 +8,14 @@
 #include "kernel/common/memory/memory.h"
 #include "../memory/mem_virt.h"
 #include "arch.h"
+#include <neutrino/macros.h>
 
 // === PRIVATE FUNCTIONS ========================
 
 // *Find the RSDP descriptor and return a pointer to it
 // @return a pointer to the RSDP descriptor
-void* find_rsdp() {
-    for (uint32_t i = RSDP_LOW; i < RSDP_HIGH; i+=0x10) {
+void* volatile_fun find_rsdp() {
+    for (uintptr_t i = get_mem_address(RSDP_LOW); i < get_mem_address(RSDP_HIGH); i+=0x10) {
         char* candidate = (char*)i;
         if (strncmp(candidate, "RSD PTR ", 8) == 0) return (void*)candidate;
     }
@@ -34,10 +35,17 @@ bool do_checksum(void* start, size_t length) {
     return checksum == 0;
 }
 
+void map_acpi() {
+    // map RSDP
+    for (uintptr_t addr = RSDP_LOW; addr < RSDP_HIGH; addr += PAGE_SIZE) 
+        vmm_map_page(0, addr, get_mem_address(addr), true, false);
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 void init_acpi() {
-    struct RSDP_descriptor2* descriptor = (struct RSDP_descriptor2*) get_mem_address(find_rsdp());
+    map_acpi();
+    struct RSDP_descriptor2* descriptor = (struct RSDP_descriptor2*) find_rsdp();
     if (descriptor == 0) {
         ks.err("Cannot find RSDP descriptor. ACPI functionalities may not be available");
         return;
