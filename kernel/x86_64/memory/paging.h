@@ -17,6 +17,7 @@
 #define ACCESSED_BIT_OFFSET     0b100000
 #define DIRTY_BIT_OFFSET        0b1000000
 #define HUGE_BIT_OFFSET         0b10000000
+#define NO_EXECUTE_BIT_OFFSET   0x8000000000000000
 #define ADDRESS_MASK            0xfffffffffffff000
 
 #define IS_PRESENT(x)   (x & PRESENT_BIT_OFFSET)

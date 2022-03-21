@@ -39,6 +39,7 @@ PageTableEntry page_create(uint64_t addr, bool writable, bool user) {
     if (writable) page_set_bit(&pt, WRITABLE_BIT_OFFSET);
     if (user) page_set_bit(&pt, USERSPACE_BIT_OFFSET);
     page_set_bit(&pt, PRESENT_BIT_OFFSET);
+    page_clear_bit(&pt, NO_EXECUTE_BIT_OFFSET);
 
     return pt;
 }
