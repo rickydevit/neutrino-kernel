@@ -103,7 +103,7 @@ Cpu* get_bootstrap_cpu() {
 
 // *Get the cpu info about the current processor
 // @return the pointer to the cpu info structure of the current processor
-Cpu* get_current_cpu() {
+Cpu* volatile_fun get_current_cpu() {
     uint32_t id = LapicIDCorrection(apic_read(lapic_id));
 
     for (uint32_t i = 0; i < smp.cpu_count; i++) {
@@ -113,4 +113,8 @@ Cpu* get_current_cpu() {
 
     ks.warn("Cannot find cpu with lapic id %u", id);
     return (Cpu*)NULL;
+}
+
+size_t get_cpu_count() {
+    return (size_t)smp.cpu_count;
 }
