@@ -56,54 +56,55 @@ void kput(char* message, ...) {
 }
 
 void klog(char* message, ...) {
-    lock(&l);
     disable_interrupts();
+    lock(&l);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[LOG] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    enable_interrupts();
     unlock(&l);
+    enable_interrupts();
 }
 
 void kdbg(char* message, ...) {
-    lock(&l);
     disable_interrupts();
+    lock(&l);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[DEBUG] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    enable_interrupts();
     unlock(&l);
+    enable_interrupts();
 }
 
 void kwarn(char* message, ...) {
-    lock(&l);
     disable_interrupts();
+    lock(&l);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[WARN] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    enable_interrupts();
     unlock(&l);
+    enable_interrupts();
 }
 
 void kerr(char* message, ...) {
-    lock(&l);
     disable_interrupts();
+    lock(&l);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[ERR] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    enable_interrupts();
     unlock(&l);
+    enable_interrupts();
 }
 
 void kpanic(Fatal fatal_error, ...) {
+    disable_interrupts();
     lock(&l);
     va_list args; va_start(args, fatal_error);
     char buf[2048] = {0}, cbuf[32] = {0};
@@ -114,6 +115,5 @@ void kpanic(Fatal fatal_error, ...) {
     ks._helper(vstrf(fatal_error.message, buf, args));
     ks._helper("\n");
 
-    asm volatile ("cli");
     asm volatile ("hlt");
 }
