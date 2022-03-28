@@ -88,7 +88,7 @@ void log_interrupt(InterruptStack* stack) {
 // *Initialize the Interrupt Descriptor Table
 void init_idt() {
 	for (uint64_t i = 0; i < 48; i++) {
-		if (i == 0x0e || i == 0x08) 
+		if (i == 0x0e || i == 0x08 || i == 0x0d || i == 0x20) 
 			set_idt_entry(i, _interrupt_vector[i], 1, INTERRUPT_GATE);
 		else
 			set_idt_entry(i, _interrupt_vector[i], 0, INTERRUPT_GATE);
@@ -111,6 +111,9 @@ InterruptStack* exception_handler(InterruptStack* stack) {
         case 11:    // NP
         case 12:    // SS
         case 13:    // GP
+            log_interrupt(stack);
+            ks.err("General Protection Fault detected.");
+            break;
         case 17:    // AC
         case 18:    // MC
         case 21:    // CP
@@ -137,18 +140,15 @@ InterruptStack* volatile_fun interrupt_handler(InterruptStack* stack) {
 
     if (stack->irq == APIC_TIMER_IRQ) {     // timer interrupt, do task switch
         if (scheduler.ready) {
-            volatile Cpu* current = get_current_cpu();
-            // context_save(current->tasks.current->context, stack);     // save context to task
-            sched_cycle(current);
-            // ks.dbg("cpu %u: now running %c entry_point at %x, stack at %x (%x)", 
-            //         current->id, current->tasks.current->name, current->tasks.current->context->regs.rip,
-            //         current->tasks.current->context->regs.rsp, current->tasks.current->stack);
+            volatile Cpu* cpu = get_current_cpu();
+            
+            if (cpu->tasks.current->status != TASK_NEW && 
+                cpu->tasks.current->status != TASK_EMBRYO)
+                context_save(cpu->tasks.current->context, stack);     // save context to task
+            sched_cycle(cpu);
+            context_load(cpu->tasks.current->context, stack);     // load context from task
 
-            context_load(current->tasks.current->context, stack);     // load context from task
-            // ks.dbg("context switched");
-
-            space_switch(current->tasks.current->space);              // switch space
-            // ks.dbg("space switched");
+            space_switch(cpu->tasks.current->space);              // switch space
         }
     }
 
