@@ -22,4 +22,5 @@ typedef struct __scheduler {
 Scheduler scheduler;
 
 void sched_cycle(Cpu* cpu);
+void sched_start(Task* task);
 void init_scheduler();

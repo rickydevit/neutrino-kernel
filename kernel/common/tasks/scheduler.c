@@ -58,7 +58,7 @@ void queue_put(Task* task) {
 // --- Scheduler default tasks ------------------
 
 void cpu_idle() {
-    ks.dbg("TASK IDLE");
+    ks.dbg("TASK IDLE on cpu #%u", get_current_cpu()->id);
     while (true)
         asm volatile ("hlt");
 }
@@ -69,8 +69,8 @@ void volatile_fun init_scheduler() {
     ks.log("Initializing scheduler...");
     scheduler.ready = false;
 
-    // set idle task
-    scheduler.idle = NewIdleTask((uintptr_t)cpu_idle);
+    for (size_t i = 0; i < get_cpu_count(); i++)
+        get_cpu(i)->tasks.idle = NewIdleTask((uintptr_t)cpu_idle);
 
     scheduler.gtq = nullptr;
     scheduler.gtq_last = nullptr;
@@ -80,9 +80,14 @@ void volatile_fun init_scheduler() {
     scheduler.ready = true;
 }
 
+void sched_start(Task* task) {
+    // todo: implement correct start
+    for (size_t i = 0; i < get_cpu_count(); i++)
+        get_cpu(i)->tasks.current = get_cpu(i)->tasks.idle;
+}
+
 void sched_cycle(Cpu* cpu) {
-    // ks.log("sched_cycle() : cpu: %u", cpu->id);
-    cpu->tasks.current = scheduler.idle;
+    cpu->tasks.current->status = TASK_RUNNING;
     return;
 
     if (cpu_is_idle(cpu)) {
