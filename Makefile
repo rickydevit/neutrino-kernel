@@ -46,7 +46,7 @@ SOBJ			:= $(patsubst %.s,$(BUILD_OUT)/%.o,$(SFILES))
 OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
 
 # qemu settings
-QEMU 			= /mnt/d/Programmi/qemu/qemu-system-${ARCH}.exe
+QEMU 			= qemu-system-${ARCH}
 HARD_FLAGS 		= -m 4G -vga std -cpu Skylake-Client -smp 2
 RUN_FLAGS 		= ${HARD_FLAGS} -serial stdio
 DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -d cpu_reset,int -D qemu.log -s -S
