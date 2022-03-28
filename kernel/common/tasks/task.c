@@ -5,6 +5,7 @@
 #include "../memory/space.h"
 #include <liballoc.h>
 #include <string.h>
+#include <neutrino/macros.h>
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -33,6 +34,15 @@ Task* NewTask(char* name, bool user) {
 
     task_set_stack(task);
     return task;
+}
+
+Task* NewIdleTask(uintptr_t entry_point) {
+    Task* idle = NewTask("idle", false);
+    context_init(idle->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE, PROCESS_STACK_BASE, (ContextFlags)0);
+
+    idle->status = TASK_NEW;
+
+    return idle;
 }
 
 void DestroyTask(Task* task) {
