@@ -8,23 +8,23 @@
 
 // *Enable FPU (Floating Point Unit)
 inline void enable_fpu() {
-    asm("fninit");
+    asm volatile("fninit");
 }
 
-inline void _avx_save(uintptr_t addr) {
-    __asm__("xsave64 %0" : :  "m" (*(uint64_t*)addr), "d" (0xffffffff), "a" (0xffffffff));
+static inline void _avx_save(uintptr_t addr) {
+    asm volatile("xsave64 %0" : :  "m" (*(uint64_t*)addr), "d" (0xffffffff), "a" (0xffffffff) : "memory");
 }
 
-inline void _avx_load(uintptr_t addr) {
-    __asm__("xrstor64 %0" : : "m" (*(uint64_t*)addr), "d" (0xffffffff), "a" (0xffffffff));
+static inline void _avx_load(uintptr_t addr) {
+    asm volatile("xrstor64 %0" : : "m" (*(uint64_t*)addr), "d" (0xffffffff), "a" (0xffffffff) : "memory");
 }
 
-inline void _sse_save(uintptr_t addr) {
-    __asm__("fxsave %0" : : "m" (*(uint64_t*)addr));
+static inline void _sse_save(uintptr_t addr) {
+    asm volatile("fxsave %0" : : "m" (*(uint64_t*)addr));
 }
 
-inline void _sse_load(uintptr_t addr) {
-    __asm__("fxrstor %0" : : "m" (*(uint64_t*)addr));
+static inline void _sse_load(uintptr_t addr) {
+    asm volatile("fxrstor %0" : : "m" (*(uint64_t*)addr));
 }
 
 bool has_sse();

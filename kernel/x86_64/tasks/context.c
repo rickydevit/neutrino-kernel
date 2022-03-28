@@ -6,6 +6,7 @@
 #include "kernel/common/tasks/task.h"
 #include "kernel/common/kservice.h"
 #include <liballoc.h>
+#include <neutrino/macros.h>
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -13,8 +14,7 @@
 
 // *Create a new Context
 Context* NewContext() {
-    Context* context = (Context*)kmalloc(sizeof(Context));
-    context->simd = (uint8_t*)kmalloc(get_sse_context_size());
+    Context* context = (Context*)kmalloc(sizeof(Context) + get_sse_context_size());
     set_initial_sse_context(context->simd);
     return context;
 }

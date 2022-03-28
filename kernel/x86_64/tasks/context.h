@@ -10,8 +10,8 @@ struct __context {
     // uintptr_t syscall_ustack; // todo syscalls
 
     Registers regs;
-    uint8_t* simd aligned(64);
-} packed;
+    uint8_t simd[] aligned(64);
+} aligned(64);
 
 #define RFLAGS_INTERRUPT_ENABLE     (1<<9)
 #define RFLAGS_RESERVED1_ONE        (1<<1)
