@@ -40,7 +40,7 @@
     - [x] **SMD (Symmetric multi-processing)**
         - [x] **Per-CPU initialization (via stivale2)**
     - [x] **CPUID** 
-    - [ ] **Timers**
+    - [x] **Timers**
         - [x] **RTC** `🚧 WIP`
         - [x] **LAPIC timer**
         - [ ] **PIT** `🔻 LOW PRIORITY`
@@ -52,7 +52,7 @@
             *Manages the virtual memory page tables. Can map, remap and unmap pages*
         - [x] **Kernel Heap manager**
     - [ ] **Executable loading**
-    - [ ] **Process scheduler** `🔗 Timers, Executable loading`
+    - [x] **Process scheduler** `🔗 Timers, Executable loading`
 
 - [ ] ⚙ **Advanced drivers**
     - [x] **Video driver**

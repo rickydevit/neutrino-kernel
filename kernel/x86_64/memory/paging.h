@@ -14,6 +14,7 @@
 #define PRESENT_BIT_OFFSET      0b1
 #define WRITABLE_BIT_OFFSET     0b10
 #define USERSPACE_BIT_OFFSET    0b100
+#define CACHE_DISABLE_BIT_OFFSET 0b1000
 #define ACCESSED_BIT_OFFSET     0b100000
 #define DIRTY_BIT_OFFSET        0b1000000
 #define HUGE_BIT_OFFSET         0b10000000
@@ -57,7 +58,11 @@ typedef struct __paging_path {
 typedef struct __page_properties {
     bool writable;
     bool user;
+    bool cache_disable;
 } PageProperties;
+
+#define PageKernelWrite (PageProperties){true, false, false}
+#define PageUserWrite   (PageProperties){true, true, false}
 
 bool is_paging_enabled();
 void disable_paging();
@@ -67,5 +72,5 @@ void write_cr3(uint64_t value);
 inline void page_set_bit(PageTableEntry* page, uint64_t offset) { *page |= (offset); }
 inline void page_clear_bit(PageTableEntry* page, uint64_t offset) { *page &= ~(offset); }
 
-PageTableEntry page_create(uint64_t addr, bool writable, bool user);
+PageTableEntry page_create(uint64_t addr, PageProperties prop);
 PageTableEntry page_self(PageTable* table);

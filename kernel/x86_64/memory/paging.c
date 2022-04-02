@@ -33,11 +33,12 @@ void write_cr3(uint64_t value) {
     __asm__("mov %0, %%cr3" : : "r"(value));
 }
 
-PageTableEntry page_create(uint64_t addr, bool writable, bool user) {
+PageTableEntry page_create(uint64_t addr, PageProperties prop) {
     PageTableEntry pt = addr & ADDRESS_MASK;
 
-    if (writable) page_set_bit(&pt, WRITABLE_BIT_OFFSET);
-    if (user) page_set_bit(&pt, USERSPACE_BIT_OFFSET);
+    if (prop.writable) page_set_bit(&pt, WRITABLE_BIT_OFFSET);
+    if (prop.user) page_set_bit(&pt, USERSPACE_BIT_OFFSET);
+    if (prop.cache_disable) page_set_bit(&pt, CACHE_DISABLE_BIT_OFFSET);
     page_set_bit(&pt, PRESENT_BIT_OFFSET);
     page_clear_bit(&pt, NO_EXECUTE_BIT_OFFSET);
 
@@ -45,5 +46,5 @@ PageTableEntry page_create(uint64_t addr, bool writable, bool user) {
 }
 
 PageTableEntry page_self(PageTable* table) {
-    return page_create(get_rmem_address((uintptr_t)table), true, false);
+    return page_create(get_rmem_address((uintptr_t)table), PageKernelWrite);
 }

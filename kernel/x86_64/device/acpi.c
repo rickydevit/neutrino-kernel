@@ -38,7 +38,7 @@ bool do_checksum(void* start, size_t length) {
 void map_acpi() {
     // map RSDP
     for (uintptr_t addr = RSDP_LOW; addr < RSDP_HIGH; addr += PAGE_SIZE) 
-        vmm_map_page(0, addr, get_mem_address(addr), true, false);
+        vmm_map_page(0, addr, get_mem_address(addr), PageKernelWrite);
 }
 
 // === PUBLIC FUNCTIONS =========================

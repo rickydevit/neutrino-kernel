@@ -75,7 +75,7 @@ void init_tss(Cpu* cpu) {
     cpu->tss.ist1 = CPU_STACK_BASE + CPU_STACK_SIZE;
 
     for (uint32_t i = 0; i < CPU_STACK_SIZE / PAGE_SIZE; i++)
-        vmm_map_page(cpu->page_table, cpu->stack_interrupt + i*PAGE_SIZE, CPU_STACK_BASE + i*PAGE_SIZE, true, false);
+        vmm_map_page(cpu->page_table, cpu->stack_interrupt + i*PAGE_SIZE, CPU_STACK_BASE + i*PAGE_SIZE, PageKernelWrite);
 
     install_tss();
     ks.dbg("TSS set up for CPU #%u", cpu->id);

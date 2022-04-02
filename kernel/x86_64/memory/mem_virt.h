@@ -15,9 +15,9 @@ void init_vmm();
 void init_vmm_on_ap(struct stivale2_smp_info* info);
 
 bool vmm_unmap_page(PageTable* table, uintptr_t virt_addr);
-void vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, bool writable, bool user);
+void vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop);
 
-uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, bool writable, bool user);
+uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, PageProperties prop);
 uintptr_t vmm_allocate_heap(size_t blocks);
 uintptr_t vmm_map_mmio(uintptr_t mmio_addr, size_t blocks);
 bool vmm_free_memory(PageTableEntry* table, uintptr_t addr, size_t blocks);
