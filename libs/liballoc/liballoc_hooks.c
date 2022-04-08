@@ -24,11 +24,11 @@ int liballoc_unlock() {
 
 void* liballoc_alloc(size_t pages) {
     uintptr_t addr = vmm_allocate_heap(pages);
-    return addr;
+    return (void*)addr;
 }
 
 int liballoc_free(void* address, size_t pages) {
-    if (vmm_free_memory(0, address, pages) == true) return 0;
+    if (vmm_free_memory(0, (uintptr_t)address, pages) == true) return 0;
     return 1;
 }
 

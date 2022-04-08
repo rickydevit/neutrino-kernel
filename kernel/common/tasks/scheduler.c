@@ -12,28 +12,28 @@
 // *Get if the given CPU is currently idle
 // @param cpu the CPU to check 
 // @return true if both current and next tasks are cleared, false otherwise
-bool cpu_is_idle(Cpu* cpu) {
+bool cpu_is_idle(volatile Cpu* cpu) {
     return (cpu->tasks.current == nullptr) && (cpu->tasks.next == nullptr);
 }
 
 // *Get it the given CPU is Next-free
 // @param cpu the CPU to check 
 // @return true if next task is cleared, false otherwise
-bool cpu_is_next_free(Cpu* cpu) {
+bool cpu_is_next_free(volatile Cpu* cpu) {
     return (cpu->tasks.next == nullptr);
 }
 
-bool cpu_peek_other(Cpu* cpu) {
+bool cpu_peek_other(volatile Cpu* cpu) {
     ks.fatal(FatalError(NOT_IMPLEMENTED, "cpu_peek_other() not implemented."));
     return false;
 }
 
-void cpu_swap_task(Cpu* cpu) {
+void cpu_swap_task(volatile Cpu* cpu) {
     ks.fatal(FatalError(NOT_IMPLEMENTED, "cpu_swap_task() not implemented."));
     return;
 }
 
-void cpu_next(Cpu* cpu) {
+void cpu_next(volatile Cpu* cpu) {
     ks.fatal(FatalError(NOT_IMPLEMENTED, "cpu_next() not implemented."));
     return;
 }
@@ -86,7 +86,7 @@ void sched_start(Task* task) {
         get_cpu(i)->tasks.current = get_cpu(i)->tasks.idle;
 }
 
-void sched_cycle(Cpu* cpu) {
+void sched_cycle(volatile Cpu* cpu) {
     if (cpu->tasks.current == nullptr)
         cpu->tasks.current = cpu->tasks.idle;
 

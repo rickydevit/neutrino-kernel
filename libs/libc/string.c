@@ -55,7 +55,7 @@ int32_t volatile_fun strncmp(const char* s1, const char* s2, size_t len) {
 bool volatile_fun strcpy(const char *src, char *dest) {
     if (dest == NULL || src == NULL) return false;
     char *temp = dest;
-    while(*temp++ = *src++); 
+    while ((*temp++ = *src++)); 
     return true;
 }
 

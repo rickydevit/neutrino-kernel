@@ -33,7 +33,7 @@ void volatile_fun vmm_reload_cr3() {
 // @return a pointer to the page entry requested, or 0 if not found
 PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
     if (IS_PRESENT(table->entries[entry])) 
-        return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
+        return (PageTable*)get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     return 0;
 }
 
@@ -44,7 +44,7 @@ PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
 // @return the address of the newly created entry
 PageTable* volatile_fun vmm_create_entry(PageTable* table, uint64_t entry, PageProperties prop) {
     PageTable* pt = (PageTable*)get_mem_address(pmm_alloc());
-    table->entries[entry] = page_create(get_rmem_address(pt), prop);
+    table->entries[entry] = page_create(get_rmem_address((uintptr_t)pt), prop);
     vmm_reload_cr3();
 
     return pt;
@@ -58,7 +58,7 @@ PageTable* volatile_fun vmm_create_entry(PageTable* table, uint64_t entry, PageP
 // @return the address of the existing table or the newly created table
 PageTable* volatile_fun vmm_get_or_create_entry(PageTable* table, uint64_t entry, PageProperties prop) {
     if (IS_PRESENT(table->entries[entry])) {
-        return get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
+        return (PageTable*)get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     } else {
         return vmm_create_entry(table, entry, prop);
     }
@@ -68,7 +68,7 @@ PageTable* volatile_fun vmm_get_or_create_entry(PageTable* table, uint64_t entry
 // @param virt the virtual address
 // @return the physical address associated to the virtual address
 uintptr_t vmm_virt_to_phys(uintptr_t virt) {
-    PageTable* pdpt = vmm_get_entry(read_cr3(), (uint64_t)GET_PL4_INDEX(virt));
+    PageTable* pdpt = vmm_get_entry((PageTable*)read_cr3(), (uint64_t)GET_PL4_INDEX(virt));
     if (pdpt == 0) ks.warn("Physical address for virtual address %x is invalid", virt);
     
     PageTable* pdir = vmm_get_entry(pdpt, (uint64_t)GET_DPT_INDEX(virt));
@@ -84,7 +84,7 @@ uintptr_t vmm_virt_to_phys(uintptr_t virt) {
 // @return the new page table pointer
 PageTable* vmm_new_table() {
     PageTable* table = (PageTable*)get_mem_address(pmm_alloc());
-    memory_set(table, 0, PHYSMEM_BLOCK_SIZE);
+    memory_set((uint8_t*)table, 0, PHYSMEM_BLOCK_SIZE);
 
     return table;
 }
@@ -136,15 +136,15 @@ PageTable* volatile_fun vmm_get_table_address(PageTable* table_addr, uintptr_t v
     PagingPath tpath = GetPagingPath((uintptr_t)table_addr);
     bool isRecursive = tpath.pl4 == RECURSE_ACTIVE || tpath.pl4 == RECURSE_OTHER;
 
-    PageTable *pdpt;
+    PageTable* pdpt;
 
     if (isRecursive) {
-        pdpt = GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0);
-        if (depth == 1) return GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0);
-        vmm_get_or_create_entry(GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, PageKernelWrite);
-        if (depth == 2) return GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0);
-        vmm_get_or_create_entry(GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, PageKernelWrite);
-        if (depth == 3) return GetRecursiveAddress(tpath.pt, path.pl4, path.dpt, path.pd, 0);
+        pdpt = (PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0);
+        if (depth == 1) return (PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, PageKernelWrite);
+        if (depth == 2) return (PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, PageKernelWrite);
+        if (depth == 3) return (PageTable*)GetRecursiveAddress(tpath.pt, path.pl4, path.dpt, path.pd, 0);
     } else {
         pdpt = vmm_get_or_create_entry(table_addr, path.pl4, PageKernelWrite);
         PageTable* pd = vmm_get_or_create_entry(pdpt, path.dpt, PageKernelWrite);
@@ -162,7 +162,7 @@ PageTable* volatile_fun vmm_get_table_address(PageTable* table_addr, uintptr_t v
 void vmm_free_if_necessary_table(PageTable* table, PageTable* parent, uint64_t parent_index) {
     if (vmm_is_table_free(table)) {
         pmm_free(GET_PHYSICAL_ADDRESS(parent->entries[parent_index]));
-        page_clear_bit(vmm_get_entry(table, parent_index), PRESENT_BIT_OFFSET);
+        page_clear_bit((PageTableEntry*)vmm_get_entry(table, parent_index), PRESENT_BIT_OFFSET);
     }
 }
 
@@ -190,10 +190,10 @@ PageTable* volatile_fun vmm_get_most_nested_table(PageTable* table_addr, uintptr
     PageTable *pdpt, *pd, *pt;
     
     if (isRecursive) {
-        vmm_get_or_create_entry(GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pl4, tpath.pt, 0), path.pl4, PageKernelWrite);
-        vmm_get_or_create_entry(GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, PageKernelWrite);
-        vmm_get_or_create_entry(GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, PageKernelWrite);
-        pt = GetRecursiveAddress(tpath.pt, path.pl4, path.dpt, path.pd, 0);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pl4, tpath.pt, 0), path.pl4, PageKernelWrite);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, PageKernelWrite);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, PageKernelWrite);
+        pt = (PageTable*)GetRecursiveAddress(tpath.pt, path.pl4, path.dpt, path.pd, 0);
     } else {
         pdpt = vmm_get_or_create_entry(table_addr, path.pl4, PageKernelWrite);
         pd = vmm_get_or_create_entry(pdpt, path.dpt, PageKernelWrite);
@@ -258,10 +258,10 @@ bool vmm_unmap_page_impl(PageTable* table_addr, uintptr_t virt_addr) {
     PagingPath path = GetPagingPath(virt_addr);
     PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr);
 
-    PageTable *to_free = vmm_get_entry(pt, path.pt);
+    PageTable* to_free = vmm_get_entry(pt, path.pt);
     if (to_free == 0) return false;
 
-    page_clear_bit(to_free, PRESENT_BIT_OFFSET);
+    page_clear_bit((PageTableEntry*)to_free, PRESENT_BIT_OFFSET);
 
     vmm_free_if_necessary_tables(table_addr, virt_addr); // todo: reimplement this
     vmm_reload_tlb(virt_addr);
@@ -271,32 +271,30 @@ bool vmm_unmap_page_impl(PageTable* table_addr, uintptr_t virt_addr) {
 // *Get the recurse link for the active page table
 // @return the address of the active page table
 static inline uintptr_t vmm_get_active_recurse_link() {
-    return GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, 0);
+    return (uintptr_t)GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, 0);
 }
 
 // *Get the recurse link for the other page table
 // @return the address of the other page table
 static inline uintptr_t vmm_get_other_recurse_link() {
-    return GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_OTHER, 0);
+    return (uintptr_t)GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_OTHER, 0);
 }
 
 uintptr_t vmm_find_free_heap_series(size_t size) {
-    uint64_t pl4 = GET_PL4_INDEX(HEAP_OFFSET);
-    
-    PageTable* pl4_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET));
+    PageTable* pl4_addr = (PageTable*)GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET));
     for (int dpt = 0; dpt < 512; dpt++) {
             
         vmm_get_or_create_entry(pl4_addr, dpt, (PageProperties){true, false, true});
-        PageTable* dpt_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt);
+        PageTable* dpt_addr = (PageTable*)GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt);
         for (int pd = 0; pd < 512; pd++) {
         
             vmm_get_or_create_entry(dpt_addr, pd, (PageProperties){true, false, true});
-            PageTable* pd_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd);
+            PageTable* pd_addr = (PageTable*)GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd);
             for (int pt = 0; pt < 512; pt++) {
                 if (vmm_get_entry(pd_addr, pt) != 0) continue;
         
                 vmm_get_or_create_entry(pd_addr, pt, (PageProperties){true, false, true});
-                PageTable* pt_addr = GetRecursiveAddress(RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd, pt);
+                PageTable* pt_addr = (PageTable*)GetRecursiveAddress(RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd, pt);
                 for (int page = 0; page < 512; page++) {
                     if (vmm_get_entry(pt_addr, page) != 0) continue;
 
@@ -341,7 +339,7 @@ void init_vmm() {
     
     // give CR3 the kernel pml4 address
     ks.dbg("Preparing to load pml4...");
-    get_bootstrap_cpu()->page_table = get_rmem_address((uintptr_t)kernel_pml4);
+    get_bootstrap_cpu()->page_table = (PageTable*)get_rmem_address((uintptr_t)kernel_pml4);
     write_cr3(get_rmem_address((uintptr_t)kernel_pml4));
 
     ks.log("VMM has been initialized.");
@@ -357,7 +355,7 @@ void volatile_fun init_vmm_on_ap(struct stivale2_smp_info* info) {
     // clone 256-511 entries
     ks.dbg("Cloning BSP page table...");
     for (uint32_t entry = 256; entry < PAGE_ENTRIES; entry++) 
-        kernel_pml4->entries[entry] = ((PageTable*)get_mem_address(get_bootstrap_cpu()->page_table))->entries[entry];
+        kernel_pml4->entries[entry] = ((PageTable*)get_mem_address((uintptr_t)get_bootstrap_cpu()->page_table))->entries[entry];
 
     // map the page itself in the 510st pml4 entry
     ks.dbg("Mapping page table inside itself: %x (%x) to %x", kernel_pml4, get_rmem_address((uintptr_t)kernel_pml4), RECURSE_PML4);
@@ -378,7 +376,7 @@ void volatile_fun init_vmm_on_ap(struct stivale2_smp_info* info) {
     
     // give CR3 the kernel pml4 address
     ks.dbg("Preparing to load pml4... %x %x", kernel_pml4, get_rmem_address((uintptr_t)kernel_pml4));
-    get_cpu(info->processor_id)->page_table = get_rmem_address((uintptr_t)kernel_pml4);
+    get_cpu(info->processor_id)->page_table = (PageTable*)get_rmem_address((uintptr_t)kernel_pml4);
     write_cr3(get_rmem_address((uintptr_t)kernel_pml4));
     ks.log("VMM has been initialized.");
 }
@@ -389,14 +387,14 @@ void volatile_fun init_vmm_on_ap(struct stivale2_smp_info* info) {
 // @param virt_addr the virtual address to map the physical address to
 // @param prop the properties of the page entry
 void volatile_fun vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
-    if (table == read_cr3() || table == 0) {               //  cr3 is the given table physical address
-        vmm_map_page_impl(vmm_get_active_recurse_link(), phys_addr, virt_addr, prop);
+    if (read_cr3() == (uintptr_t)table || table == 0) {               //  cr3 is the given table physical address
+        vmm_map_page_impl((PageTable*)vmm_get_active_recurse_link(), phys_addr, virt_addr, prop);
     
     } else {
-        ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = page_create(table, prop);
+        ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = page_create((uint64_t)table, prop);
         vmm_reload_tlb(vmm_get_other_recurse_link());
 
-        vmm_map_page_impl(vmm_get_other_recurse_link(), phys_addr, virt_addr, prop);
+        vmm_map_page_impl((PageTable*)vmm_get_other_recurse_link(), phys_addr, virt_addr, prop);
 
         ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = 0;
     }
@@ -411,14 +409,14 @@ void volatile_fun vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t 
 bool vmm_unmap_page(PageTable* table, uintptr_t virt_addr) {
     bool res = false;
     
-    if (read_cr3() == table || table == 0) {   // if cr3 is the given table physical address
-        res = vmm_unmap_page_impl(vmm_get_active_recurse_link(), virt_addr);
+    if (read_cr3() == (uintptr_t)table || table == 0) {   // if cr3 is the given table physical address
+        res = vmm_unmap_page_impl((PageTable*)vmm_get_active_recurse_link(), virt_addr);
 
     } else {
-        ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = page_create(table, PageKernelWrite);
+        ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = page_create((uint64_t)table, PageKernelWrite);
         vmm_reload_tlb(RECURSE_PML4_OTHER);
 
-        res = vmm_unmap_page_impl(vmm_get_other_recurse_link(), virt_addr);
+        res = vmm_unmap_page_impl((PageTable*)vmm_get_other_recurse_link(), virt_addr);
 
         ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = 0;
     }
@@ -432,7 +430,7 @@ bool vmm_unmap_page(PageTable* table, uintptr_t virt_addr) {
 // @param blocks the number of blocks to be mapped
 // @param prop the properties of the page entry
 // @return the virtual address of the newly allocated memory
-uintptr_t vmm_allocate_memory(PageTableEntry* table, size_t blocks, PageProperties prop) {
+uintptr_t vmm_allocate_memory(PageTable* table, size_t blocks, PageProperties prop) {
     uintptr_t phys_addr = pmm_alloc_series(blocks);
 
     for (size_t i = 0; i < blocks; i++) 
@@ -452,7 +450,7 @@ uintptr_t volatile_fun vmm_allocate_heap(size_t blocks) {
         for (size_t i = 0; i < get_cpu_count(); i++) {
             if (get_current_cpu()->id == i) continue;
             
-            ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = page_create(get_cpu(i)->page_table, (PageProperties){true, false, true});
+            ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = page_create((uint64_t)get_cpu(i)->page_table, (PageProperties){true, false, true});
             vmm_reload_tlb(vmm_get_other_recurse_link());
 
             ((PageTable*)vmm_get_other_recurse_link())->entries[GET_PL4_INDEX(HEAP_OFFSET)] = ((PageTable*)vmm_get_active_recurse_link())->entries[GET_PL4_INDEX(HEAP_OFFSET)];
@@ -469,7 +467,7 @@ uintptr_t volatile_fun vmm_allocate_heap(size_t blocks) {
 // @param table the table to unmap the address from. 0 if current
 // @param addr the virtual address to unmap
 // @param blocks the number of blocks to be unmapped
-bool vmm_free_memory(PageTableEntry* table, uintptr_t addr, size_t blocks) {
+bool vmm_free_memory(PageTable* table, uintptr_t addr, size_t blocks) {
     uintptr_t phys_addr = vmm_virt_to_phys(addr);
     for (size_t i = 0; i < blocks; i++) vmm_unmap_page(table, addr + (i*PHYSMEM_BLOCK_SIZE));
 
@@ -494,7 +492,7 @@ uintptr_t vmm_map_mmio(uintptr_t mmio_addr, size_t blocks) {
 
 PageTable* volatile_fun NewPageTable() {
     PageTable* p = (PageTable*)vmm_allocate_memory(get_current_cpu()->page_table, 1, PageKernelWrite);
-    memory_set(p, 0, PAGE_SIZE);
+    memory_set((uint8_t*)p, 0, PAGE_SIZE);
 
     // clone 256-511 entries
     for (uint32_t entry = 256; entry < PAGE_ENTRIES; entry++) 
@@ -502,14 +500,14 @@ PageTable* volatile_fun NewPageTable() {
 
     // set active
     p->entries[RECURSE_ACTIVE] = page_self(p);
-    return get_rmem_address(p);
+    return (PageTable*)get_rmem_address((uintptr_t)p);
 }
 
 void DestroyPageTable(PageTable* page_table) {
-    vmm_free_memory(get_current_cpu()->page_table, page_table, 1);
+    vmm_free_memory(get_current_cpu()->page_table, (uintptr_t)page_table, 1);
 } 
 
 void volatile_fun vmm_switch_space(PageTable* page_table) {
-    write_cr3(page_table);
+    write_cr3((uint64_t)page_table);
     vmm_reload_cr3();
 }

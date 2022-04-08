@@ -37,7 +37,7 @@ void apic_setup_IOAPIC() {
     struct MADT_apic_header* entry_hdr = &(madt->interrupt_devices_start);
     apic.ioapics_count = 0;
 
-    while (entry_hdr < ((uint64_t)madt + madt->h.Length)) {
+    while ((uint64_t)entry_hdr < ((uint64_t)madt + madt->h.Length)) {
         if (entry_hdr->type == IOAPIC) {
             apic.ioapics[apic.ioapics_count] = (MadtApicIOApic*) entry_hdr;
             vmm_map_mmio(apic.ioapics[apic.ioapics_count]->apic_addr, 1);
@@ -54,7 +54,7 @@ void apic_setup_IOAPIC_ISO() {
     struct MADT_apic_header* entry_hdr = &(madt->interrupt_devices_start);
     apic.ioapics_iso_count = 0;
 
-    while (entry_hdr < ((uint64_t)madt + madt->h.Length)) {
+    while ((uint64_t)entry_hdr < ((uint64_t)madt + madt->h.Length)) {
         if (entry_hdr->type == IOAPIC_ISO) {
             apic.ioapics_iso[apic.ioapics_iso_count] = (MadtApicIOApicISO*) entry_hdr;
             ks.dbg("ioapic iso bus: %u interrupt: %u", apic.ioapics_iso[apic.ioapics_iso_count]->bus_source, 
@@ -96,7 +96,7 @@ void apic_set_raw_redirect(uint8_t vector, uint32_t target_gsi, uint16_t flags, 
     if (flags & edge_level) end |= (1 << 15);
     if (!status) end |= (1 << 16);
 
-    end |= get_cpu(cpu)->lapic_id << 56;
+    end |= (uint64_t)(get_cpu(cpu)->lapic_id) << 56;
     uint32_t io_reg = (target_gsi - apic.ioapics[io_apic_target]->gsib) *2 +16;
 
     apic_io_write(apic.ioapics[io_apic_target]->apic_addr, io_reg, (uint32_t)end);

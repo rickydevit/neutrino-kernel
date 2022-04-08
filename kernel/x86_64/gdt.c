@@ -34,7 +34,7 @@ void install_gdt(struct cpu_GDT* gdt) {
     gdt_ptr.offset = gdt_address;
 
     ks.dbg("GDT built at %x. Loading to register...", gdt_address);
-    load_gdt((uint32_t)&gdt_ptr);
+    load_gdt((uintptr_t)&gdt_ptr);
 }
 
 void inline install_tss() {
@@ -65,17 +65,17 @@ void init_gdt_on_ap(uint32_t cpu_id) {
 void init_tss(Cpu* cpu) {
     ks.dbg("Setting up TSS...");
     // tss descriptor 0x28
-    struct TSS_entry entry = tss_entry_create(&(cpu->tss), (uint64_t)&(cpu->tss) + sizeof(cpu->tss), GDT_TSS_PRESENT | GDT_TSS, GDT_FLAGS_TSS);
+    struct TSS_entry entry = tss_entry_create((uint64_t)&(cpu->tss), (uint64_t)&(cpu->tss) + sizeof(cpu->tss), GDT_TSS_PRESENT | GDT_TSS, GDT_FLAGS_TSS);
     gdt_array[cpu->id].TSS = entry;
 
     // setup tss.ist1
     cpu->tss.iopb_offset = sizeof(Tss);
     cpu->tss.rsp0 = (uint64_t)cpu->stack;
-    cpu->stack_interrupt = pmm_alloc_series(CPU_STACK_SIZE / PAGE_SIZE);
+    cpu->stack_interrupt = (uint8_t*)pmm_alloc_series(CPU_STACK_SIZE / PAGE_SIZE);
     cpu->tss.ist1 = CPU_STACK_BASE + CPU_STACK_SIZE;
 
     for (uint32_t i = 0; i < CPU_STACK_SIZE / PAGE_SIZE; i++)
-        vmm_map_page(cpu->page_table, cpu->stack_interrupt + i*PAGE_SIZE, CPU_STACK_BASE + i*PAGE_SIZE, PageKernelWrite);
+        vmm_map_page(cpu->page_table, (uintptr_t)cpu->stack_interrupt + i*PAGE_SIZE, CPU_STACK_BASE + i*PAGE_SIZE, PageKernelWrite);
 
     install_tss();
     ks.dbg("TSS set up for CPU #%u", cpu->id);

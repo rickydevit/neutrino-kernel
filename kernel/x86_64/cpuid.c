@@ -47,7 +47,7 @@ uint8_t get_physical_address_length() {
 }
 
 size_t get_xsave_size() {
-    uint32_t ecx, _;
+    uint32_t ecx;
     asm volatile("cpuid" : "=c"(ecx) : "a"(0xd), "c"(0));
     return (size_t)ecx;
 }

@@ -108,7 +108,7 @@ void init_idt() {
 	idt_ptr.offset = (uint64_t)&IDT[0];
 
     ks.dbg("IDT built at %x, size is %x. Loading to register...", idt_ptr.offset, idt_ptr.size);
-	load_idt((uint32_t)&idt_ptr);
+	load_idt((uintptr_t)&idt_ptr);
 	ks.log("Interrupt Descriptor Table loaded successfully.");
 }
 
@@ -171,7 +171,6 @@ void pagefault_handler(InterruptStack* stack) {
 	int rw = stack->error_code & 0x2;           // Write operation?
     int us = stack->error_code & 0x4;           // Processor was in user-mode?
     int reserved = stack->error_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
-    int id = stack->error_code & 0x10; 
 
 	ks.err("Page fault at address %x. %c, %c, %c, Reserved bits %c", faulting_address, (present == 1) ? "Present" : "Non-present", 
            (rw == 1) ? "Write" : "Read", (us == 1) ? "User" : "Supervisor", (reserved == 1) ? "set" : "untoched"); 

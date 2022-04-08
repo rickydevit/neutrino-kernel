@@ -1,6 +1,7 @@
 #include "smp.h"
 #include "gdt.h"
 #include "arch.h"
+#include "sse.h"
 #include "interrupts.h"
 #include "device/apic.h"
 #include "device/time/hpet.h"
@@ -23,7 +24,7 @@ void volatile_fun start_cpu(struct stivale2_smp_info* smp_info) {
     init_idt();
 
     init_vmm_on_ap(smp_info);
-    init_tss(get_cpu(((struct stivale2_smp_info*)get_mem_address(smp_info))->processor_id));
+    init_tss(get_cpu(((struct stivale2_smp_info*)get_mem_address((uintptr_t)smp_info))->processor_id));
     
     init_sse();
     map_apic_on_ap();
@@ -58,8 +59,8 @@ void volatile_fun init_smp(struct stivale2_struct_tag_smp *smp_struct) {
         smp.cpus[i].lapic_id = cpu_info.lapic_id;
         
         // prepare the stack
-        smp.cpus[i].stack = pmm_alloc_series(CPU_STACK_SIZE/PHYSMEM_BLOCK_SIZE);
-        smp_struct->smp_info[i].target_stack = get_mem_address(smp.cpus[i].stack) + CPU_STACK_SIZE;
+        smp.cpus[i].stack = (uint8_t*)pmm_alloc_series(CPU_STACK_SIZE/PHYSMEM_BLOCK_SIZE);
+        smp_struct->smp_info[i].target_stack = get_mem_address((uintptr_t)smp.cpus[i].stack) + CPU_STACK_SIZE;
         smp.cpus[i].tss.rsp0 = (uint64_t)smp.cpus[i].stack;
 
         // boot the ap

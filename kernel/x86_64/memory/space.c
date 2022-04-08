@@ -38,7 +38,7 @@ void volatile_fun space_switch(Space* space) {
     unlock(&space->lock);
 }
 
-uintptr_t space_map(Space* space, uintptr_t phys_addr, size_t size, uintptr_t virt_addr) {
+void space_map(Space* space, uintptr_t phys_addr, size_t size, uintptr_t virt_addr) {
     lock(&space->lock);
 
     // map all the required pages

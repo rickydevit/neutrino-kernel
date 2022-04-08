@@ -12,4 +12,4 @@ struct __space {
     PageTable* page_table;
 
     MemoryRangeNode* memory_ranges;
-} packed;
+};

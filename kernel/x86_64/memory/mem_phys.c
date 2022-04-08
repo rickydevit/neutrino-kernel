@@ -193,8 +193,8 @@ void init_pmm(MemoryPhysicalRegion* entries, uint32_t size) {
         
 		// find the first usable region and set it as the base address of the memory bitmap
         if (entry.type == MEMORY_REGION_USABLE && pmm._map == 0 && entry.size >= pmm._map_size && entry.base >= PHYSMEM_2MEGS) {
-			pmm._map = get_mem_address(entry.base);
-			memory_set(pmm._map, 0, pmm._map_size);
+			pmm._map = (uint32_t*)get_mem_address(entry.base);
+			memory_set((uint8_t*)pmm._map, 0, pmm._map_size);
 		}
         
 		// the usable_memory is the sum of all the usable memory regions
@@ -238,7 +238,7 @@ uintptr_t pmm_alloc() {
 // @return the physical address of the assigned block
 uintptr_t pmm_alloc_zero() {
 	uintptr_t frame = pmm_alloc();
-	memory_set(frame, 0, PHYSMEM_BLOCK_SIZE);
+	memory_set((uint8_t*)frame, 0, PHYSMEM_BLOCK_SIZE);
 	return frame;
 }
 

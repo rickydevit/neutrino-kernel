@@ -70,5 +70,5 @@ static inline void enable_interrupts() {
     asm volatile ("sti");
 }
 
-extern int load_idt();
-extern uint64_t _interrupt_vector[128];
+extern int load_idt(uintptr_t);
+extern void* _interrupt_vector[128];

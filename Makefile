@@ -27,7 +27,7 @@ INCLUDEFLAGS 	:= -I. \
 					
 CFLAGS 			:= 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
 					-mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
-					-O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
+					-O1 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
 
 LDFLAGS 		:= 	-T $(LD_SCRIPT) -nostdlib -zmax-page-size=0x1000 -static \
 					--no-dynamic-linker -ztext
@@ -53,7 +53,7 @@ DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -d cpu_reset,int -D qemu.lo
 
 # gdb settings
 GDB				= gdb
-GDB_FLAGS 		= -ex "target remote localhost:1234" -ex "layout split"
+GDB_FLAGS 		= -ex "target remote localhost:1234" -ex "layout split" -ex "set scheduler-locking step"
 
 # === COMMANDS AND BUILD ========================
 

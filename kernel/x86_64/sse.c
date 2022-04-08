@@ -107,5 +107,5 @@ size_t get_sse_context_size() {
 // *Set the given context to the initial SSE context
 // @param p the pointer to the SIMD context to initialize
 void set_initial_sse_context(void* p) {
-    memory_copy(fpu_data, p, get_sse_context_size());
+    memory_copy((uint8_t*)fpu_data, p, get_sse_context_size());
 }

@@ -46,7 +46,7 @@ Task* NewIdleTask(uintptr_t entry_point) {
 }
 
 void DestroyTask(Task* task) {
-    kfree(task->stack_base);
+    kfree((void*)task->stack_base);
     DestroySpace(task->space);
     DestroyContext(task->context);
     kfree(task);

@@ -1,5 +1,6 @@
 #include "rtc.h"
-#include "stdint.h"
+#include <stdint.h>
+#include <string.h>
 #include "kernel/common/device/port.h"
 #include "interrupts.h"
 
@@ -27,14 +28,14 @@ CmosReading cmos_read() {
     read_from_cmos(cmos);
 
     CmosReading result;
-    itoa(cmos[0] + cmos[1], 16, result.second);
-    itoa(cmos[2] + cmos[3], 16, result.minute);
-    itoa(cmos[4] + cmos[5], 16, result.hour); 
-    itoa(cmos[6], 16, result.weekday);
-    itoa(cmos[7], 16, result.monthday);
-    itoa(cmos[8], 16, result.month);
-    itoa(cmos[9], 16, result.year);
-    itoa(cmos[50], 16, result.century);
+    itoa(cmos[0] + cmos[1], 16, (char*)&result.second);
+    itoa(cmos[2] + cmos[3], 16, (char*)&result.minute);
+    itoa(cmos[4] + cmos[5], 16, (char*)&result.hour); 
+    itoa(cmos[6], 16, (char*)&result.weekday);
+    itoa(cmos[7], 16, (char*)&result.monthday);
+    itoa(cmos[8], 16, (char*)&result.month);
+    itoa(cmos[9], 16, (char*)&result.year);
+    itoa(cmos[50], 16, (char*)&result.century);
     
     return result;
 }

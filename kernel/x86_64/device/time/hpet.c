@@ -36,7 +36,7 @@ void volatile_fun init_hpet() {
     ks.log("Initializing HPET...");
     hpet.table_pointer = (struct HPET*)find_sdt_entry("HPET");
 
-    if (!has_hpet) {
+    if (!has_hpet()) {
         ks.err("HPET was not found in the system. Cannot initialize it.");
         init_pit(1000);
         return;
