@@ -32,7 +32,7 @@ bool has_hpet() {
 }
 
 // *Initialize the HPET
-void volatile_fun init_hpet() {
+void unoptimized init_hpet() {
     ks.log("Initializing HPET...");
     hpet.table_pointer = (struct HPET*)find_sdt_entry("HPET");
 

@@ -25,7 +25,7 @@ void pmm_map_unset(int bit) {
 // *Get the value of the memory bitmap at the position [bit]
 // @param bit the bit to get the value from
 // @return true if the bit is set, false otherwise
-BlockState volatile_fun pmm_map_get(int bit) {
+BlockState unoptimized pmm_map_get(int bit) {
     return (pmm._map[bit / 32] & (1 << (bit % 32)));
 }
 

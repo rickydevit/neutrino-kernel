@@ -14,7 +14,7 @@
 
 // *Find the RSDP descriptor and return a pointer to it
 // @return a pointer to the RSDP descriptor
-void* volatile_fun find_rsdp() {
+void* unoptimized find_rsdp() {
     for (uintptr_t i = get_mem_address(RSDP_LOW); i < get_mem_address(RSDP_HIGH); i+=0x10) {
         char* candidate = (char*)i;
         if (strncmp(candidate, "RSD PTR ", 8) == 0) return (void*)candidate;

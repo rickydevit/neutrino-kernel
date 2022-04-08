@@ -65,7 +65,7 @@ void cpu_idle() {
 
 // === PUBLIC FUNCTIONS =========================
 
-void volatile_fun init_scheduler() {
+void unoptimized init_scheduler() {
     ks.log("Initializing scheduler...");
     scheduler.ready = false;
 

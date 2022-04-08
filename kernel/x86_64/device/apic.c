@@ -106,7 +106,7 @@ void apic_set_raw_redirect(uint8_t vector, uint32_t target_gsi, uint16_t flags, 
 // === PUBLIC FUNCTIONS =========================
 
 // *Intialize the APIC
-void volatile_fun init_apic() {
+void unoptimized init_apic() {
     ks.log("Initializing APIC...");
 
     disable_interrupts();
@@ -129,12 +129,12 @@ void volatile_fun init_apic() {
 }
 
 // *Map the LAPIC into the active table
-void volatile_fun map_apic() {
+void unoptimized map_apic() {
     apic.apic_addr = vmm_map_mmio((uintptr_t)apic.apic_addr, 3);
 }
 
 // *Map the LAPIC into the active table for an AP
-void volatile_fun map_apic_on_ap() {
+void unoptimized map_apic_on_ap() {
     vmm_map_mmio(get_rmmio_address((uintptr_t)apic.apic_addr), 3);
 }
 

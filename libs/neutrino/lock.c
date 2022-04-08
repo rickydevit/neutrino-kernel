@@ -3,7 +3,7 @@
 
 // === PRIVATE FUNCTIONS ========================
 
-int volatile_fun test_and_set(int* old_flag, int new_v) {
+int unoptimized test_and_set(int* old_flag, int new_v) {
     volatile int old = *old_flag;
     *old_flag = new_v;
     return old;
@@ -19,12 +19,12 @@ void lock_init(Lock *lock) {
 
 // *Lock a spinlock, avoiding other threads accessing it
 // @param lock the lock to be locked
-void volatile_fun lock(Lock* lock) {
+void unoptimized lock(Lock* lock) {
     while (test_and_set(&lock->flag, LOCKED) == 1);
 }
 
 // *Unlock a spinlock and make it available to other threads
 // @param lock the lock to be unlocked
-void volatile_fun unlock(Lock* lock) {
+void unoptimized unlock(Lock* lock) {
     lock->flag = UNLOCKED;
 }

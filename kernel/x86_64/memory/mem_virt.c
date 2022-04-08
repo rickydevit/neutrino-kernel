@@ -17,12 +17,12 @@ void vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t vir
 
 // -- Utilities ---------------------------------
 
-void volatile_fun vmm_reload_tlb(uintptr_t addr) {
+void unoptimized vmm_reload_tlb(uintptr_t addr) {
        asm volatile("invlpg (%0)" ::"r" (addr) : "memory");
 }
 
 // *Refresh paging by reloading the CR3 register
-void volatile_fun vmm_reload_cr3() {
+void unoptimized vmm_reload_cr3() {
     asm volatile("mov %%cr3, %%rax" : : );
     asm volatile("mov %%rax, %%cr3" : : );
 }
@@ -42,7 +42,7 @@ PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
 // @param entry the index of the entry to be added
 // @param prop the properties of the page entry
 // @return the address of the newly created entry
-PageTable* volatile_fun vmm_create_entry(PageTable* table, uint64_t entry, PageProperties prop) {
+PageTable* unoptimized vmm_create_entry(PageTable* table, uint64_t entry, PageProperties prop) {
     PageTable* pt = (PageTable*)get_mem_address(pmm_alloc());
     table->entries[entry] = page_create(get_rmem_address((uintptr_t)pt), prop);
     vmm_reload_cr3();
@@ -56,7 +56,7 @@ PageTable* volatile_fun vmm_create_entry(PageTable* table, uint64_t entry, PageP
 // @param entry the index of the entry to be added
 // @param prop the properties of the page entry
 // @return the address of the existing table or the newly created table
-PageTable* volatile_fun vmm_get_or_create_entry(PageTable* table, uint64_t entry, PageProperties prop) {
+PageTable* unoptimized vmm_get_or_create_entry(PageTable* table, uint64_t entry, PageProperties prop) {
     if (IS_PRESENT(table->entries[entry])) {
         return (PageTable*)get_mem_address(GET_PHYSICAL_ADDRESS(table->entries[entry]));
     } else {
@@ -128,7 +128,7 @@ int64_t vmm_find_table_free_series(PageTable* table, size_t size){
     return -1;
 }
 
-PageTable* volatile_fun vmm_get_table_address(PageTable* table_addr, uintptr_t virt_addr, uint16_t depth) {
+PageTable* unoptimized vmm_get_table_address(PageTable* table_addr, uintptr_t virt_addr, uint16_t depth) {
     if (depth == 0) return table_addr;
     if (depth > 3) depth = 3;
 
@@ -182,7 +182,7 @@ void vmm_free_if_necessary_tables(PageTable* table, uint64_t unmapped_addr) {
     vmm_free_if_necessary_table(pdpt, table, path.pl4);
 }
 
-PageTable* volatile_fun vmm_get_most_nested_table(PageTable* table_addr, uintptr_t virt_addr) {
+PageTable* unoptimized vmm_get_most_nested_table(PageTable* table_addr, uintptr_t virt_addr) {
     PagingPath path = GetPagingPath(virt_addr);
     PagingPath tpath = GetPagingPath((uintptr_t)table_addr);
     bool isRecursive = tpath.pl4 == RECURSE_ACTIVE || tpath.pl4 == RECURSE_OTHER;
@@ -230,7 +230,7 @@ void vmm_map_physical_regions(PageTable* page) {
     }
 }
 
-void volatile_fun vmm_map_kernel_region(struct memory_physical* phys, PageTable* page) {
+void unoptimized vmm_map_kernel_region(struct memory_physical* phys, PageTable* page) {
     for (int ind = 0; ind < phys->regions_count; ind++) {
         if (phys->regions[ind].type != MEMORY_REGION_KERNEL) continue;
 
@@ -247,7 +247,7 @@ void volatile_fun vmm_map_kernel_region(struct memory_physical* phys, PageTable*
 
 // --- Mapping and unmapping --------------------
 
-void volatile_fun vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
+void unoptimized vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
     PagingPath path = GetPagingPath(virt_addr);
     PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr);
 
@@ -345,7 +345,7 @@ void init_vmm() {
     ks.log("VMM has been initialized.");
 }
 
-void volatile_fun init_vmm_on_ap(struct stivale2_smp_info* info) {
+void unoptimized init_vmm_on_ap(struct stivale2_smp_info* info) {
     ks.log("Initializing VMM on CPU #%u...", info->processor_id);
 
     // prepare a pml4 table for the kernel address space
@@ -386,7 +386,7 @@ void volatile_fun init_vmm_on_ap(struct stivale2_smp_info* info) {
 // @param phys_addr the physical address to map the virtual address to
 // @param virt_addr the virtual address to map the physical address to
 // @param prop the properties of the page entry
-void volatile_fun vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
+void unoptimized vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
     if (read_cr3() == (uintptr_t)table || table == 0) {               //  cr3 is the given table physical address
         vmm_map_page_impl((PageTable*)vmm_get_active_recurse_link(), phys_addr, virt_addr, prop);
     
@@ -439,7 +439,7 @@ uintptr_t vmm_allocate_memory(PageTable* table, size_t blocks, PageProperties pr
     return get_mem_address(phys_addr);
 }
 
-uintptr_t volatile_fun vmm_allocate_heap(size_t blocks) {
+uintptr_t unoptimized vmm_allocate_heap(size_t blocks) {
     uintptr_t phys_addr = pmm_alloc_series(blocks);
     uintptr_t virt_addr = vmm_find_free_heap_series(blocks);
 
@@ -490,7 +490,7 @@ uintptr_t vmm_map_mmio(uintptr_t mmio_addr, size_t blocks) {
 
 #include <liballoc.h>
 
-PageTable* volatile_fun NewPageTable() {
+PageTable* unoptimized NewPageTable() {
     PageTable* p = (PageTable*)vmm_allocate_memory(get_current_cpu()->page_table, 1, PageKernelWrite);
     memory_set((uint8_t*)p, 0, PAGE_SIZE);
 
@@ -507,7 +507,7 @@ void DestroyPageTable(PageTable* page_table) {
     vmm_free_memory(get_current_cpu()->page_table, (uintptr_t)page_table, 1);
 } 
 
-void volatile_fun vmm_switch_space(PageTable* page_table) {
+void unoptimized vmm_switch_space(PageTable* page_table) {
     write_cr3((uint64_t)page_table);
     vmm_reload_cr3();
 }

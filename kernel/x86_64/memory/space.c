@@ -32,7 +32,7 @@ void DestroySpace(Space* space) {
     kfree(space);
 }
 
-void volatile_fun space_switch(Space* space) {
+void unoptimized space_switch(Space* space) {
     lock(&space->lock);
     vmm_switch_space(space->page_table);
     unlock(&space->lock);

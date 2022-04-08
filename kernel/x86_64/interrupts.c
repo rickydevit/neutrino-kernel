@@ -56,7 +56,7 @@ const char *interrupt_exception_name[] = {
 // @param isr the pointer to the Interrupt Service Routine
 // @param ist the offset of the interrupt stack table stored in the TSS
 // @param type_attr the attributes for the newly added idt entry
-void volatile_fun set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t type_attr) {
+void unoptimized set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t type_attr) {
 	uint64_t irq_address = (uint64_t)isr;
 	IDT[irq].offset_lowerbits = (irq_address) & 0xffff;
 	IDT[irq].selector = KERNEL_CODE;
@@ -70,7 +70,7 @@ void volatile_fun set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t
 
 // *Log the interrupt stack passed to the function. Useful for debugging interrupts stack frames
 // @param stack the pointer to the interrupt stack to be logged
-void volatile_fun log_interrupt(InterruptStack* stack) {
+void unoptimized log_interrupt(InterruptStack* stack) {
     ks.dbg(" ========== INTERRUPT FRAME LOG ==========\n\
             Got interrupt %u with error_code %x on cpu #%d \n\
             rax: %x | rbx: %x | rcx: %x | rdx: %x \n\
@@ -144,7 +144,7 @@ InterruptStack* exception_handler(InterruptStack* stack) {
     return stack;
 }
 
-InterruptStack* volatile_fun interrupt_handler(InterruptStack* stack) {
+InterruptStack* unoptimized interrupt_handler(InterruptStack* stack) {
 
     if (stack->irq == APIC_TIMER_IRQ) {     // timer interrupt, do task switch
         if (scheduler.ready) {

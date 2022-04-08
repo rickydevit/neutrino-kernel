@@ -56,7 +56,7 @@ void kput(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
 }
 
-void volatile_fun klog(char* message, ...) {
+void unoptimized klog(char* message, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
@@ -68,7 +68,7 @@ void volatile_fun klog(char* message, ...) {
     enable_interrupts();
 }
 
-void volatile_fun kdbg(char* message, ...) {
+void unoptimized kdbg(char* message, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
@@ -80,7 +80,7 @@ void volatile_fun kdbg(char* message, ...) {
     enable_interrupts();
 }
 
-void volatile_fun kwarn(char* message, ...) {
+void unoptimized kwarn(char* message, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
@@ -92,7 +92,7 @@ void volatile_fun kwarn(char* message, ...) {
     enable_interrupts();
 }
 
-void volatile_fun kerr(char* message, ...) {
+void unoptimized kerr(char* message, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
@@ -104,7 +104,7 @@ void volatile_fun kerr(char* message, ...) {
     enable_interrupts();
 }
 
-void volatile_fun kpanic(Fatal fatal_error, ...) {
+void unoptimized kpanic(Fatal fatal_error, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, fatal_error);

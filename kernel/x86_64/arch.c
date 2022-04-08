@@ -54,7 +54,7 @@ void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, Memory
     init_vmm();
 }
 
-void volatile_fun _kstart(struct stivale2_struct *stivale2_struct) {
+void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     struct stivale2_struct_tag_smp *smp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
     MemoryPhysicalRegion entries[memmap_str_tag->entries];

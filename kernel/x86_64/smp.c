@@ -17,7 +17,7 @@ static volatile bool cpu_started = false;
 
 // === PRIVATE FUNCTIONS ========================
 
-void volatile_fun start_cpu(struct stivale2_smp_info* smp_info) {
+void unoptimized start_cpu(struct stivale2_smp_info* smp_info) {
     disable_interrupts();
 
     init_gdt_on_ap(smp_info->processor_id);
@@ -41,7 +41,7 @@ void volatile_fun start_cpu(struct stivale2_smp_info* smp_info) {
 
 // === PUBLIC FUNCTIONS =========================
 
-void volatile_fun init_smp(struct stivale2_struct_tag_smp *smp_struct) {
+void unoptimized init_smp(struct stivale2_struct_tag_smp *smp_struct) {
     ks.log("Initializing other CPUs...");
     ks.dbg("Found %i CPUs. x2APIC is %c", smp_struct->cpu_count, smp_struct->flags & 1 ? "enabled" : "disabled");
 
@@ -79,7 +79,7 @@ void volatile_fun init_smp(struct stivale2_struct_tag_smp *smp_struct) {
 
 // *Set the information about the BSP on startup
 // @param bsp_stack the stack of the bootstrap processor
-void volatile_fun setup_bsp(uint8_t* bsp_stack) {
+void unoptimized setup_bsp(uint8_t* bsp_stack) {
     smp.cpus[0].id = 0;
     smp.cpus[0].lapic_id = 0;
     smp.cpus[0].stack = bsp_stack;
@@ -105,7 +105,7 @@ Cpu* get_bootstrap_cpu() {
 
 // *Get the cpu info about the current processor
 // @return the pointer to the cpu info structure of the current processor
-Cpu* volatile_fun get_current_cpu() {
+Cpu* unoptimized get_current_cpu() {
     uint32_t id = LapicIDCorrection(apic_read(lapic_id));
 
     if (id >= 0 && id < smp.cpu_count)

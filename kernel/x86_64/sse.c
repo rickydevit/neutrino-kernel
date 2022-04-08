@@ -31,7 +31,7 @@ bool has_avx() {
 }
 
 // *Enable SSE in the system. Must first check if SSE is available with has_sse()
-void volatile_fun enable_sse() {
+void unoptimized enable_sse() {
     uint64_t cr0, cr4;
     __asm__("mov %%cr0, %0" : "=g" (cr0) : );
     __asm__("mov %%cr4, %0" : "=g" (cr4) : );
@@ -46,7 +46,7 @@ void volatile_fun enable_sse() {
 }
 
 // *Enable XSAVE instruction in the system. Must first check if XSAVE is supported with has_xsave()
-void volatile_fun enable_xsave() {
+void unoptimized enable_xsave() {
     uint64_t cr4;
     __asm__("mov %%cr4, %0" : "=g" (cr4) : );   
     cr4 |= (1 << 18);
@@ -56,7 +56,7 @@ void volatile_fun enable_xsave() {
 }
 
 // *Enable AVX instruction set in the system. Must first check if AVX is supported with has_avx()
-void volatile_fun enable_avx() {
+void unoptimized enable_avx() {
     __asm__("xsetbv" : : "a" (XCR0_X87_STATE | XCR0_ENABLE_SSE | XCR0_ENABLE_AVX), "c" (0), "d" (0));
 }
 
@@ -87,12 +87,12 @@ void init_sse() {
     _avx_save((uintptr_t)fpu_data);
 }
 
-void volatile_fun save_sse_context(uint8_t* context) {
+void unoptimized save_sse_context(uint8_t* context) {
     if (use_xsave) _avx_save((uintptr_t)context);
     else _sse_save((uintptr_t)context);
 }
 
-void volatile_fun load_sse_context(uint8_t* context) {
+void unoptimized load_sse_context(uint8_t* context) {
     if (use_xsave) _avx_load((uintptr_t)context);
     else _sse_load((uintptr_t)context);
 }
