@@ -87,6 +87,9 @@ void sched_start(Task* task) {
 }
 
 void sched_cycle(Cpu* cpu) {
+    if (cpu->tasks.current == nullptr)
+        cpu->tasks.current = cpu->tasks.idle;
+
     cpu->tasks.current->status = TASK_RUNNING;
     return;
 
@@ -122,5 +125,5 @@ void sched_cycle(Cpu* cpu) {
 
     // if current task is empty, it becomes an idle task
     if (cpu->tasks.current == nullptr) 
-        cpu->tasks.current = scheduler.idle;
+        cpu->tasks.current = cpu->tasks.idle;
 }

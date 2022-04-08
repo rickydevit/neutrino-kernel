@@ -13,7 +13,6 @@ typedef union __global_task_queue_node {
 
 typedef struct __scheduler {
     bool ready;
-    Task* idle;
     GlobalTaskQueueNode* gtq;
     GlobalTaskQueueNode* gtq_last;
     Lock gtq_lock;                  // locked when a CPU is accessing the GTQ
