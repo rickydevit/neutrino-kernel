@@ -1,9 +1,10 @@
 #include "lock.h"
+#include <neutrino/macros.h>
 
 // === PRIVATE FUNCTIONS ========================
 
-int test_and_set(int* old_flag, int new_v) {
-    int old = *old_flag;
+int volatile_fun test_and_set(int* old_flag, int new_v) {
+    volatile int old = *old_flag;
     *old_flag = new_v;
     return old;
 }
@@ -18,12 +19,12 @@ void lock_init(Lock *lock) {
 
 // *Lock a spinlock, avoiding other threads accessing it
 // @param lock the lock to be locked
-void lock(Lock* lock) {
+void volatile_fun lock(Lock* lock) {
     while (test_and_set(&lock->flag, LOCKED) == 1);
 }
 
 // *Unlock a spinlock and make it available to other threads
 // @param lock the lock to be unlocked
-void unlock(Lock* lock) {
+void volatile_fun unlock(Lock* lock) {
     lock->flag = UNLOCKED;
 }

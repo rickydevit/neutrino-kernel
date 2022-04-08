@@ -4,6 +4,7 @@
 #include "kernel/common/memory/memory.h"
 #include <liballoc.h>
 #include <_null.h>
+#include <neutrino/macros.h>
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -31,7 +32,7 @@ void DestroySpace(Space* space) {
     kfree(space);
 }
 
-void space_switch(Space* space) {
+void volatile_fun space_switch(Space* space) {
     lock(&space->lock);
     vmm_switch_space(space->page_table);
     unlock(&space->lock);

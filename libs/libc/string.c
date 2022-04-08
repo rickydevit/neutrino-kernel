@@ -3,6 +3,7 @@
 #include "stdbool.h"
 #include "stdarg.h"
 #include <_null.h>
+#include <neutrino/macros.h>
 #include "kernel/common/device/serial.h"
 
 char tbuf[32] = {0};
@@ -11,7 +12,7 @@ char bchars[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
 // *Return the length of the given string [str]
 // @param str the string to be measured
 // @return the length of the string [str]
-unsigned int strlen(const char str[]) {
+unsigned int volatile_fun strlen(const char str[]) {
     int l;
     for(l=0; str[l]!='\0'; l++);
     return l;
@@ -21,7 +22,7 @@ unsigned int strlen(const char str[]) {
 // @param s1 the first string to compare
 // @param s2 the second string to compare
 // @return true if the strings are equal, false otherwise
-bool strcmp(const char* s1, const char* s2) {
+bool volatile_fun strcmp(const char* s1, const char* s2) {
     bool result = false;
     for (size_t i=0; ; i++) {
         if (s1[i] != s2[i]) return false;
@@ -37,7 +38,7 @@ bool strcmp(const char* s1, const char* s2) {
 // @param s2 the second string to compare
 // @param len the number of characters to compare
 // @return 0 if the strings are equal, >0 if a character in s1 is greater than a character in s2, <0 if a character in s1 is less than a character in s2
-int32_t strncmp(const char* s1, const char* s2, size_t len) {
+int32_t volatile_fun strncmp(const char* s1, const char* s2, size_t len) {
     while (len && *s1 && (*s1 == *s2)) {
         ++s1;
         ++s2;
@@ -51,7 +52,7 @@ int32_t strncmp(const char* s1, const char* s2, size_t len) {
 // @param src the string to be copied
 // @param dest the destination string
 // @return true if the copy was successful, false otherwise
-bool strcpy(const char *src, char *dest) {
+bool volatile_fun strcpy(const char *src, char *dest) {
     if (dest == NULL || src == NULL) return false;
     char *temp = dest;
     while(*temp++ = *src++); 
@@ -63,7 +64,7 @@ bool strcpy(const char *src, char *dest) {
 // @param base the base to convert the unsigned integer to
 // @param buf the buffer to use during the conversion
 // @return the converted string 
-char* itoa(unsigned i, unsigned base, char* buf) {
+char* volatile_fun itoa(unsigned i, unsigned base, char* buf) {
     int pos = 0;
     int opos = 0;
     int top = 0;
@@ -94,7 +95,7 @@ char* itoa(unsigned i, unsigned base, char* buf) {
 // @param base the base to convert the signed integer to
 // @param buf the buffer to use during the conversion
 // @return the converted string 
-void itoa_s(int i, unsigned base, char* buf) {
+void volatile_fun itoa_s(int i, unsigned base, char* buf) {
     if (base > 16) return;
     if (i < 0) {
         *buf++ = '-';
@@ -108,7 +109,7 @@ void itoa_s(int i, unsigned base, char* buf) {
 // @param base the base to convert the unsigned long to
 // @param buf the buffer to use during the conversion
 // @return the converted string 
-char* ltoa(uint64_t i, unsigned base, char* buf) {
+char* volatile_fun ltoa(uint64_t i, unsigned base, char* buf) {
     int pos = 0;
     int opos = 0;
     int top = 0;
@@ -139,7 +140,7 @@ char* ltoa(uint64_t i, unsigned base, char* buf) {
 // @param base the base to convert the signed long to
 // @param buf the buffer to use during the conversion
 // @return the converted string 
-void ltoa_s(int64_t i, unsigned base, char* buf) {
+void volatile_fun ltoa_s(int64_t i, unsigned base, char* buf) {
     if (base > 16) return;
     if (i < 0) {
         *buf++ = '-';
@@ -153,7 +154,7 @@ void ltoa_s(int64_t i, unsigned base, char* buf) {
 // @param buffer the buffer to use during the conversion
 // @param ... the arguments to be formatted in the string
 // @return the formatted string
-char* strf(const char* istr, char buffer[], ...) {
+char* volatile_fun strf(const char* istr, char buffer[], ...) {
     if (!istr) return 0;
 
     va_list args;
@@ -167,7 +168,7 @@ char* strf(const char* istr, char buffer[], ...) {
 // @param buffer the buffer to use during the conversion
 // @param args the arguments list to be formatted in the string
 // @return the formatted string
-char* vstrf(const char* istr, char buffer[], va_list args) {
+char* volatile_fun vstrf(const char* istr, char buffer[], va_list args) {
     if (!istr) return 0;
 
     char *buffer_p = buffer;

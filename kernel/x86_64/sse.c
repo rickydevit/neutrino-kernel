@@ -87,12 +87,12 @@ void init_sse() {
     _avx_save((uintptr_t)fpu_data);
 }
 
-void save_sse_context(uint8_t* context) {
+void volatile_fun save_sse_context(uint8_t* context) {
     if (use_xsave) _avx_save((uintptr_t)context);
     else _sse_save((uintptr_t)context);
 }
 
-void load_sse_context(uint8_t* context) {
+void volatile_fun load_sse_context(uint8_t* context) {
     if (use_xsave) _avx_load((uintptr_t)context);
     else _sse_load((uintptr_t)context);
 }

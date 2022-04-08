@@ -13,7 +13,7 @@
 // === PUBLIC FUNCTIONS =========================
 
 // *Create a new Context
-Context* NewContext() {
+Context* volatile_fun NewContext() {
     Context* context = (Context*)kmalloc(sizeof(Context) + get_sse_context_size());
     set_initial_sse_context(context->simd);
     return context;
@@ -44,12 +44,12 @@ void volatile_fun context_init(Context* context, uintptr_t ip, uintptr_t sp, uin
     // context->syscall_kstack = ksp; // todo implement syscalls
 }
 
-void context_save(Context* context, const Registers* regs) {
+void volatile_fun context_save(Context* context, const Registers* regs) {
     save_sse_context(context->simd);
     context->regs = *regs;
 }
 
-void context_load(Context* context, Registers* regs) {
+void volatile_fun context_load(Context* context, Registers* regs) {
     *regs = context->regs;
     load_sse_context(context->simd);
 }

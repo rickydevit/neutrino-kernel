@@ -8,6 +8,7 @@
 #include "memory/mem_phys.h"
 #include "kernel/common/kservice.h"
 #include <limine/stivale2.h>
+#include <neutrino/macros.h>
 #include <_null.h>
 #include <stdbool.h>
 
@@ -15,7 +16,7 @@ static volatile bool cpu_started = false;
 
 // === PRIVATE FUNCTIONS ========================
 
-void start_cpu(struct stivale2_smp_info* smp_info) {
+void volatile_fun start_cpu(struct stivale2_smp_info* smp_info) {
     disable_interrupts();
 
     init_gdt_on_ap(smp_info->processor_id);
@@ -39,7 +40,7 @@ void start_cpu(struct stivale2_smp_info* smp_info) {
 
 // === PUBLIC FUNCTIONS =========================
 
-void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
+void volatile_fun init_smp(struct stivale2_struct_tag_smp *smp_struct) {
     ks.log("Initializing other CPUs...");
     ks.dbg("Found %i CPUs. x2APIC is %c", smp_struct->cpu_count, smp_struct->flags & 1 ? "enabled" : "disabled");
 
@@ -77,7 +78,7 @@ void init_smp(struct stivale2_struct_tag_smp *smp_struct) {
 
 // *Set the information about the BSP on startup
 // @param bsp_stack the stack of the bootstrap processor
-void setup_bsp(uint8_t* bsp_stack) {
+void volatile_fun setup_bsp(uint8_t* bsp_stack) {
     smp.cpus[0].id = 0;
     smp.cpus[0].lapic_id = 0;
     smp.cpus[0].stack = bsp_stack;
@@ -106,13 +107,11 @@ Cpu* get_bootstrap_cpu() {
 Cpu* volatile_fun get_current_cpu() {
     uint32_t id = LapicIDCorrection(apic_read(lapic_id));
 
-    for (uint32_t i = 0; i < smp.cpu_count; i++) {
-        if (smp.cpus[i].lapic_id == id)
-            return &(smp.cpus[i]);
-    }
-
-    ks.warn("Cannot find cpu with lapic id %u", id);
-    return (Cpu*)NULL;
+    if (id >= 0 && id < smp.cpu_count)
+        return &(smp.cpus[id]);
+    
+    ks.warn("Cannot find cpu #%u", id);
+    return (Cpu*)nullptr;
 }
 
 size_t get_cpu_count() {

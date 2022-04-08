@@ -16,6 +16,7 @@
 #include "kernel/common/tasks/scheduler.h"
 #include <size_t.h>
 #include <libs/limine/stivale2hdr.h>
+#include <neutrino/macros.h>
 
 void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, MemoryPhysicalRegion* entries) {
     uint32_t memmap_entries = memmap_str_tag->entries;
@@ -53,7 +54,7 @@ void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, Memory
     init_vmm();
 }
 
-void _kstart(struct stivale2_struct *stivale2_struct) {
+void volatile_fun _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     struct stivale2_struct_tag_smp *smp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
     MemoryPhysicalRegion entries[memmap_str_tag->entries];
@@ -80,7 +81,7 @@ void _kstart(struct stivale2_struct *stivale2_struct) {
     init_smp(smp_str_tag);
 
     init_scheduler();
-    sched_start(nullptr);
+    // sched_start(nullptr);
 
     enable_interrupts();
 

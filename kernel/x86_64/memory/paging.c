@@ -30,7 +30,7 @@ uint64_t volatile_fun read_cr3() {
 // *Write the given value to the CR3 register
 // @param value the value to write to CR3 register
 void write_cr3(uint64_t value) {
-    __asm__("mov %0, %%cr3" : : "r"(value));
+    asm volatile("mov %0, %%cr3" : : "r"(value));
 }
 
 PageTableEntry page_create(uint64_t addr, PageProperties prop) {

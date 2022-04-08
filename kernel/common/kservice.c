@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <neutrino/lock.h>
+#include <neutrino/macros.h>
 
 // Private functions declarations
 
@@ -55,7 +56,7 @@ void kput(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
 }
 
-void klog(char* message, ...) {
+void volatile_fun klog(char* message, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
@@ -67,7 +68,7 @@ void klog(char* message, ...) {
     enable_interrupts();
 }
 
-void kdbg(char* message, ...) {
+void volatile_fun kdbg(char* message, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
@@ -79,7 +80,7 @@ void kdbg(char* message, ...) {
     enable_interrupts();
 }
 
-void kwarn(char* message, ...) {
+void volatile_fun kwarn(char* message, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
@@ -91,7 +92,7 @@ void kwarn(char* message, ...) {
     enable_interrupts();
 }
 
-void kerr(char* message, ...) {
+void volatile_fun kerr(char* message, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
@@ -103,7 +104,7 @@ void kerr(char* message, ...) {
     enable_interrupts();
 }
 
-void kpanic(Fatal fatal_error, ...) {
+void volatile_fun kpanic(Fatal fatal_error, ...) {
     disable_interrupts();
     lock(&l);
     va_list args; va_start(args, fatal_error);
