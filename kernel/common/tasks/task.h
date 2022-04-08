@@ -41,6 +41,7 @@ typedef struct __task {
 } Task;
 
 #define IsTaskRunnable(task)    ((task)->status == TASK_READY || (task)->status == TASK_SYSCALL)
+#define IsTaskNeverRun(task)    ((task)->status == TASK_EMBRYO || (task)->status == TASK_NEW)
 
 Task* NewTask(char* name, bool user);
 Task* NewIdleTask(uintptr_t entry_point);

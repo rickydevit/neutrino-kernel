@@ -10,6 +10,7 @@
 #include "kernel/common/cpu.h"
 #include <stdint.h>
 #include <neutrino/macros.h>
+#include <neutrino/lock.h>
 
 struct IDT_entry IDT[IDT_SIZE];
 
@@ -69,18 +70,25 @@ void volatile_fun set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t
 
 // *Log the interrupt stack passed to the function. Useful for debugging interrupts stack frames
 // @param stack the pointer to the interrupt stack to be logged
-void log_interrupt(InterruptStack* stack) {
-    ks.dbg(" ========== INTERRUPT FRAME LOG ==========");
-    ks.dbg("Got interrupt %u with error_code %x on cpu #%d", stack->irq, stack->error_code, get_current_cpu()->id);
-    ks.dbg("rax: %x rbx: %x rcx: %x rdx: %x", stack->rax, stack->rbx, stack->rcx, stack->rdx);
-    ks.dbg("rsi: %x rdi: %x rbp: %x", stack->rsi, stack->rdi, stack->rbp);
-    ks.dbg("r8: %x r9: %x r10: %x", stack->r8, stack->r9, stack->r10);
-    ks.dbg("r11: %x r12: %x r13: %x", stack->r11, stack->r12, stack->r13);
-    ks.dbg("r14: %x r15: %x", stack->r14, stack->r15);
-    ks.dbg("rflags: %x rsp: %x", stack->rflags, stack->rsp);
-    ks.dbg("cs: %x ss: %x rip: %x", stack->cs, stack->ss, stack->rip);
-    ks.dbg("pic isr: %x  pic irr: %x", pic_get_isr(), pic_get_irr());
-    ks.dbg(" ====== END OF INTERRUPT FRAME LOG =======");
+void volatile_fun log_interrupt(InterruptStack* stack) {
+    ks.dbg(" ========== INTERRUPT FRAME LOG ==========\n\
+            Got interrupt %u with error_code %x on cpu #%d \n\
+            rax: %x | rbx: %x | rcx: %x | rdx: %x \n\
+            rsi: %x | rdi: %x | rbp: %x \n\
+            r8: %x | r9: %x | r10: %x \n\
+            r11: %x | r12: %x | r13: %x \n\
+            r14: %x | r15: %x \n\
+            rflags: %x | rsp: %x \n\
+            cs: %x | ss: %x | rip: %x\n\
+         ====== END OF INTERRUPT FRAME LOG =======", 
+            stack->irq, stack->error_code, get_current_cpu()->id, 
+            stack->rax, stack->rbx, stack->rcx, stack->rdx, 
+            stack->rsi, stack->rdi, stack->rbp,
+            stack->r8, stack->r9, stack->r10, 
+            stack->r11, stack->r12, stack->r13,
+            stack->r14, stack->r15, 
+            stack->rflags, stack->rsp, 
+            stack->cs, stack->ss, stack->rip);
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -131,7 +139,7 @@ InterruptStack* exception_handler(InterruptStack* stack) {
            log_interrupt(stack);
            break; 
     }
-
+    
     apic_eoi();
     return stack;
 }
@@ -142,8 +150,7 @@ InterruptStack* volatile_fun interrupt_handler(InterruptStack* stack) {
         if (scheduler.ready) {
             volatile Cpu* cpu = get_current_cpu();
             
-            if (cpu->tasks.current->status != TASK_NEW && 
-                cpu->tasks.current->status != TASK_EMBRYO)
+            if (cpu->tasks.current != nullptr && !IsTaskNeverRun(cpu->tasks.current))
                 context_save(cpu->tasks.current->context, stack);     // save context to task
             sched_cycle(cpu);
             context_load(cpu->tasks.current->context, stack);     // load context from task
