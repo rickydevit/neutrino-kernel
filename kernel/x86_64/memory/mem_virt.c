@@ -448,7 +448,7 @@ uintptr_t volatile_fun vmm_allocate_heap(size_t blocks) {
     for (size_t i = 0; i < blocks; i++) 
         vmm_map_page(0, phys_addr + (i*PHYSMEM_BLOCK_SIZE), virt_addr + (i*PHYSMEM_BLOCK_SIZE), (PageProperties){true, false, true});
     
-    if (virt_addr == HEAP_OFFSET && get_cpu_count() > 1) {
+    if (get_cpu_count() > 1) {
         for (size_t i = 0; i < get_cpu_count(); i++) {
             if (get_current_cpu()->id == i) continue;
             
