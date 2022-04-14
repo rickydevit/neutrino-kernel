@@ -88,7 +88,7 @@ void unoptimized setup_bsp(uint8_t* bsp_stack) {
 // *Get the cpu info given the cpu id
 // @param id the cpu id to get the info from
 // @return the pointer to the cpu info structure
-Cpu* get_cpu(uint32_t id) {
+Cpu* unoptimized get_cpu(uint32_t id) {
     if (id != 0 && id >= smp.cpu_count) {
         ks.warn("Cannot find cpu with id %u", id);
         return (Cpu*)NULL;
@@ -110,9 +110,10 @@ Cpu* unoptimized get_current_cpu() {
 
     if (id >= 0 && id < smp.cpu_count)
         return &(smp.cpus[id]);
-    
-    ks.warn("Cannot find cpu #%u", id);
-    return (Cpu*)nullptr;
+    else {
+        ks.warn("Cannot find cpu #%u", id);
+        return (Cpu*)nullptr;
+    }    
 }
 
 size_t get_cpu_count() {

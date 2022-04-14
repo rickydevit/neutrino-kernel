@@ -21,7 +21,7 @@ void task_set_name(Task* task, char* name) {
 
 // === PUBLIC FUNCTIONS =========================
 
-Task* NewTask(char* name, bool user) {
+Task* unoptimized NewTask(char* name, bool user) {
     Task* task = (Task*)kmalloc(sizeof(Task));
 
     task_set_name(task, name);
@@ -36,7 +36,7 @@ Task* NewTask(char* name, bool user) {
     return task;
 }
 
-Task* NewIdleTask(uintptr_t entry_point) {
+Task* unoptimized NewIdleTask(uintptr_t entry_point) {
     Task* idle = NewTask("idle", false);
     context_init(idle->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE, PROCESS_STACK_BASE, (ContextFlags)0);
 

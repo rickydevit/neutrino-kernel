@@ -44,7 +44,7 @@ void unoptimized context_init(Context* context, uintptr_t ip, uintptr_t sp, uint
     // context->syscall_kstack = ksp; // todo implement syscalls
 }
 
-void unoptimized context_save(Context* context, const Registers* regs) {
+void unoptimized context_save(Context* context, Registers const* regs) {
     save_sse_context(context->simd);
     context->regs = *regs;
 }

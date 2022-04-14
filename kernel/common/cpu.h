@@ -5,7 +5,7 @@
 #include "tasks/task.h"
 
 #define MAX_CPU 64
-#define CPU_STACK_SIZE      0x2000
+#define CPU_STACK_SIZE      0x8000
 #define CPU_STACK_BASE      0xfffff80000000000
 
 struct __tasks {

@@ -58,9 +58,9 @@ void queue_put(Task* task) {
 // --- Scheduler default tasks ------------------
 
 void cpu_idle() {
-    ks.dbg("TASK IDLE on cpu #%u", get_current_cpu()->id);
-    while (true)
-        asm volatile ("hlt");
+    asm volatile ("mov %0, %%eax" : : "g" (0xff0000 | get_current_cpu()->id));
+    asm volatile ("int %0" : : "g" (3));
+    while (true) asm volatile ("hlt");
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -69,8 +69,10 @@ void unoptimized init_scheduler() {
     ks.log("Initializing scheduler...");
     scheduler.ready = false;
 
-    for (size_t i = 0; i < get_cpu_count(); i++)
-        get_cpu(i)->tasks.idle = NewIdleTask((uintptr_t)cpu_idle);
+    for (size_t i = 0; i < get_cpu_count(); i++) {
+        volatile Cpu* cpu = get_cpu(i);
+        cpu->tasks.idle = NewIdleTask((uintptr_t)cpu_idle);
+    }
 
     scheduler.gtq = nullptr;
     scheduler.gtq_last = nullptr;
