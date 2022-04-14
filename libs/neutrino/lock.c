@@ -4,7 +4,7 @@
 // === PRIVATE FUNCTIONS ========================
 
 int unoptimized test_and_set(int* old_flag, int new_v) {
-    volatile int old = *old_flag;
+    int old = *old_flag;
     *old_flag = new_v;
     return old;
 }
@@ -20,7 +20,8 @@ void lock_init(Lock *lock) {
 // *Lock a spinlock, avoiding other threads accessing it
 // @param lock the lock to be locked
 void unoptimized lock(Lock* lock) {
-    while (test_and_set(&lock->flag, LOCKED) == 1);
+    while (!__sync_bool_compare_and_swap(&(lock->flag), UNLOCKED, LOCKED))
+        asm volatile ("pause");
 }
 
 // *Unlock a spinlock and make it available to other threads
