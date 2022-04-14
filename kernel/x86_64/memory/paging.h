@@ -9,7 +9,8 @@
 #define RECURSE_PML4_OTHER  (0xfffffe8000000000UL)
 #define PAGE_ENTRIES 512
 
-#define GetRecursiveAddress(gate, p3, p2, p1, offset) (PageTableEntry*)((0xffffUL<<48) | (gate<<39) | (p3<<30) | (p2<<21) | (p1<<12)) + offset
+#define GetRecursiveAddress(gate, p3, p2, p1, offset) (PageTable*)&(((PageTable*)((0xffffUL<<48) | (gate<<39) | (p3<<30) | (p2<<21) | (p1<<12)))->entries[offset])
+#define GetTable(addr)                                (PageTable*)((addr >> 12) << 12)
 
 #define PRESENT_BIT_OFFSET      0b1
 #define WRITABLE_BIT_OFFSET     0b10

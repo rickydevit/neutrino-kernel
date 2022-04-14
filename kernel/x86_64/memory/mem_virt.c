@@ -280,21 +280,21 @@ static inline uintptr_t vmm_get_other_recurse_link() {
     return (uintptr_t)GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_OTHER, 0);
 }
 
-uintptr_t vmm_find_free_heap_series(size_t size) {
-    PageTable* pl4_addr = (PageTable*)GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET));
+uintptr_t unoptimized vmm_find_free_heap_series(size_t size) {
+    PageTable* pl4_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET));
     for (int dpt = 0; dpt < 512; dpt++) {
             
         vmm_get_or_create_entry(pl4_addr, dpt, (PageProperties){true, false, true});
-        PageTable* dpt_addr = (PageTable*)GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt);
+        PageTable* dpt_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt);
         for (int pd = 0; pd < 512; pd++) {
         
             vmm_get_or_create_entry(dpt_addr, pd, (PageProperties){true, false, true});
-            PageTable* pd_addr = (PageTable*)GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd);
+            PageTable* pd_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd);
             for (int pt = 0; pt < 512; pt++) {
                 if (vmm_get_entry(pd_addr, pt) != 0) continue;
         
                 vmm_get_or_create_entry(pd_addr, pt, (PageProperties){true, false, true});
-                PageTable* pt_addr = (PageTable*)GetRecursiveAddress(RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd, pt);
+                PageTable* pt_addr = GetRecursiveAddress(RECURSE_ACTIVE, GET_PL4_INDEX(HEAP_OFFSET), dpt, pd, pt);
                 for (int page = 0; page < 512; page++) {
                     if (vmm_get_entry(pt_addr, page) != 0) continue;
 
@@ -367,7 +367,7 @@ void unoptimized init_vmm_on_ap(struct stivale2_smp_info* info) {
 
     // map the cpu stack in the page
     uint64_t stack_base = (uint64_t)(info->target_stack-CPU_STACK_SIZE) - (uint64_t)(info->target_stack - CPU_STACK_SIZE) % PAGE_SIZE;
-    uint64_t stack_size = ((CPU_STACK_SIZE / PAGE_SIZE) + 1) * PAGE_SIZE;
+    uint64_t stack_size = ((CPU_STACK_SIZE / PAGE_SIZE)) * PAGE_SIZE;
     ks.dbg("Mapping CPU stack starting %x, length %x", stack_base, stack_size);
     for (int i = 0; i * PAGE_SIZE < stack_size; i++) {
         uintptr_t addr = stack_base + i * PAGE_SIZE;
