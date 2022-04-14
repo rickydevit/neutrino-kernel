@@ -78,7 +78,6 @@ _generic_exception:
 
   popall
   add rsp, 16         ; pop interrupt number
-  sti
   iretq
 
 _generic_interrupt:
@@ -91,7 +90,6 @@ _generic_interrupt:
 
   popall
   add rsp, 16         ; pop interrupt number
-  sti
   iretq
 
 _EXCEPTION_COMMON 0   ; DIVIDE EXCEPTION
