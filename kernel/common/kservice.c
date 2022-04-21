@@ -57,7 +57,6 @@ void kput(char* message, ...) {
 }
 
 void unoptimized klog(char* message, ...) {
-    disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
@@ -65,11 +64,9 @@ void unoptimized klog(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
     unlock(&l);
-    enable_interrupts();
 }
 
 void unoptimized kdbg(char* message, ...) {
-    disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
@@ -77,11 +74,9 @@ void unoptimized kdbg(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
     unlock(&l);
-    enable_interrupts();
 }
 
 void unoptimized kwarn(char* message, ...) {
-    disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
@@ -89,11 +84,9 @@ void unoptimized kwarn(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
     unlock(&l);
-    enable_interrupts();
 }
 
 void unoptimized kerr(char* message, ...) {
-    disable_interrupts();
     lock(&l);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
@@ -101,7 +94,6 @@ void unoptimized kerr(char* message, ...) {
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
     unlock(&l);
-    enable_interrupts();
 }
 
 void unoptimized kpanic(Fatal fatal_error, ...) {

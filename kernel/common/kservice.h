@@ -4,6 +4,7 @@ enum KERNEL_FATAL {
     //! reserved                    | 0x000 - 0x0ff
     INTERNAL_TEST       = 0x000,
     NOT_IMPLEMENTED     = 0x001,
+    FATAL_ERROR         = 0x002,
 
     //! core hardware not found     | 0x100 - 0x1ff
     NO_PIT              = 0x100,

@@ -82,7 +82,7 @@ struct GDT_entry inline gdt_entry_create(uint64_t base, uint64_t limit, uint64_t
 	return entry;
 }
 
-struct TSS_entry inline tss_entry_create(uint64_t base, uint64_t limit, uint64_t access, uint64_t flags) {
+static inline struct TSS_entry tss_entry_create(uint64_t base, uint64_t limit, uint64_t access, uint64_t flags) {
 	struct TSS_entry entry;
 
 	entry.low = gdt_entry_create(base, limit, access, flags);

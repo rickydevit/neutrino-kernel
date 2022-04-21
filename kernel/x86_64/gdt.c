@@ -3,6 +3,7 @@
 #include "kservice.h"
 #include "memory/mem_phys.h"
 #include "memory/mem_virt.h"
+#include <neutrino/macros.h>
 
 struct cpu_GDT gdt_array[MAX_CPU];
 
@@ -37,7 +38,7 @@ void install_gdt(struct cpu_GDT* gdt) {
     load_gdt((uintptr_t)&gdt_ptr);
 }
 
-void inline install_tss() {
+static inline void install_tss() {
    __asm__ volatile("ltr %%ax" : : "a"(0x28));
 }
 
@@ -62,7 +63,7 @@ void init_gdt_on_ap(uint32_t cpu_id) {
 
 // *Setup the TSS
 // @param cpu the structure information of the cpu
-void init_tss(Cpu* cpu) {
+void unoptimized init_tss(Cpu* cpu) {
     ks.dbg("Setting up TSS...");
     // tss descriptor 0x28
     struct TSS_entry entry = tss_entry_create((uint64_t)&(cpu->tss), (uint64_t)&(cpu->tss) + sizeof(cpu->tss), GDT_TSS_PRESENT | GDT_TSS, GDT_FLAGS_TSS);

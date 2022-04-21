@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <neutrino/macros.h>
 #include <neutrino/lock.h>
+#include <neutrino/atomic.h>
 
 struct IDT_entry IDT[IDT_SIZE];
 
@@ -73,6 +74,7 @@ void unoptimized set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t 
 void unoptimized log_interrupt(InterruptStack* stack) {
     ks.dbg(" ========== INTERRUPT FRAME LOG ==========\n\
             Got interrupt %u with error_code %x on cpu #%d \n\
+            Previous stack frame was %x \n\
             rax: %x | rbx: %x | rcx: %x | rdx: %x \n\
             rsi: %x | rdi: %x | rbp: %x \n\
             r8: %x | r9: %x | r10: %x \n\
@@ -82,6 +84,7 @@ void unoptimized log_interrupt(InterruptStack* stack) {
             cs: %x | ss: %x | rip: %x\n\
          ====== END OF INTERRUPT FRAME LOG =======", 
             stack->irq, stack->error_code, get_current_cpu()->id, 
+            stack->rsp,
             stack->rax, stack->rbx, stack->rcx, stack->rdx, 
             stack->rsi, stack->rdi, stack->rbp,
             stack->r8, stack->r9, stack->r10, 
@@ -149,13 +152,18 @@ InterruptStack* unoptimized interrupt_handler(InterruptStack* stack) {
     if (stack->irq == APIC_TIMER_IRQ) {     // timer interrupt, do task switch
         if (scheduler.ready) {
             volatile Cpu* cpu = get_current_cpu();
-            
-            if (cpu->tasks.current != nullptr && !IsTaskNeverRun(cpu->tasks.current))
-                context_save(cpu->tasks.current->context, stack);     // save context to task
-            sched_cycle(cpu);
-            context_load(cpu->tasks.current->context, stack);     // load context from task
+            if (atomic_get_byte((uintptr_t)&(cpu->tasks.is_switching.flag)) == UNLOCKED) {
+                lock((Lock*)&(cpu->tasks.is_switching));
+                
+                if (cpu->tasks.current != nullptr && !IsTaskNeverRun(cpu->tasks.current))
+                    context_save(cpu->tasks.current->context, stack);     // save context to task
+                sched_cycle(cpu);
+                context_load(cpu->tasks.current->context, stack);     // load context from task
 
-            space_switch(cpu->tasks.current->space);              // switch space
+                space_switch(cpu->tasks.current->space);              // switch space
+                
+                unlock((Lock*)&(cpu->tasks.is_switching));
+            }
         }
     }
 

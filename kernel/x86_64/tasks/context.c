@@ -27,6 +27,7 @@ void DestroyContext(Context* context) {
 
 void unoptimized context_init(Context* context, uintptr_t ip, uintptr_t sp, uintptr_t ksp, ContextFlags cflags) {
     Registers regs;
+    memory_set((uint8_t*)&regs, 0, sizeof(Registers));
 
     regs.rip = ip;
     regs.rflags = RFLAGS_INTERRUPT_ENABLE | RFLAGS_RESERVED1_ONE;

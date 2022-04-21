@@ -83,9 +83,8 @@ void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     init_scheduler();
     // sched_start(nullptr);
 
-    enable_interrupts();
-
     //? -----------------------------------------
+    ks.fatal(FatalError(FATAL_ERROR, "init_scheduler() returned!"));
     for (;;) asm volatile("hlt");
 
     /*
