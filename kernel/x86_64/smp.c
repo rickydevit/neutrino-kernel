@@ -46,31 +46,40 @@ void unoptimized init_smp(struct stivale2_struct_tag_smp *smp_struct) {
     ks.dbg("Found %i CPUs. x2APIC is %c", smp_struct->cpu_count, smp_struct->flags & 1 ? "enabled" : "disabled");
 
     apic.x2apic_enabled = smp_struct->flags & 1;
-    smp.cpu_count = (smp_struct->cpu_count > MAX_CPU ? MAX_CPU : smp_struct->cpu_count);
 
-    // save cpus
-    for (int i = 0; i < smp.cpu_count; i++) {
-        struct stivale2_smp_info cpu_info = smp_struct->smp_info[i];
-        // skip the bsp
-        if (cpu_info.lapic_id == smp_struct->bsp_lapic_id) continue;               
-        
-        ks.dbg("cpu id: %d lapic id: %d", cpu_info.processor_id, cpu_info.lapic_id);
-        smp.cpus[i].id = cpu_info.processor_id;
-        smp.cpus[i].lapic_id = cpu_info.lapic_id;
-        
-        // prepare the stack
-        smp.cpus[i].stack = (uint8_t*)pmm_alloc_series(CPU_STACK_SIZE/PHYSMEM_BLOCK_SIZE);
-        smp_struct->smp_info[i].target_stack = get_mem_address((uintptr_t)smp.cpus[i].stack) + CPU_STACK_SIZE;
-        smp.cpus[i].tss.rsp0 = (uint64_t)smp.cpus[i].stack;
+    // todo: remove single-core force
+    if (smp_struct->cpu_count > 1) {
+        ks.warn("Multi-core is not supported yet. Using only one CPU.");
+        smp.cpu_count = 1;
+    
+    } else {
 
-        // boot the ap
-        ks.log("Starting CPU #%d, stack at %x, trampoline at %x", i, smp_struct->smp_info[i].target_stack, (uint64_t)start_cpu);
-        smp_struct->smp_info[i].goto_address = (uint64_t)start_cpu;
-        
-        // wait for ap to boot up
-        while (!cpu_started);
-        ks.log("CPU #%d started successfully", i);
-        cpu_started = false;
+        smp.cpu_count = (smp_struct->cpu_count > MAX_CPU ? MAX_CPU : smp_struct->cpu_count);
+
+        // save cpus
+        for (int i = 0; i < smp.cpu_count; i++) {
+            struct stivale2_smp_info cpu_info = smp_struct->smp_info[i];
+            // skip the bsp
+            if (cpu_info.lapic_id == smp_struct->bsp_lapic_id) continue;               
+            
+            ks.dbg("cpu id: %d lapic id: %d", cpu_info.processor_id, cpu_info.lapic_id);
+            smp.cpus[i].id = cpu_info.processor_id;
+            smp.cpus[i].lapic_id = cpu_info.lapic_id;
+            
+            // prepare the stack
+            smp.cpus[i].stack = (uint8_t*)pmm_alloc_series(CPU_STACK_SIZE/PHYSMEM_BLOCK_SIZE);
+            smp_struct->smp_info[i].target_stack = get_mem_address((uintptr_t)smp.cpus[i].stack) + CPU_STACK_SIZE;
+            smp.cpus[i].tss.rsp0 = (uint64_t)smp.cpus[i].stack;
+
+            // boot the ap
+            ks.log("Starting CPU #%d, stack at %x, trampoline at %x", i, smp_struct->smp_info[i].target_stack, (uint64_t)start_cpu);
+            smp_struct->smp_info[i].goto_address = (uint64_t)start_cpu;
+            
+            // wait for ap to boot up
+            while (!cpu_started);
+            ks.log("CPU #%d started successfully", i);
+            cpu_started = false;
+        }
     }
 
     ks.log("%u CPUs initialized successfully.", smp.cpu_count);
