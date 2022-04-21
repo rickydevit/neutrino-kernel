@@ -72,6 +72,7 @@ void unoptimized init_scheduler() {
     for (size_t i = 0; i < get_cpu_count(); i++) {
         volatile Cpu* cpu = get_cpu(i);
         cpu->tasks.idle = NewIdleTask((uintptr_t)cpu_idle);
+        cpu->tasks.is_switching = NewLock;
     }
 
     scheduler.gtq = nullptr;
@@ -80,6 +81,9 @@ void unoptimized init_scheduler() {
 
     ks.log("Scheduler initialized");
     scheduler.ready = true;
+
+    enable_interrupts();
+    for (;;) asm volatile("hlt");
 }
 
 void sched_start(Task* task) {

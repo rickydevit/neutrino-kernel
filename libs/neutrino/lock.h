@@ -1,10 +1,11 @@
 #pragma once
+#include <stdint.h>
 
 #define LOCKED      1
 #define UNLOCKED    0
 
 typedef struct __lock {
-    int flag;
+    uint8_t flag;
 } Lock;
 
 #define NewLock         (Lock){UNLOCKED}

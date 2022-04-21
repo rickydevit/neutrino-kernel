@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <size_t.h>
 #include "tasks/task.h"
 
@@ -9,6 +10,7 @@
 #define CPU_STACK_BASE      0xfffff80000000000
 
 struct __tasks {
+    Lock is_switching;
     Task* idle;
     Task* current;
     Task* next;
