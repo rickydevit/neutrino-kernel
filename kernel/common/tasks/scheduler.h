@@ -7,7 +7,7 @@
 #include <neutrino/macros.h>
 
 typedef union __global_task_queue_node {
-    Task task;
+    Task* task;
     union __global_task_queue_node* next;
 } packed GlobalTaskQueueNode;
 
