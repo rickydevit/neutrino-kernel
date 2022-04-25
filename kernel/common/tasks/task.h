@@ -13,8 +13,6 @@ typedef enum __task_status {
     TASK_NEW,               // task has never been executed before
     TASK_READY,             // task is ready for execution
     TASK_RUNNING,           // task is running
-    TASK_IO,                // task is blocked by I/O 
-    TASK_SYSCALL,           // task is executing a syscall
     TASK_ZOMBIE             // task is ended and freeing its resources
 } TaskStatus;
 
@@ -32,15 +30,19 @@ typedef struct __task {
         bool affinity_ignored;
     } packed cpu_affinity;
 
+    // flags
     Lock lock;
     bool user;
+    bool in_syscall;
+    bool in_io;
+
     Context* context;       // ! must SAVE before every scheduler cycle and RESTORE thereafter
     Space* space;           // ! must SWITCH after every scheduler cycle
 
     uintptr_t stack_base;
 } Task;
 
-#define IsTaskRunnable(task)    ((task)->status == TASK_READY || (task)->status == TASK_SYSCALL)
+#define IsTaskRunnable(task)    ((task)->status == TASK_READY)
 #define IsTaskNeverRun(task)    ((task)->status == TASK_EMBRYO || (task)->status == TASK_NEW)
 
 Task* NewTask(char* name, bool user);
