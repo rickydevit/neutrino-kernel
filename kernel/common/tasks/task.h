@@ -42,7 +42,7 @@ typedef struct __task {
     uintptr_t stack_base;
 } Task;
 
-#define IsTaskRunnable(task)    ((task)->status == TASK_READY)
+#define IsTaskRunnable(task)    ((task)->status == TASK_READY || (task)->status == TASK_NEW)
 #define IsTaskNeverRun(task)    ((task)->status == TASK_EMBRYO || (task)->status == TASK_NEW)
 
 Task* NewTask(char* name, bool user);

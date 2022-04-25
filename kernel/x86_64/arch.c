@@ -54,6 +54,21 @@ void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, Memory
     init_vmm();
 }
 
+void cpu_test1() {
+    ks.dbg("test from process 1");
+    while (true) asm volatile ("hlt");
+}
+
+void cpu_test2() {
+    ks.dbg("test from process 2");
+    while (true) asm volatile ("hlt");
+}
+
+void cpu_test3() {
+    ks.dbg("test from process 3");
+    while (true) asm volatile ("hlt");
+}
+
 void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     struct stivale2_struct_tag_smp *smp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
@@ -80,8 +95,18 @@ void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     init_apic_timer();
     init_smp(smp_str_tag);
 
-    init_scheduler();
-    // sched_start(nullptr);
+    init_scheduler();    
+
+    // test scheduler
+    Task* test = NewTask("test1", false);
+    Task* test2 = NewTask("test2", false);
+    Task* test3 = NewTask("test3", false);
+    sched_start(test, (uintptr_t)cpu_test1);
+    sched_start(test2, (uintptr_t)cpu_test2);
+    sched_start(test3, (uintptr_t)cpu_test3);
+
+    enable_interrupts();
+    for (;;) asm volatile("hlt");
 
     //? -----------------------------------------
     ks.fatal(FatalError(FATAL_ERROR, "init_scheduler() returned!"));

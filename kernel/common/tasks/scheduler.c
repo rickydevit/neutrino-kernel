@@ -4,10 +4,13 @@
 #include "kernel/common/kservice.h"
 #include <stdbool.h>
 #include <_null.h>
+#include <linkedlist.h>
 #include <neutrino/lock.h>
 #include <neutrino/macros.h>
 
 // === PRIVATE FUNCTIONS ========================
+
+// --- CPU functions ----------------------------
 
 // *Get if the given CPU is currently idle
 // @param cpu the CPU to check 
@@ -30,8 +33,8 @@ bool cpu_peek_other(volatile Cpu* cpu) {
 }
 
 void cpu_swap_task(volatile Cpu* cpu) {
-    lock((Lock*)&(cpu->tasks.current));
-    lock((Lock*)&(cpu->tasks.next));
+    lock((Lock*)&(cpu->tasks.current->lock));
+    lock((Lock*)&(cpu->tasks.next->lock));
 
     if (cpu->tasks.current->status == TASK_RUNNING)
         cpu->tasks.current->status = TASK_READY;
@@ -41,41 +44,47 @@ void cpu_swap_task(volatile Cpu* cpu) {
     cpu->tasks.current = cpu->tasks.next;
     cpu->tasks.next = temp;
 
-    unlock((Lock*)&(cpu->tasks.next));
-    unlock((Lock*)&(cpu->tasks.current));
+    unlock((Lock*)&(cpu->tasks.next->lock));
+    unlock((Lock*)&(cpu->tasks.current->lock));
     return;
 }
 
 void cpu_next(volatile Cpu* cpu) {
-    lock((Lock*)&(cpu->tasks.next));
+    lock((Lock*)&(cpu->tasks.next->lock));
     cpu->tasks.current = cpu->tasks.next;
-    unlock((Lock*)&(cpu->tasks.current));
+    unlock((Lock*)&(cpu->tasks.current->lock));
     return;
 }
+
+// --- Queue management -------------------------
 
 // *Get if the GTQ is empty
 // @return true if the GTQ is empty, false otherwise
 bool queue_is_empty() {
-    LockOperation(scheduler.gtq_lock, bool empty = scheduler.gtq == nullptr);
+    LockOperation(scheduler.gtq_lock, bool empty = list_is_empty(scheduler.gtq));
     return empty;
 }
 
-bool queue_assign(Task* task_slot, bool ignore_affinity, uint16_t cpu_id) {
+Task* unoptimized queue_assign(Task* task_slot, bool ignore_affinity, uint16_t cpu_id) {
     lock(&(scheduler.gtq_lock));
 
-    GlobalTaskQueueNode* p = scheduler.gtq;
+    List* p = scheduler.gtq;
+    Task* t = nullptr;
+    int t_index = 0;
+
     while (p != nullptr) {
+        t = list_get_value(p);
         // check if task is unlocked, and acquire lock if so
-        if (p->task->lock.flag == UNLOCKED) {
-            lock(&(p->task->lock));
+        if (t->lock.flag == UNLOCKED) {
+            lock(&(t->lock));
 
             // if task is runnable check for assignable
-            if (IsTaskRunnable(p->task)) {
+            if (IsTaskRunnable(t)) {
                 // check for affinity
                 if (!ignore_affinity) {
-                    if (p->task->cpu_affinity.cpu_id != cpu_id) {
-                        if (p->task->cpu_affinity.affinity_ignored == false)
-                            p->task->cpu_affinity.affinity_ignored = true;
+                    if (t->cpu_affinity.cpu_id != cpu_id) {
+                        if (t->cpu_affinity.affinity_ignored == false)
+                            t->cpu_affinity.affinity_ignored = true;
                         else
                             break;      // quit cycle, p is the task to be assigned
                     }    
@@ -84,25 +93,30 @@ bool queue_assign(Task* task_slot, bool ignore_affinity, uint16_t cpu_id) {
                 break;      // affinity is unnecessary, p is the task to be assigned
             }
 
-            unlock(&(p->task->lock));
+            unlock(&(t->lock));
         }
         
+        t = nullptr;
         p = p->next;
+        t_index++;
     }
-    unlock(&(scheduler.gtq_lock));
 
     // ! check for empty task
-    if (p->task == nullptr) return false;
+    if (t == nullptr) return nullptr;
 
     // assign task and reset affinity
-    task_slot = p->task;
+    task_slot = t;
     task_slot->cpu_affinity.cpu_id = cpu_id;
     task_slot->cpu_affinity.affinity_ignored = false;
+
+    // remove from gtq
+    scheduler.gtq = list_delete_at(scheduler.gtq, t_index);
+    unlock(&(scheduler.gtq_lock));
 
     // ! unacquire the task lock
     unlock(&task_slot->lock);
 
-    return true;
+    return task_slot;
 }
 
 void queue_put(Task* task) {
@@ -112,12 +126,10 @@ void queue_put(Task* task) {
     if (task->status == TASK_RUNNING)
         task->status = TASK_READY;
 
-    scheduler.gtq_last->next = scheduler.gtq_last;
-    scheduler.gtq_last->task = task;
+    scheduler.gtq = list_append(scheduler.gtq, task);
 
     unlock(&(task->lock));
     unlock(&(scheduler.gtq_lock));
-    return;
 }
 
 // --- Scheduler default tasks ------------------
@@ -141,20 +153,19 @@ void unoptimized init_scheduler() {
     }
 
     scheduler.gtq = nullptr;
-    scheduler.gtq_last = nullptr;
     scheduler.gtq_lock = NewLock;
 
     ks.log("Scheduler initialized");
     scheduler.ready = true;
-
-    enable_interrupts();
-    for (;;) asm volatile("hlt");
 }
 
-void sched_start(Task* task) {
-    // todo: implement correct start
-    for (size_t i = 0; i < get_cpu_count(); i++)
-        get_cpu(i)->tasks.current = get_cpu(i)->tasks.idle;
+void sched_start(Task* task, uintptr_t entry_point) {
+    lock(&task->lock);
+    context_init(task->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE, PROCESS_STACK_BASE, (ContextFlags)0);
+    task->status = TASK_NEW;
+    unlock(&task->lock);
+
+    queue_put(task);
 }
 
 void sched_cycle(volatile Cpu* cpu) {
@@ -171,7 +182,7 @@ void sched_cycle(volatile Cpu* cpu) {
             // cpu_peek_other(cpu); // todo when implementing multi-core
         } else {                                        
             // if the cpu is idle but the GTQ has something pending, assign to cpu from the queue.
-            queue_assign(cpu->tasks.current, true, cpu->id);
+            cpu->tasks.current = queue_assign(cpu->tasks.current, true, cpu->id);
         }
     } else {
         if (queue_is_empty()) {
@@ -185,13 +196,13 @@ void sched_cycle(volatile Cpu* cpu) {
 
             if (cpu_is_next_free(cpu)) 
                 // if the next slot is free assign the current
-                queue_assign(cpu->tasks.current, true, cpu->id);
+                cpu->tasks.current = queue_assign(cpu->tasks.current, true, cpu->id);
             else 
                 // if the next slot is filled put the next in the current slot
                 cpu_next(cpu);
             
             // try to assign the next
-            queue_assign(cpu->tasks.next, false, cpu->id);
+            cpu->tasks.next = queue_assign(cpu->tasks.next, false, cpu->id);
         }
     }
 
