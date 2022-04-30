@@ -1,4 +1,5 @@
 #include "scheduler.h"
+#include "arch.h"
 #include "task.h"
 #include "kernel/common/cpu.h"
 #include "kernel/common/kservice.h"
@@ -52,6 +53,7 @@ void cpu_swap_task(volatile Cpu* cpu) {
 void cpu_next(volatile Cpu* cpu) {
     lock((Lock*)&(cpu->tasks.next->lock));
     cpu->tasks.current = cpu->tasks.next;
+    cpu->tasks.next = nullptr;
     unlock((Lock*)&(cpu->tasks.current->lock));
     return;
 }
@@ -135,9 +137,7 @@ void queue_put(Task* task) {
 // --- Scheduler default tasks ------------------
 
 void cpu_idle() {
-    asm volatile ("mov %0, %%eax" : : "g" (0xff0000 | get_current_cpu()->id));
-    asm volatile ("int %0" : : "g" (3));
-    while (true) asm volatile ("hlt");
+    arch_idle();
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -161,7 +161,7 @@ void unoptimized init_scheduler() {
 
 void sched_start(Task* task, uintptr_t entry_point) {
     lock(&task->lock);
-    context_init(task->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE, PROCESS_STACK_BASE, (ContextFlags)0);
+    context_init(task->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE - sizeof(uintptr_t), PROCESS_STACK_BASE, (ContextFlags)0);
     task->status = TASK_NEW;
     unlock(&task->lock);
 
@@ -186,9 +186,13 @@ void unoptimized sched_cycle(volatile Cpu* cpu) {
         }
     } else {
         if (queue_is_empty()) {
-            if (!cpu_is_next_free(cpu))
+            if (!cpu_is_next_free(cpu)) {
                 // if the cpu is busy, the GTQ is empty and the next slot is filled, then swap current and next.
-                cpu_swap_task(cpu);
+                if (cpu->tasks.current == nullptr)
+                    cpu_next(cpu);
+                else
+                    cpu_swap_task(cpu);
+            }
             
         } else {
             // if the cpu is busy and the GTQ has something pending move current task to GTQ
@@ -222,4 +226,5 @@ void unoptimized sched_terminate() {
     ks.log("Task ID %d on CPU %d terminated.", 
             cpu->tasks.current->pid, cpu->id);
     enable_interrupts();
+    arch_idle();
 }

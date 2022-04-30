@@ -56,18 +56,14 @@ void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, Memory
 
 void cpu_test1() {
     ks.dbg("test from process 1");
-    sched_terminate();
-    while (true) asm volatile ("hlt");
 }
 
 void cpu_test2() {
     ks.dbg("test from process 2");
-    while (true) asm volatile ("hlt");
 }
 
 void cpu_test3() {
     ks.dbg("test from process 3");
-    while (true) asm volatile ("hlt");
 }
 
 void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {

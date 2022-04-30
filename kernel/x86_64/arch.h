@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 
 #define MEMV_OFFSET 0xffff800000000000
 #define MMIO_OFFSET 0xfffff00000000000
@@ -39,4 +40,8 @@ inline uint64_t read_msr(uint64_t msr) {
 // @param value the value to write to the register
 inline void write_msr(uint64_t msr, uint64_t value) {
     asm volatile("wrmsr" : : "c"(msr), "a"(value & 0xFFFFFFFF), "d"(value >> 32));
+}
+
+static inline void arch_idle() {
+    while (true) asm volatile ("hlt");
 }
