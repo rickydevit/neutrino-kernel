@@ -20,7 +20,7 @@ void DestroySpace(Space* space) {
     if (space->memory_ranges != nullptr) {
 
         MemoryRangeNode* node = space->memory_ranges;
-        while (node->next != nullptr) { // loop and free the memory ranges
+        while (node != nullptr) { // loop and free the memory ranges
             vmm_free_memory(space->page_table, node->range.base, node->range.size);
             kfree(node);
             node = node->next;
@@ -60,7 +60,7 @@ void space_unmap(Space* space, uintptr_t virt_addr) {
 
     // find the corresponding node and free the associated memory range
     MemoryRangeNode* node = space->memory_ranges;
-    while (node->next != nullptr) { 
+    while (node != nullptr) { 
         if (node->range.base != virt_addr) {
             node = node->next;
             continue;
