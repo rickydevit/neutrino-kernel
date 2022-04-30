@@ -23,3 +23,4 @@ Scheduler scheduler;
 void sched_cycle(volatile Cpu* cpu);
 void sched_start(Task* task, uintptr_t entry_point);
 void init_scheduler();
+void sched_terminate();

@@ -56,6 +56,7 @@ void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, Memory
 
 void cpu_test1() {
     ks.dbg("test from process 1");
+    sched_terminate();
     while (true) asm volatile ("hlt");
 }
 
@@ -106,10 +107,9 @@ void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     sched_start(test3, (uintptr_t)cpu_test3);
 
     enable_interrupts();
-    for (;;) asm volatile("hlt");
 
     //? -----------------------------------------
-    ks.fatal(FatalError(FATAL_ERROR, "init_scheduler() returned!"));
+    ks.fatal(FatalError(FATAL_ERROR, "Neutrino returned!"));
     for (;;) asm volatile("hlt");
 
     /*

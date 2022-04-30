@@ -7,6 +7,8 @@
 #include <string.h>
 #include <neutrino/macros.h>
 
+static uint32_t _global_pid = 0;
+
 // === PRIVATE FUNCTIONS ========================
 
 void task_set_name(Task* task, char* name) {
@@ -26,6 +28,7 @@ Task* unoptimized NewTask(char* name, bool user) {
 
     task_set_name(task, name);
 
+    task->pid = _global_pid++;
     task->status = TASK_EMBRYO;
     task->user = user;
     task->lock = NewLock;
@@ -46,7 +49,6 @@ Task* unoptimized NewIdleTask(uintptr_t entry_point) {
 }
 
 void DestroyTask(Task* task) {
-    kfree((void*)task->stack_base);
     DestroySpace(task->space);
     DestroyContext(task->context);
     kfree(task);

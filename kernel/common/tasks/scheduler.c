@@ -168,7 +168,7 @@ void sched_start(Task* task, uintptr_t entry_point) {
     queue_put(task);
 }
 
-void sched_cycle(volatile Cpu* cpu) {
+void unoptimized sched_cycle(volatile Cpu* cpu) {
     if (cpu->tasks.current != nullptr) {
         if (cpu->tasks.current->status == TASK_ZOMBIE) {
             DestroyTask(cpu->tasks.current);
@@ -192,7 +192,8 @@ void sched_cycle(volatile Cpu* cpu) {
             
         } else {
             // if the cpu is busy and the GTQ has something pending move current task to GTQ
-            queue_put(cpu->tasks.current);
+            if (cpu->tasks.current != nullptr)
+                queue_put(cpu->tasks.current);
 
             if (cpu_is_next_free(cpu)) 
                 // if the next slot is free assign the current
@@ -212,4 +213,13 @@ void sched_cycle(volatile Cpu* cpu) {
 
     cpu->tasks.current->status = TASK_RUNNING;
     return;
+}
+
+void unoptimized sched_terminate() {
+    disable_interrupts();
+    Cpu* cpu = get_current_cpu();
+    LockOperation(cpu->tasks.current->lock,  cpu->tasks.current->status = TASK_ZOMBIE);
+    ks.log("Task ID %d on CPU %d terminated.", 
+            cpu->tasks.current->pid, cpu->id);
+    enable_interrupts();
 }
