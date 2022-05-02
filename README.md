@@ -53,35 +53,46 @@
         - [x] **Kernel Heap manager**
     - [ ] **Executable loading**
     - [x] **Process scheduler** `🔗 Timers, Executable loading`
+    - [x] **Virtual Filesystem (VFS)**
 
 - [ ] ⚙ **Advanced drivers**
     - [x] **Video driver**
         - [x] **Plot pixel**
         - [ ] **Draw line**
         - [ ] **Draw complex shapes**
-    - [ ] **USB driver**
     - [ ] **Network driver**
-    - [ ] **Storage drivers**
+
+- [ ] 📀 **Storage**
+    - [ ] **Drives drivers**
+        - [ ] **USB**
+        - [ ] **AHCI**
     - [ ] **Filesystem drivers**
+        - [ ] **initrd**
+        - [ ] **ext2**
+        - [ ] **FAT12**
 
 - [ ] 👤 **Userspace**
     - [ ] **System calls**
     - [ ] *And many apps*
 
-## Source structure
+## Source tree
 - **`kernel\`**
     - **`x86-64\`** _platform-specific code for the x86-64 architecture_
         - **`device\`** _platform-specific code for device libraries_
             - **`time\`** _source files for time related components (hpet, lapic, etc.)_
         - **`memory\`** _platform-specific code for memory related functions_
+        - **`tasks\`** _platform-specific code for tasks related functions_
     - **`common\`** _platform-independent kernel code_
         - **`device\`** _libraries for device abstraction in the kernel_
+        - **`fs\`** _filesystem abstraction in the kernel_
         - **`memory\`** _libraries for memory related functions_
+        - **`tasks\`** _scheduler, tasks and context related functions_
         - **`video\`** _implementation of video driver_
 - **`libs\`**
     - **`liballoc\`** _Durand's Amazing Super Duper Memory allocator_
     - **`libc\`** _porting of useful C libraries_
     - **`limine\`** _limine bootloader's headers and libraries_
+    - **`linkedlist\`** _linkedlist implementation_
     - **`neutrino\`** _kernel libraries_
 - **`limine\`** [_limine bootloader binaries_](https://github.com/limine-bootloader/limine/tree/v2.0-branch-binary)
 - **`utils\`** _file stored as backup or utility_
