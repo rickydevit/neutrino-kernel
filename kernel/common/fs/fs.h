@@ -11,17 +11,10 @@
 #define FS_SYMLINK     0x06
 #define FS_MOUNTPOINT  0x08
 
-typedef uintptr_t (*FsNodeRead)(struct __fs_node*, uint32_t, uint32_t, uint8_t*);
-typedef uintptr_t (*FsNodeWrite)(struct __fs_node*, uint32_t, uint32_t, uint8_t*);
-typedef void (*FsNodeOpen)(struct __fs_node*);
-typedef void (*FsNodeClose)(struct __fs_node*);
-typedef struct __dirent* (*FsNodeReadDir)(struct __fs_node*, uint32_t);
-typedef struct __fs_node* (*FsNodeFindDir)(struct __fs_node*, char*);
-
 struct __dirent {
     char name[MAX_PATH];
     uint32_t ino;       // Inode number
-}
+};
 
 typedef struct __fs_node {
     char name[MAX_PATH];
@@ -35,12 +28,12 @@ typedef struct __fs_node {
     uint32_t inode;
     uint32_t impl;
 
-    FsNodeRead read;   
-    FsNodeWrite write;
-    FsNodeOpen open;
-    FsNodeClose close;
-    FsNodeReadDir readdir; //? Returns the n'th child of a directory
-    FsNodeFindDir finddir; //? Try to find a child in a directory by name
+    uintptr_t (*read)(struct __fs_node*, uint32_t, uint32_t, uint8_t*);   
+    uintptr_t (*write)(struct __fs_node*, uint32_t, uint32_t, uint8_t*);
+    void (*open)(struct __fs_node*);
+    void (*close)(struct __fs_node*);
+    struct __dirent* (*readdir)(struct __fs_node*, uint32_t);   //? Returns the n'th child of a directory
+    struct __fs_node* (*finddir)(struct __fs_node*, char*);     //? Try to find a child in a directory by name
 
     struct __fs_node* ptr;
 } FsNode;
