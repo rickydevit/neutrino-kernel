@@ -1,6 +1,7 @@
 .DEFAULT_GOAL=$(ELF_TARGET)
 
 ARCH 			:= x86_64
+BOOTLOADER		:= limine
 BUILD_OUT 		:= ./build
 ISO_OUT 		:= ./iso
 ELF_TARGET 		:= neutrino.sys
@@ -16,12 +17,11 @@ CC 				:= $(ARCH)-elf-gcc
 LD 				:= $(ARCH)-elf-ld
 
 # flags
-DEFINEFLAGS  	:= -D__$(ARCH)
+DEFINEFLAGS  	:= -D__$(ARCH) -D__$(BOOTLOADER)
 
 INCLUDEFLAGS 	:= -I. \
 					-I./kernel/common \
 					-I./kernel/$(ARCH) \
-					-I./thirdparty/ \
         			-I./libs/libc \
        				-I./libs/ 
 					
@@ -82,6 +82,8 @@ $(ELF_TARGET): $(BUILD_OUT)/$(ELF_TARGET)
 
 .PHONY:$(BUILD_OUT)/$(ELF_TARGET)
 $(BUILD_OUT)/$(ELF_TARGET): $(COBJ) $(ASMOBJ)
+	@echo "[NEUTRINO] Build started. Current target platform is \"$(ARCH)\", bootloader is \"$(BOOTLOADER)\"."
+	@sleep 2s
 	@echo "[KERNEL $(ARCH)] (ld) $^"
 	@${LD} $^ $(LDFLAGS) -o $@
 
