@@ -8,32 +8,28 @@ FsNode* root = nullptr;
 
 // === PUBLIC FUNCTIONS =========================
 
-uintptr_t fs_read(FsNode* node, uint32_t offset, uint32_t size, uint8_t* buf) {
+size_t fs_read(FsNode* node, uint32_t offset, uint32_t size, uint8_t* buf) {
     if (node->read != nullptr)
         return node->read(node, offset, size, buf);
     else
-        return nullptr;
+        return 0;
 }
 
-uintptr_t fs_write(FsNode* node, uint32_t offset, uint32_t size, uint8_t* buf) {
+size_t fs_write(FsNode* node, uint32_t offset, uint32_t size, uint8_t* buf) {
     if (node->write != nullptr)
         return node->write(node, offset, size, buf);
     else
-        return nullptr;
+        return 0;
 }
 
 void fs_open(FsNode* node, uint8_t read, uint8_t write) {
     if (node->open != nullptr)
         return node->open(node);
-    else
-        return nullptr;
 }
 
 void fs_close(FsNode* node) {
     if (node->close != nullptr)
         return node->close(node);
-    else
-        return nullptr;
 }
 
 struct __dirent* fs_readdir(FsNode* node, uint32_t index) {

@@ -42,8 +42,8 @@ typedef struct __fs_node {
 
 extern FsNode* root;
 
-uintptr_t fs_read(FsNode* node, uint32_t offset, uint32_t size, uint8_t* buf);
-uintptr_t fs_write(FsNode* node, uint32_t offset, uint32_t size, uint8_t* buf);
+size_t fs_read(FsNode* node, uint32_t offset, uint32_t size, uint8_t* buf);
+size_t fs_write(FsNode* node, uint32_t offset, uint32_t size, uint8_t* buf);
 void fs_open(FsNode* node, uint8_t read, uint8_t write);
 void fs_close(FsNode* node);
 struct __dirent* fs_readdir(FsNode* node, uint32_t index);
