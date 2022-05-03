@@ -15,7 +15,10 @@
 #include "kernel/common/kservice.h"
 #include "kernel/common/tasks/scheduler.h"
 #include "kernel/common/modules.h"
+#include "kernel/common/fs/fs.h"
+#include "kernel/common/fs/initrd.h"
 #include <size_t.h>
+#include <_null.h>
 #include <libs/limine/stivale2hdr.h>
 #include <neutrino/macros.h>
 
@@ -64,7 +67,22 @@ void cpu_test2() {
 }
 
 void cpu_test3() {
-    ks.dbg("test from process 3");
+    int i = 0;
+    struct __dirent* node = 0;
+
+    while ((node = fs_readdir(root, i)) != nullptr) {
+    ks.dbg("Found file %c", node->name);
+    FsNode* fsnode = fs_finddir(root, node->name);
+
+    if ((fsnode->flags & 0x7) == FS_DIRECTORY)
+        ks.dbg("\t(directory)");
+    else {
+        char buf[256] = {0};
+        size_t sz = fs_read(fsnode, 0, 256, (uint8_t*)buf);
+        ks.dbg("\t contents (%u): \"%c\"", sz, buf);
+    }
+    i++;
+    }
 }
 
 void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
@@ -94,6 +112,9 @@ void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     init_apic_timer();
     init_smp(smp_str_tag);
     init_modules((uintptr_t)modules);
+
+    uintptr_t initrd = module_get_by_name("initrd")->start_addr;
+    if (initrd != nullptr) root = init_initrd(initrd);
 
     init_scheduler();    
 

@@ -48,8 +48,8 @@ OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
 # qemu settings
 QEMU 			= qemu-system-${ARCH}
 HARD_FLAGS 		= -m 4G -vga std -cpu Skylake-Client -smp 2
-RUN_FLAGS 		= ${HARD_FLAGS} -serial stdio
-DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -d cpu_reset,int -D qemu.log -s -S
+RUN_FLAGS 		= ${HARD_FLAGS} -serial stdio -d cpu_reset,int -D qemu.log
+DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -s -S
 
 # gdb settings
 GDB				= gdb
