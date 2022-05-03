@@ -44,11 +44,11 @@ static struct __dirent* initrd_readdir(FsNode* node, uint32_t index) {
 }
 
 static FsNode* initrd_finddir(FsNode* node, char* name) {
-    if (node == initrd_root && !strcmp(name, "dev"))
+    if (node == initrd_root && strcmp(name, "dev"))
         return initrd_dev;
     
     for (size_t i = 0; i < nroot_nodes; i++)
-        if (!strcmp(name, root_nodes[i].name))
+        if (strcmp(name, root_nodes[i].name))
             return &root_nodes[i];   
 
     return nullptr;

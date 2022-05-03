@@ -6,7 +6,7 @@ struct initrd_header
 {
    unsigned char magic; // The magic number is there to check for consistency.
    char name[64];
-   unsigned int offset; // Offset in the initrd the file starts.
+   unsigned long offset; // Offset in the initrd the file starts.
    unsigned int length; // Length of the file.
 };
 

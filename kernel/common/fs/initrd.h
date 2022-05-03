@@ -9,8 +9,8 @@ typedef struct __initrd_header {
 typedef struct __initrd_file_header {
     uint8_t magic;
     char name[64];
-    uint32_t offset;
-    uint32_t length;
+    uintptr_t offset;
+    size_t length;
 } InitrdFileHeader;
 
 FsNode* init_initrd(uintptr_t addr);
