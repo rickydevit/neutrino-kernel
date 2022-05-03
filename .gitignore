@@ -1,6 +1,10 @@
 iso/
 build/
 .vscode/
+initrd/
 
 *.iso
+*.img
 *.log
+
+make-initrd
