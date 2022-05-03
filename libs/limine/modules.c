@@ -35,8 +35,8 @@ int init_modules(uintptr_t addr) {
 
 BootModule* module_get_by_name(const char* name) {
     for (size_t i = 0; i < modules_count; i++) {
-        if (strcmp(modules[i].name, name) != 0) continue;
-        else return &modules[i];
+        if (strcmp(modules[i].name, name) == false) continue;
+        else return modules+i;
     }
 
     return nullptr;
