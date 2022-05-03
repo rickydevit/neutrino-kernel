@@ -28,8 +28,8 @@ typedef struct __fs_node {
     uint32_t inode;
     uint32_t impl;
 
-    uintptr_t (*read)(struct __fs_node*, uint32_t, uint32_t, uint8_t*);   
-    uintptr_t (*write)(struct __fs_node*, uint32_t, uint32_t, uint8_t*);
+    size_t (*read)(struct __fs_node*, uint32_t, uint32_t, uint8_t*);   
+    size_t (*write)(struct __fs_node*, uint32_t, uint32_t, uint8_t*);
     void (*open)(struct __fs_node*);
     void (*close)(struct __fs_node*);
     struct __dirent* (*readdir)(struct __fs_node*, uint32_t);   //? Returns the n'th child of a directory
