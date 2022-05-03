@@ -14,6 +14,7 @@
 #include "kernel/common/video/display.h"
 #include "kernel/common/kservice.h"
 #include "kernel/common/tasks/scheduler.h"
+#include "kernel/common/modules.h"
 #include <size_t.h>
 #include <libs/limine/stivale2hdr.h>
 #include <neutrino/macros.h>
@@ -69,6 +70,7 @@ void cpu_test3() {
 void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     struct stivale2_struct_tag_smp *smp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
+    struct stivale2_struct_tag_modules *modules = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
     MemoryPhysicalRegion entries[memmap_str_tag->entries];
 
     disable_interrupts();
@@ -91,6 +93,7 @@ void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     init_hpet();
     init_apic_timer();
     init_smp(smp_str_tag);
+    init_modules((uintptr_t)modules);
 
     init_scheduler();    
 
