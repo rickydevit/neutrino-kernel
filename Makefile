@@ -6,6 +6,8 @@ BUILD_OUT 		:= ./build
 ISO_OUT 		:= ./iso
 ELF_TARGET 		:= neutrino.sys
 ISO_TARGET 		:= neutrino.iso
+INITRD_SCRIPT	:= make-initrd
+INITRD_TARGET	:= initrd.img
 DIRECTORY_GUARD  = mkdir -p $(@D)
 LD_SCRIPT 		:= $(ARCH).ld
 
@@ -42,6 +44,8 @@ ASMFILES		:= $(shell find $(END_PATH) -type f -name '*.asm')
 SFILES 			:= $(shell find $(END_PATH) -type f -name '*.s')
 ASMOBJ			:= $(patsubst %.asm,$(BUILD_OUT)/%.o,$(ASMFILES)) 
 SOBJ			:= $(patsubst %.s,$(BUILD_OUT)/%.o,$(SFILES))
+
+INITRDFILES		:= $(shell find initrd/ -type f -name '*')
 
 OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
 
@@ -103,13 +107,26 @@ cd:	$(ISO_TARGET)
 	@echo "[KERNEL $(ARCH)] Preparing iso..."
 
 .PHONY:$(ISO_TARGET)
-$(ISO_TARGET): $(ELF_TARGET)
+$(ISO_TARGET): $(ELF_TARGET) $(INITRD_TARGET)
 	@mkdir -p iso
 	@cp -v $(BUILD_OUT)/$< utils/limine.cfg limine/limine.sys \
-    	limine/limine-cd.bin limine/limine-eltorito-efi.bin $(ISO_OUT)
+    	limine/limine-cd.bin limine/limine-eltorito-efi.bin $(INITRD_TARGET) $(ISO_OUT)
 	@xorriso -as mkisofs -b limine-cd.bin \
         -no-emul-boot -boot-load-size 4 -boot-info-table \
         --efi-boot limine-eltorito-efi.bin \
         -efi-boot-part --efi-boot-image --protective-msdos-label \
         $(ISO_OUT) -o $@
 	@./limine/limine-install $@
+
+.PHONY:$(INITRD_SCRIPT)
+$(INITRD_SCRIPT):
+	@echo "[INITRD] Building \"./make-initrd/\" script..."
+	@gcc utils/$@.c -o $@
+
+.PHONY:$(INITRD_TARGET)
+$(INITRD_TARGET): $(INITRD_SCRIPT)
+	@mkdir -p initrd
+	@echo "[INITRD] Adding files from ./initrd/ to $@..."
+	@./$(INITRD_SCRIPT) $(INITRDFILES)
+
+initrd: $(INITRD_TARGET)
