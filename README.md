@@ -1,5 +1,5 @@
 ### ![Neutrino Kernel Project](./utils/logo.png)
-*Neutrino* is a project that aims to understand and implement a 64 bit kernel written in a modern C and Assembly. The kernel will have basic drivers and functionality, but other features may be added in the future. The currently implemented features are listed [here](#Features). 
+*Neutrino* is a project that aims to understand and implement a 64 bit kernel written in modern C and Assembly. The kernel will have basic drivers and functionality, but other features may be added in the future. The currently implemented features are listed [here](#Features). 
 
 ## Milestones
 - [ ] **0 ー Reaching Userspace** ⬅  
@@ -67,7 +67,7 @@
         - [ ] **USB**
         - [ ] **AHCI**
     - [ ] **Filesystem drivers**
-        - [ ] **initrd**
+        - [x] **initrd**
         - [ ] **ext2**
         - [ ] **FAT12**
 
