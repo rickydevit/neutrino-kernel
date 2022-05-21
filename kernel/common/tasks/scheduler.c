@@ -223,8 +223,8 @@ void unoptimized sched_terminate() {
     disable_interrupts();
     Cpu* cpu = get_current_cpu();
     LockOperation(cpu->tasks.current->lock,  cpu->tasks.current->status = TASK_ZOMBIE);
-    ks.log("Task ID %d on CPU %d terminated.", 
-            cpu->tasks.current->pid, cpu->id);
+    ks.log("Task ID %d (%c) on CPU %d terminated.", 
+            cpu->tasks.current->pid, cpu->tasks.current->name, cpu->id);
     enable_interrupts();
     arch_idle();
 }
