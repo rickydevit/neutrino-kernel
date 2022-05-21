@@ -15,8 +15,7 @@
 #include "kernel/common/kservice.h"
 #include "kernel/common/tasks/scheduler.h"
 #include "kernel/common/modules.h"
-#include "kernel/common/fs/fs.h"
-#include "kernel/common/fs/initrd.h"
+#include "kernel/common/neutrino.h"
 #include <size_t.h>
 #include <_null.h>
 #include <libs/limine/stivale2hdr.h>
@@ -58,33 +57,6 @@ void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, Memory
     init_vmm();
 }
 
-void cpu_test1() {
-    ks.dbg("test from process 1");
-}
-
-void cpu_test2() {
-    ks.dbg("test from process 2");
-}
-
-void cpu_test3() {
-    int i = 0;
-    struct __dirent* node = 0;
-
-    while ((node = fs_readdir(root, i)) != nullptr) {
-    ks.dbg("Found file %c", node->name);
-    FsNode* fsnode = fs_finddir(root, node->name);
-
-    if ((fsnode->flags & 0x7) == FS_DIRECTORY)
-        ks.dbg("\t(directory)");
-    else {
-        char buf[256] = {0};
-        size_t sz = fs_read(fsnode, 0, 256, (uint8_t*)buf);
-        ks.dbg("\t contents (%u): \"%c\"", sz, buf);
-    }
-    i++;
-    }
-}
-
 void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_memmap *memmap_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     struct stivale2_struct_tag_smp *smp_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
@@ -113,19 +85,12 @@ void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     init_smp(smp_str_tag);
     init_modules((uintptr_t)modules);
 
-    uintptr_t initrd = module_get_by_name("initrd")->start_addr;
-    if (initrd != nullptr) root = init_initrd(initrd);
-
     init_scheduler();    
+    Task* neutrino = NewTask("neutrino", false);
+    sched_start(neutrino, (uintptr_t)neutrino_main);
 
-    // test scheduler
-    Task* test = NewTask("test1", false);
-    Task* test2 = NewTask("test2", false);
-    Task* test3 = NewTask("test3", false);
-    sched_start(test, (uintptr_t)cpu_test1);
-    sched_start(test2, (uintptr_t)cpu_test2);
-    sched_start(test3, (uintptr_t)cpu_test3);
-
+    // arch-dependant _kstart() is done setting up the system with the right architecture.
+    // flow is passed to neutrino_main() in "kernel/common" to continue the set up process. see ya!
     enable_interrupts();
 
     //? -----------------------------------------
