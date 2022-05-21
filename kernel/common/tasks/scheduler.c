@@ -161,7 +161,7 @@ void unoptimized init_scheduler() {
 
 void sched_start(Task* task, uintptr_t entry_point) {
     lock(&task->lock);
-    context_init(task->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE - sizeof(uintptr_t), PROCESS_STACK_BASE, (ContextFlags)0);
+    context_init(task->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE - sizeof(uintptr_t), PROCESS_STACK_BASE, (ContextFlags){.user = task->user});
     task->status = TASK_NEW;
     unlock(&task->lock);
 

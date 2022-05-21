@@ -9,9 +9,12 @@
 #endif
 
 typedef struct __context Context;
-typedef uint64_t ContextFlags;
+typedef struct __context_flags {
+    uint8_t user : 1;
+    uint64_t padding : 63;
+} ContextFlags;
 
-#define IsUserTask(flags) ((flags) & (1<<0))
+#define IsUserTask(flags) (flags.user == 1)
 
 Context* NewContext();
 void DestroyContext(Context* context);

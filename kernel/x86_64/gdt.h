@@ -7,7 +7,9 @@
 //? 2: 32 bit data descriptor
 //? 3: 64 bit code descriptor
 //? 4: 64 bit data descriptor
-#define GDT_ENTRIES 5
+//? 5: 64 bit USER code descriptor
+//? 6: 64 bit USER data descriptor
+#define GDT_ENTRIES 7
 
 #define GDT_PRESENT     0b10010000	        // Present bit. This must be 1 for all valid selectors.
 #define GDT_USER        0b01100000		    // Privilege, 2 bits. Contains the ring level, 0 = highest (kernel), 3 = lowest (user applications).

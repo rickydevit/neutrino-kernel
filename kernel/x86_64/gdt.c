@@ -22,6 +22,10 @@ void setup_gdt(struct cpu_GDT* gdt) {
     // 64-bit code and data descriptors 0x18 0x20
     gdt->GDT[3] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_EXECUTABLE, GDT_FLAGS_64BIT_CODE);
     gdt->GDT[4] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE                 , GDT_FLAGS_64BIT);
+
+    // 64-bit code and data descriptors 0x28 0x30
+    gdt->GDT[5] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_EXECUTABLE | GDT_USER, GDT_FLAGS_64BIT_CODE);
+    gdt->GDT[6] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_USER                 , GDT_FLAGS_64BIT);
 }
 
 // *Install the GDT 
@@ -39,7 +43,7 @@ void install_gdt(struct cpu_GDT* gdt) {
 }
 
 static inline void install_tss() {
-   __asm__ volatile("ltr %%ax" : : "a"(0x28));
+   __asm__ volatile("ltr %%ax" : : "a"(0x8*GDT_ENTRIES));
 }
 
 // === PUBLIC FUNCTIONS =========================

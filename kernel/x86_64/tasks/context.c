@@ -33,7 +33,8 @@ void unoptimized context_init(Context* context, uintptr_t ip, uintptr_t sp, uint
     regs.rflags = RFLAGS_INTERRUPT_ENABLE | RFLAGS_RESERVED1_ONE;
     
     if (IsUserTask(cflags)) {
-        // todo implement userspace
+        regs.cs = 0x28; // user code selector
+        regs.ss = 0x30; // user data selector
     } else {
         regs.cs = 0x18; // code selector
         regs.ss = 0x20; // data selector
