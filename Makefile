@@ -11,7 +11,7 @@ INITRD_TARGET	:= initrd.img
 DIRECTORY_GUARD  = mkdir -p $(@D)
 LD_SCRIPT 		:= $(ARCH).ld
 
-END_PATH 		:= kernel/common kernel/${ARCH} libs/
+END_PATH 		:= libs/ kernel/common kernel/${ARCH} 
 
 # compiler and linker
 CC 				:= $(ARCH)-elf-gcc
