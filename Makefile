@@ -19,7 +19,7 @@ CC 				:= $(ARCH)-elf-gcc
 LD 				:= $(ARCH)-elf-ld
 
 # flags
-DEFINEFLAGS  	:= -D__$(ARCH) -D__$(BOOTLOADER)
+DEFINEFLAGS  	:= -D__$(ARCH) -D__$(BOOTLOADER) -D__kernel
 
 INCLUDEFLAGS 	:= -I. \
 					-I./kernel/common \

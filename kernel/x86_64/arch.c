@@ -16,6 +16,7 @@
 #include "kernel/common/tasks/scheduler.h"
 #include "kernel/common/modules.h"
 #include "kernel/common/neutrino.h"
+#include "syscall.h"
 #include <size_t.h>
 #include <_null.h>
 #include <libs/limine/stivale2hdr.h>
@@ -84,8 +85,9 @@ void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     init_apic_timer();
     init_smp(smp_str_tag);
     init_modules((uintptr_t)modules);
-
     init_scheduler();    
+    init_syscall();
+
     Task* neutrino = NewTask("neutrino", false);
     sched_start(neutrino, (uintptr_t)neutrino_main);
 

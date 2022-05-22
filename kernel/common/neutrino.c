@@ -8,11 +8,12 @@
 #include "fs/fs.h"
 #include "fs/initrd.h"
 #include <libs/elf/elf.h>
+#include <neutrino/syscall.h>
 
 // === PRIVATE FUNCTIONS ========================
 
 void cpu_test1() {
-    ks.dbg("test from process 1");
+    sys_test(nullptr);
 }
 
 void cpu_test2() {
