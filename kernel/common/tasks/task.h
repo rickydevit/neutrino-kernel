@@ -48,6 +48,9 @@ typedef struct __task {
 Task* NewTask(char* name, bool user);
 Task* NewIdleTask(uintptr_t entry_point);
 void DestroyTask(Task* task);
+Task* get_current_task();
+void task_start_syscall();
+void task_end_syscall();
 
 #ifdef __x86_64
 #include "kernel/x86_64/tasks/task.h"

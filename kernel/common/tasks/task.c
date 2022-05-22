@@ -1,5 +1,6 @@
 #include "task.h"
 #include "context.h"
+#include "cpu.h"
 #include "../kservice.h"
 #include "../memory/memory.h"
 #include "../memory/space.h"
@@ -41,7 +42,7 @@ Task* unoptimized NewTask(char* name, bool user) {
 
 Task* unoptimized NewIdleTask(uintptr_t entry_point) {
     Task* idle = NewTask("idle", false);
-    context_init(idle->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE, PROCESS_STACK_BASE, (ContextFlags)0);
+    context_init(idle->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE, PROCESS_STACK_BASE, (ContextFlags){0});
 
     idle->status = TASK_NEW;
 
@@ -52,4 +53,16 @@ void DestroyTask(Task* task) {
     DestroySpace(task->space);
     DestroyContext(task->context);
     kfree(task);
+}
+
+Task* get_current_task() {
+    return get_current_cpu()->tasks.current;
+}
+
+void task_start_syscall() {
+    get_current_task()->in_syscall = true;
+}
+
+void task_end_syscall() {
+    get_current_task()->in_syscall = false;
 }
