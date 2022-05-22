@@ -26,10 +26,12 @@ enum MSR_REGISTERS {
     KERN_GS_BASE =      0xc0000102,
 };
 
+#define EFER_ENABLE_SYSCALL 0x1
+
 // *Read a model specific register value and return it
 // @param msr the model specific register to read
 // @return the value of the register
-inline uint64_t read_msr(uint64_t msr) {
+static inline uint64_t read_msr(uint64_t msr) {
     uint32_t low, high;
     asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
     return ((uint64_t)high << 32) | low;
@@ -38,7 +40,7 @@ inline uint64_t read_msr(uint64_t msr) {
 // *Write a value to a model specific register
 // @param msr the model specific register to write
 // @param value the value to write to the register
-inline void write_msr(uint64_t msr, uint64_t value) {
+static inline void write_msr(uint64_t msr, uint64_t value) {
     asm volatile("wrmsr" : : "c"(msr), "a"(value & 0xFFFFFFFF), "d"(value >> 32));
 }
 

@@ -23,9 +23,9 @@ void setup_gdt(struct cpu_GDT* gdt) {
     gdt->GDT[3] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_EXECUTABLE, GDT_FLAGS_64BIT_CODE);
     gdt->GDT[4] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE                 , GDT_FLAGS_64BIT);
 
-    // 64-bit code and data descriptors 0x28 0x30
-    gdt->GDT[5] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_EXECUTABLE | GDT_USER, GDT_FLAGS_64BIT_CODE);
-    gdt->GDT[6] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_USER                 , GDT_FLAGS_64BIT);
+    // 64-bit data and code descriptors 0x28 0x30
+    gdt->GDT[5] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_USER                 , GDT_FLAGS_64BIT);
+    gdt->GDT[6] = gdt_entry_create(0, 0xffffffff, GDT_PRESENT | GDT_READWRITE | GDT_EXECUTABLE | GDT_USER, GDT_FLAGS_64BIT_CODE);
 }
 
 // *Install the GDT 

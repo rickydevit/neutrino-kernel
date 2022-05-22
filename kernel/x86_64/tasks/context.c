@@ -33,8 +33,9 @@ void unoptimized context_init(Context* context, uintptr_t ip, uintptr_t sp, uint
     regs.rflags = RFLAGS_INTERRUPT_ENABLE | RFLAGS_RESERVED1_ONE;
     
     if (IsUserTask(cflags)) {
-        regs.cs = 0x28; // user code selector
-        regs.ss = 0x30; // user data selector
+        regs.cs = 0x30; // user data selector
+        regs.ss = 0x28; // user code selector
+        regs.rbp = PROCESS_STACK_BASE;
     } else {
         regs.cs = 0x18; // code selector
         regs.ss = 0x20; // data selector
@@ -43,7 +44,7 @@ void unoptimized context_init(Context* context, uintptr_t ip, uintptr_t sp, uint
 
     regs.rsp = (uint64_t)sp;
     context->regs = regs;
-    // context->syscall_kstack = ksp; // todo implement syscalls
+    context->syscall_kstack = ksp;
 }
 
 void unoptimized context_save(Context* context, Registers const* regs) {

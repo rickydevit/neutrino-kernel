@@ -6,8 +6,8 @@
 #include "kernel/common/tasks/context.h"
 
 struct __context {
-    // uintptr_t syscall_kstack; // todo syscalls
-    // uintptr_t syscall_ustack; // todo syscalls
+    uintptr_t syscall_kstack; 
+    uintptr_t syscall_ustack; 
 
     Registers regs;
     uint8_t simd[] aligned(64);
