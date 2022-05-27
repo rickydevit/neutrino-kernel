@@ -38,12 +38,16 @@ void unoptimized space_switch(Space* space) {
     unlock(&space->lock);
 }
 
-void space_map(Space* space, uintptr_t phys_addr, size_t size, uintptr_t virt_addr) {
+void space_map(Space* space, uintptr_t phys_addr, uintptr_t virt_addr, size_t size, MappingFlags flags) {
     lock(&space->lock);
 
     // map all the required pages
     for (size_t i = 0; i < size; i++) {
-        vmm_map_page(space->page_table, phys_addr + (i*PAGE_SIZE), virt_addr + (i*PAGE_SIZE), PageUserWrite);
+        vmm_map_page(space->page_table, phys_addr + (i*PAGE_SIZE), virt_addr + (i*PAGE_SIZE), (PageProperties){
+            .cache_disable = false, 
+            .user = (flags & MAP_USER) == MAP_USER, 
+            .writable = (flags & MAP_WRITABLE) == MAP_WRITABLE
+            });
     }
 
     // create a new node and attach it to the list 

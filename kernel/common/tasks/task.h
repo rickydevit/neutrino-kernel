@@ -16,6 +16,13 @@ typedef enum __task_status {
     TASK_ZOMBIE             // task is ended and freeing its resources
 } TaskStatus;
 
+typedef enum __task_exit_code {
+    QUIT_SUCCESS = 0xdf80,
+    QUIT_GENERIC_ERROR = 0xdf81,
+    QUIT_MEMORY_ERROR = 0xdf82,
+    QUIT_TERMINATED  = 0xdf83,
+} TaskExitCode;
+
 #define TASK_NAME_MAX 64
 #define PROCESS_STACK_SIZE  0x4000
 #define PROCESS_STACK_BASE  0x80000000000

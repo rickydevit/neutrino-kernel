@@ -13,5 +13,5 @@ void unoptimized task_set_stack(Task* task) {
     *(uintptr_t*)get_mem_address(task_terminator) = (uintptr_t)sched_terminate;
     vmm_unmap_page(0, get_mem_address(task_terminator));
 
-    space_map(task->space, task->stack_base, PROCESS_STACK_SIZE / PAGE_SIZE, PROCESS_STACK_BASE);
+    space_map(task->space, task->stack_base, PROCESS_STACK_BASE, PROCESS_STACK_SIZE / PAGE_SIZE, MAP_USER | MAP_WRITABLE);
 }
