@@ -33,4 +33,4 @@ void init_sse();
 void save_sse_context(uint8_t* context);
 void load_sse_context(uint8_t* context);
 size_t get_sse_context_size();
-void set_initial_sse_context(void* p);
+void set_initial_sse_context(uint8_t p[]);

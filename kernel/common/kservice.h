@@ -1,4 +1,5 @@
 #pragma once
+#include <neutrino/lock.h>
 
 enum KERNEL_FATAL {
     //! reserved                    | 0x000 - 0x0ff
@@ -34,6 +35,7 @@ struct KernelService {
 
     void (*_put) (char* message, ...);
     void (*_helper) (char* message);
+    Lock lock;
 };
 
 enum KSERVICE_TYPE {

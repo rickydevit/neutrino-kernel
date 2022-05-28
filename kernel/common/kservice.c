@@ -16,8 +16,6 @@ void kwarn(char* message, ...);
 void kerr(char* message, ...);
 void kpanic(Fatal fatal_error, ...);
 
-static Lock l = NewLock;
-
 // Public functions
 
 //* Initialize the kernel services
@@ -29,6 +27,7 @@ void init_kservice() {
     ks.warn = kwarn;
     ks.err = kerr;
     ks.fatal = kpanic;
+    ks.lock = NewLock;
 
     ks.log("Kernel services initialized.");
 }
@@ -57,48 +56,48 @@ void kput(char* message, ...) {
 }
 
 void unoptimized klog(char* message, ...) {
-    lock(&l);
+    lock(&ks.lock);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[LOG] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&l);
+    unlock(&ks.lock);
 }
 
 void unoptimized kdbg(char* message, ...) {
-    lock(&l);
+    lock(&ks.lock);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[DEBUG] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&l);
+    unlock(&ks.lock);
 }
 
 void unoptimized kwarn(char* message, ...) {
-    lock(&l);
+    lock(&ks.lock);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[WARN] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&l);
+    unlock(&ks.lock);
 }
 
 void unoptimized kerr(char* message, ...) {
-    lock(&l);
+    lock(&ks.lock);
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[ERR] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&l);
+    unlock(&ks.lock);
 }
 
 void unoptimized kpanic(Fatal fatal_error, ...) {
     disable_interrupts();
-    lock(&l);
+    lock(&ks.lock);
     va_list args; va_start(args, fatal_error);
     char buf[2048] = {0}, cbuf[32] = {0};
     ltoa((uint64_t)fatal_error.code, 16, cbuf);
