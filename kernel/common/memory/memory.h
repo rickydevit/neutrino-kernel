@@ -21,3 +21,6 @@ typedef struct __virtual_mapping {
 
 void memory_copy(uint8_t *source, uint8_t *dest, int nbytes);
 void memory_set(uint8_t *dest, uint8_t val, uint32_t len);
+
+VirtualMapping memory_allocate(size_t size);
+void memory_free(VirtualMapping mapping);

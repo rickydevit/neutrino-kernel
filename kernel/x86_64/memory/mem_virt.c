@@ -81,7 +81,7 @@ PageTable* unoptimized vmm_get_or_create_entry(PageTable* table, uint64_t entry,
 // @param virt the virtual address
 // @return the physical address associated to the virtual address
 uintptr_t vmm_virt_to_phys(PageTable* table, uintptr_t virt) {
-    if (table == (PageTable*)read_cr3()) {
+    if (table == (PageTable*)read_cr3() || table == 0) {
         PagingPath path = GetPagingPath(virt);
         table = GetRecursiveAddress(RECURSE_ACTIVE, path.pl4, path.dpt, path.pd, 0);
         return GET_PHYSICAL_ADDRESS(table->entries[path.pt]) + GET_PAGE_OFFSET(virt);
@@ -204,7 +204,7 @@ void vmm_free_if_necessary_tables(PageTable* table, uint64_t unmapped_addr) {
     vmm_free_if_necessary_table(pdpt, table, path.pl4);
 }
 
-PageTable* unoptimized vmm_get_most_nested_table(PageTable* table_addr, uintptr_t virt_addr) {
+PageTable* unoptimized vmm_get_most_nested_table(PageTable* table_addr, uintptr_t virt_addr, PageProperties prop) {
     PagingPath path = GetPagingPath(virt_addr);
     PagingPath tpath = GetPagingPath((uintptr_t)table_addr);
     bool isRecursive = tpath.pl4 == RECURSE_ACTIVE || tpath.pl4 == RECURSE_OTHER;
@@ -212,14 +212,14 @@ PageTable* unoptimized vmm_get_most_nested_table(PageTable* table_addr, uintptr_
     PageTable *pdpt, *pd, *pt;
     
     if (isRecursive) {
-        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pl4, tpath.pt, 0), path.pl4, PageKernelWrite);
-        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, PageKernelWrite);
-        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, PageKernelWrite);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pl4, tpath.pt, 0), path.pl4, prop);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, prop);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, prop);
         pt = (PageTable*)GetRecursiveAddress(tpath.pt, path.pl4, path.dpt, path.pd, 0);
     } else {
-        pdpt = vmm_get_or_create_entry(table_addr, path.pl4, PageKernelWrite);
-        pd = vmm_get_or_create_entry(pdpt, path.dpt, PageKernelWrite);
-        pt = vmm_get_or_create_entry(pd, path.pd, PageKernelWrite);
+        pdpt = vmm_get_or_create_entry(table_addr, path.pl4, prop);
+        pd = vmm_get_or_create_entry(pdpt, path.dpt, prop);
+        pt = vmm_get_or_create_entry(pd, path.pd, prop);
     }
 
     return pt;
@@ -271,13 +271,13 @@ void unoptimized vmm_map_kernel_region(struct memory_physical* phys, PageTable* 
 
 void unoptimized vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
     PagingPath path = GetPagingPath(virt_addr);
-    PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr);
+    PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr, prop);
 
     pt->entries[path.pt] = page_create(phys_addr, prop);
 }
 
 bool vmm_unmap_page_impl(PageTable* table_addr, uintptr_t virt_addr) {
-    PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr);
+    PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr, PageKernelWrite);
 
     // PageTable* to_free = vmm_get_entry(pt, path.pt);
     if (pt == nullptr) return false;
