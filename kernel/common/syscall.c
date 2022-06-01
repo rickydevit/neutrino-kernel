@@ -1,6 +1,7 @@
 #include "syscall.h"
 #include "kservice.h"
 #include "tasks/task.h"
+#include "tasks/scheduler.h"
 #include <neutrino/syscall.h>
 #include <stdint.h>
 
@@ -11,12 +12,18 @@ SyscallResult sys_test(uintptr_t* args) {
     return SYSCALL_SUCCESS;
 }
 
+SyscallResult sys_destroy_task(uintptr_t* args) {
+    sched_terminate();
+    return SYSCALL_FAILURE; // return failure on sched_terminate return 
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 typedef SyscallResult SyscallFn();
 
 SyscallFn* syscalls[NEUTRINO_SYSCALL_COUNT] = {
-    [NEUTRINO_TEST] = sys_test
+    [NEUTRINO_TEST] = sys_test,
+    [NEUTRINO_KILL_TASK] = sys_destroy_task
 };
 
 SyscallResult syscall_execute(NeutrinoSyscall syscall_id, uintptr_t* args) {

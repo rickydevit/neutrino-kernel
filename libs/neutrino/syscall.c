@@ -28,3 +28,7 @@ SyscallResult neutrino_syscall(NeutrinoSyscall syscall_id, uint64_t arg1, uint64
 SyscallResult neutrino_test(uintptr_t* args) {
     return neutrino_syscall(NEUTRINO_TEST, (uintptr_t)args, 0, 0, 0, 0);
 }
+
+SyscallResult neutrino_destroy_task(uintptr_t* args) {
+    return neutrino_syscall(NEUTRINO_KILL_TASK, (uintptr_t)args, 0, 0, 0, 0);
+}

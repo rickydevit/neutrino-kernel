@@ -44,7 +44,7 @@ global _syscall
 _syscall:
     swapgs
     mov [gs:0x8], rsp       ; set Context->syscall_ustack to rsp from syscall
-    mov rsp, [gs:0x0]       ; set rsp to Context->syscall_kstack from task Context
+    ; mov rsp, [gs:0x0]       ; set rsp to Context->syscall_kstack from task Context
 
     sti
     

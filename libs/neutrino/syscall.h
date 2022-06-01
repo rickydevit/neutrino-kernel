@@ -4,6 +4,7 @@
 // Syscall enum
 typedef enum __neutrino_syscalls {
     NEUTRINO_TEST,
+    NEUTRINO_KILL_TASK,
     NEUTRINO_SYSCALL_COUNT
 } NeutrinoSyscall;
 
@@ -21,5 +22,11 @@ typedef enum __neutrino_syscall_result {
 SysCall(syscall) (NeutrinoSyscall syscall_id, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5);
 #endif
 
-// Syscall prototypes
+// === Syscall prototypes ===
+
 SysCall(test)(uintptr_t* args);
+
+// Destroy the current task. This is a TRAP syscall, control is lost and returned to kernel
+// @param args unused argument
+// @return SYSCALL_FAILURE on call failure (scheduler fails to terminate task)
+SysCall(destroy_task)(uintptr_t* args);
