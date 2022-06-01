@@ -65,4 +65,4 @@ void task_end_syscall();
 #error "Unsupported platform"
 #endif
 
-void task_set_stack(Task* task);
+void task_set_stack(Task* task, bool user);

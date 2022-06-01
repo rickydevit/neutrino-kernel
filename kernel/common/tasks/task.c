@@ -6,6 +6,7 @@
 #include "../memory/space.h"
 #include <liballoc.h>
 #include <string.h>
+#include <stdbool.h>
 #include <neutrino/macros.h>
 
 static uint32_t _global_pid = 0;
@@ -13,6 +14,8 @@ static uint32_t _global_pid = 0;
 // === PRIVATE FUNCTIONS ========================
 
 void task_set_name(Task* task, char* name) {
+    memory_set((uint8_t*)task->name, 0, TASK_NAME_MAX);
+
     if (strlen(name) > TASK_NAME_MAX) {
         ks.warn("Task name is longer than the maximum allowed (%i). The name will be truncated.", TASK_NAME_MAX);
         memory_copy((uint8_t*)name, (uint8_t*)task->name, TASK_NAME_MAX);
@@ -36,7 +39,10 @@ Task* unoptimized NewTask(char* name, bool user) {
     task->space = NewSpace();
     task->context = NewContext();
 
-    task_set_stack(task);
+    task->in_io = false;
+    task->in_syscall = false;
+
+    task_set_stack(task, user);
     return task;
 }
 
