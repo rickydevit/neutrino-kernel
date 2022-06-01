@@ -122,4 +122,3 @@ typedef struct __elf_64_section_header {
 // Functions
 
 bool elf_check(const Elf64Header* header);
-void elf_load(Elf64Header const* header);
