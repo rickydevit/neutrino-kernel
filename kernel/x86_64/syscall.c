@@ -18,7 +18,7 @@ void init_syscall() {
     // STAR: 63 -------- 47 -------- 31 -------- 15 -------- 0
     //          user seg    kern seg     32bit EIP (unused)
     //            0x28        0x18
-    write_msr(STAR, ((uint64_t)(0x18) << 32) | ((uint64_t)(0x28) << 48));
+    write_msr(STAR, ((uint64_t)(0x18) << 32) | ((uint64_t)(0x20) << 48));
 
     // LSTAR: 64bit RIP entry point
     write_msr(LSTAR, ((uintptr_t)_syscall));
@@ -28,7 +28,7 @@ void init_syscall() {
 }
 
 void syscall_set_gs(uintptr_t addr) {
-    write_msr(GS_BASE, addr);
+    // write_msr(GS_BASE, addr);
     write_msr(KERN_GS_BASE, addr);
 }
 

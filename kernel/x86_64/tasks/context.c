@@ -1,5 +1,6 @@
 #include "context.h"
 #include "../sse.h"
+#include "../syscall.h"
 #include "../memory/mem_virt.h"
 #include "kernel/common/memory/memory.h"
 #include "kernel/common/tasks/context.h"
@@ -33,8 +34,8 @@ void unoptimized context_init(Context* context, uintptr_t ip, uintptr_t sp, uint
     regs.rflags = RFLAGS_INTERRUPT_ENABLE | RFLAGS_RESERVED1_ONE;
     
     if (IsUserTask(cflags)) {
-        regs.cs = 0x30; // user data selector
-        regs.ss = 0x28; // user code selector
+        regs.cs = 0x30 | 3; // user data selector + 3 to request pl 3
+        regs.ss = 0x28 | 3; // user code selector + 3 to request pl 3
         regs.rbp = PROCESS_STACK_BASE;
     } else {
         regs.cs = 0x18; // code selector
@@ -53,6 +54,8 @@ void unoptimized context_save(Context* context, Registers const* regs) {
 }
 
 void unoptimized context_load(Context* context, Registers* regs) {
+    syscall_set_gs((uintptr_t)context);
+
     *regs = context->regs;
     load_sse_context(context->simd);
 }
