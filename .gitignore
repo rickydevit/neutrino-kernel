@@ -2,6 +2,9 @@ iso/
 build/
 .vscode/
 initrd/
+executables/*
+!executables/*.c
+!executables/*.h
 
 *.iso
 *.img

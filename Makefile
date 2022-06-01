@@ -4,6 +4,7 @@ ARCH 			:= x86_64
 BOOTLOADER		:= limine
 BUILD_OUT 		:= ./build
 ISO_OUT 		:= ./iso
+EXES_OUT		:= ./executables
 ELF_TARGET 		:= neutrino.sys
 ISO_TARGET 		:= neutrino.iso
 INITRD_SCRIPT	:= make-initrd
@@ -29,7 +30,7 @@ INCLUDEFLAGS 	:= -I. \
 					
 CFLAGS 			:= 	-g -Wall -Wl,-Wunknown-pragmas -ffreestanding -fpie -fno-stack-protector \
 					-mno-red-zone -mno-3dnow -MMD -mno-80387 -mno-mmx -mno-sse -mno-sse2 \
-					-O2 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
+					-O1 -pipe $(INCLUDEFLAGS) $(DEFINEFLAGS)
 
 LDFLAGS 		:= 	-T $(LD_SCRIPT) -nostdlib -zmax-page-size=0x1000 -static \
 					--no-dynamic-linker -ztext
@@ -44,8 +45,14 @@ ASMFILES		:= $(shell find $(END_PATH) -type f -name '*.asm')
 SFILES 			:= $(shell find $(END_PATH) -type f -name '*.s')
 ASMOBJ			:= $(patsubst %.asm,$(BUILD_OUT)/%.o,$(ASMFILES)) 
 SOBJ			:= $(patsubst %.s,$(BUILD_OUT)/%.o,$(SFILES))
+LIBSOBJ			:= $(patsubst %.c, $(BUILD_OUT)/%.o, $(shell find ./libs/neutrino -type f -name '*.c'))
 
 INITRDFILES		:= $(shell find initrd/ -type f -name '*')
+
+EXEFILES		:= $(shell find executables/ -type f -name '*.c')
+EXEOBJ			:= $(patsubst %.c,%.oo,$(EXEFILES))
+EXETARGETS		:= $(patsubst %.c,%,$(EXEFILES))
+EXEDEPS			:= $(EXEFILES:.c=.d)
 
 OBJ 			:= $(shell find $(BUILD_OUT) -type f -name '*.o')
 
@@ -57,7 +64,8 @@ DEBUG_FLAGS		= ${HARD_FLAGS} -serial file:serial.log -s -S
 
 # gdb settings
 GDB				= gdb
-GDB_FLAGS 		= -ex "target remote localhost:1234" -ex "layout split" -ex "set scheduler-locking step"
+GDB_FLAGS 		= -ex "target remote localhost:1234" -ex "layout split" \
+				  -ex "set scheduler-locking step" -ex "set disassembly-flavor intel"
 
 # === COMMANDS AND BUILD ========================
 
@@ -130,3 +138,16 @@ $(INITRD_TARGET): $(INITRD_SCRIPT)
 	@./$(INITRD_SCRIPT) $(INITRDFILES)
 
 initrd: $(INITRD_TARGET)
+
+-include $(EXEDEPS)
+.PHONY:$(%.oo)
+%.oo: %.c 
+	@echo "[EXECUTABLE] (c) $<"
+	@$(CC) $< -ffreestanding -Ilibs -s -c -o $@
+
+$(EXETARGETS): $(EXEOBJ) $(LIBSOBJ)
+	@echo "[EXECUTABLE] (ld) $@"
+	@$(LD) $< $(LIBSOBJ) -o $@ -e main
+	@rm $<
+
+executables: $(EXETARGETS)
