@@ -51,7 +51,7 @@
         - [x] **Virtual memory manager**   
             *Manages the virtual memory page tables. Can map, remap and unmap pages*
         - [x] **Kernel Heap manager**
-    - [ ] **Executable loading**
+    - [x] **Executable loading**
     - [x] **Process scheduler** `🔗 Timers, Executable loading`
     - [x] **Virtual Filesystem (VFS)**
 
@@ -72,7 +72,7 @@
         - [ ] **FAT12**
 
 - [ ] 👤 **Userspace**
-    - [ ] **System calls**
+    - [x] **System calls**
     - [ ] *And many apps*
 
 ## Source tree

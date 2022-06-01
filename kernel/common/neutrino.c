@@ -7,6 +7,7 @@
 #include "modules.h"
 #include "fs/fs.h"
 #include "fs/initrd.h"
+#include "tasks/loader.h"
 #include <libs/elf/elf.h>
 #include <neutrino/syscall.h>
 
@@ -31,12 +32,13 @@ void cpu_test3() {
     if ((fsnode->flags & 0x7) == FS_DIRECTORY)
         ks.dbg("\t(directory)");
     else {
-        char buf[sizeof(Elf64Header)] = {0};
-        size_t sz = fs_read(fsnode, 0, sizeof(Elf64Header), (uint8_t*)buf);
+        char* buf = (char*)kmalloc(fsnode->length);
+        size_t sz = fs_read(fsnode, 0, fsnode->length, (uint8_t*)buf);
         const Elf64Header* header = (const Elf64Header*)buf;
 
         if (elf_check(header)) {
-            ks.dbg("\t(ELF file) %u", sz);
+            ks.dbg("\t(ELF file) %u/%u", sz, fsnode->length);
+            load_binary((const uintptr_t)header, fsnode->name, true);
         } else {
             ks.dbg("\t(file)");
         }
