@@ -134,7 +134,6 @@ InterruptStack* exception_handler(InterruptStack* stack) {
             ks.fatal(FatalError(INTERRUPT_EXCEPTION, "Neutrino encountered a fatal exception!"));
             break;
         case 14:    // PF
-            log_interrupt(stack);
             pagefault_handler(stack);
             break;
 
@@ -180,8 +179,13 @@ void pagefault_handler(InterruptStack* stack) {
     int us = stack->error_code & 0x4;           // Processor was in user-mode?
     int reserved = stack->error_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
 
-	ks.err("Page fault at address %x. %c, %c, %c, Reserved bits %c", faulting_address, (present == 1) ? "Present" : "Non-present", 
-           (rw == 1) ? "Write" : "Read", (us == 1) ? "User" : "Supervisor", (reserved == 1) ? "set" : "untoched"); 
+    if (faulting_address == (uintptr_t)sched_terminate && us && !rw && present && !reserved) {
+        sched_terminate();
+    }
+
+    log_interrupt(stack);
+	ks.err("Page fault at address %x. %c, %c, %c, Reserved bits %c", faulting_address, (present) ? "Present" : "Non-present", 
+           (rw) ? "Write" : "Read", (us) ? "User" : "Supervisor", (reserved) ? "set" : "untoched"); 
 
     disable_interrupts();
     asm("hlt");
