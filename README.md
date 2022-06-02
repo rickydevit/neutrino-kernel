@@ -75,6 +75,15 @@
     - [x] **System calls**
     - [ ] *And many apps*
 
+## How to
+### Build Neutrino
+WIP
+### Make Initrd
+- Create a folder named `initrd` in the project root folder
+- Put inside the newly created folder the files you want to load. As for now only custom ELF binaries are supported in execution. Other files will simply be displayed
+- Run the `make initrd` command: it will generate a file called `initrd.img`   
+_Note that if you compile the main kernel with `make`, the initrd will be created as well and it will copied to the image_
+
 ## Source tree
 - **`kernel\`**
     - **`x86-64\`** _platform-specific code for the x86-64 architecture_
