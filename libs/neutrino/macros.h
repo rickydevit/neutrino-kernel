@@ -8,3 +8,7 @@
 #define Min(a,b)        ((a < b) ? a : b)
 
 #define AlignUp(addr, align)    ((addr + align-1) & ~(align-1))
+#define GetMemberOffset(T, member)  (size_t)(uintptr_t)(&((T*)0)->member)
+
+#define GenerateEnum(list)  list, 
+#define GenerateString(list) #list, 
