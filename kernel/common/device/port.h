@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 #ifdef __x86_64
 #include "kernel/x86_64/device/port.h"
@@ -6,7 +7,9 @@
 #error "Unsupported platform"
 #endif
 
-extern unsigned char port_byte_in(unsigned short port);
-extern void port_byte_out(unsigned short port, unsigned char data);
-extern unsigned short port_word_in(unsigned short port);
-extern void port_word_out(unsigned short port, unsigned short data);
+uint8_t port_byte_in(uint16_t port);
+void port_byte_out(uint16_t port, uint8_t data);
+uint16_t port_word_in(uint16_t port);
+void port_word_out(uint16_t port, uint16_t data);
+uint32_t port_dword_in(uint16_t port);
+void port_dword_out(uint16_t port, uint32_t data);
