@@ -1,6 +1,7 @@
 #include "neutrino.h"
 #include "arch.h"
 #include "device/serial.h"
+#include "device/pci/pci.h"
 #include "video/display.h"
 #include "kservice.h"
 #include "tasks/scheduler.h"
@@ -13,15 +14,7 @@
 
 // === PRIVATE FUNCTIONS ========================
 
-void cpu_test1() {
-    sys_test(nullptr);
-}
-
-void cpu_test2() {
-    ks.dbg("test from process 2");
-}
-
-void cpu_test3() {
+void initrd_explorer() {
     int i = 0;
     struct __dirent* node = 0;
 
@@ -53,13 +46,10 @@ void neutrino_main() {
     uintptr_t initrd = module_get_by_name("initrd")->start_addr;
     if (initrd != nullptr) root = init_initrd(initrd);
 
-    // test scheduler
-    Task* test = NewTask("test1", false);
-    Task* test2 = NewTask("test2", false);
-    Task* test3 = NewTask("test3", false);
-    sched_start(test, (uintptr_t)cpu_test1);
-    sched_start(test2, (uintptr_t)cpu_test2);
-    sched_start(test3, (uintptr_t)cpu_test3);
+    Task* test3 = NewTask("initrd_explorer", false);
+    sched_start(test3, (uintptr_t)initrd_explorer);
 
+    init_pci();
+    
     arch_idle();
 }
