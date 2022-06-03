@@ -32,3 +32,7 @@ SyscallResult neutrino_test(uintptr_t* args) {
 SyscallResult neutrino_destroy_task(uintptr_t* args) {
     return neutrino_syscall(NEUTRINO_KILL_TASK, (uintptr_t)args, 0, 0, 0, 0);
 }
+
+SyscallResult neutrino_now(SCNowArgs* args) {
+    return neutrino_syscall(NEUTRINO_NOW, (uintptr_t)args, 0, 0, 0, 0);
+}

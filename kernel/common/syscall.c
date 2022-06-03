@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "arch.h"
 #include "kservice.h"
 #include "tasks/task.h"
 #include "tasks/scheduler.h"
@@ -17,12 +18,21 @@ SyscallResult sys_destroy_task(uintptr_t* args) {
     return SYSCALL_FAILURE; // return failure on sched_terminate return 
 }
 
+SyscallResult sys_now(SCNowArgs* args) {
+    *args = (SCNowArgs){
+        .timestamp = arch_now(),
+    };
+
+    return SYSCALL_SUCCESS;
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 typedef SyscallResult SyscallFn();
 
 SyscallFn* syscalls[NEUTRINO_SYSCALL_COUNT] = {
     [NEUTRINO_TEST] = sys_test,
+    [NEUTRINO_NOW] = sys_now,
     [NEUTRINO_KILL_TASK] = sys_destroy_task
 };
 
