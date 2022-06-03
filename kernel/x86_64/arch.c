@@ -10,6 +10,7 @@
 #include "memory/mem_phys.h"
 #include "device/acpi.h"
 #include "device/time/hpet.h"
+#include "device/time/rtc.h"
 #include "kernel/common/device/serial.h"
 #include "kernel/common/video/display.h"
 #include "kernel/common/kservice.h"
@@ -21,6 +22,7 @@
 #include <_null.h>
 #include <libs/limine/stivale2hdr.h>
 #include <neutrino/macros.h>
+#include <neutrino/time.h>
 
 void kinit_mem_manager(struct stivale2_struct_tag_memmap* memmap_str_tag, MemoryPhysicalRegion* entries) {
     uint32_t memmap_entries = memmap_str_tag->entries;
@@ -136,4 +138,12 @@ void unoptimized _kstart(struct stivale2_struct *stivale2_struct) {
     //TODO: implement user-space (final goal)
     for (;;) asm("hlt");
     */
+}
+
+void arch_idle() {
+    while (true) asm volatile ("hlt");
+}
+
+Timestamp arch_now() {
+    return datetime_to_timestamp(cmos_read());
 }
