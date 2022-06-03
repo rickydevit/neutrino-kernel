@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <neutrino/macros.h>
+#include <_null.h>
 
 #define CONFIG_ADDR_PORT	0xcf8
 #define CONFIG_DATA_PORT	0xcfc
@@ -10,12 +11,51 @@
 #define AddrDevID(x)	(((uint32_t)(x) & 0x1f) << 11)
 #define AddrFunID(x)	(((uint32_t)(x) & 3) << 8)
 
+#define GetMemBAR16bitAddr(b)       (uintptr_t)(((BAR)b).bar & 0xfff0)
+#define GetMemBAR32bitAddr(b)       (uintptr_t)(((BAR)b).bar & 0xfffffff0)
+#define GetMemBAR64bitAddr(b1,b2)   (uintptr_t)(GetMemBAR32bitAddr(b1) + ((uintptr_t)(((BAR)b2).bar & 0xffffffff) << 32))
+#define GetIOBARAddr(b)             (uintptr_t)(((BAR)b).bar & 0xfffffffc)
+
+#define GetBARAddr(bar_p,i)         (((BaseAddrReg)bar_p[i]).bar_type == BAR_IO_SPACE) ? GetIOBARAddr(bar_p[i]) : \
+                                    (((BaseAddrReg)bar_p[i]).memory_bar_type == MEMORY_BAR_16BIT) ? GetMemBAR16bitAddr(bar_p[i]) : \
+                                    (((BaseAddrReg)bar_p[i]).memory_bar_type == MEMORY_BAR_32BIT) ? GetMemBAR32bitAddr(bar_p[i]) : \
+                                    (((BaseAddrReg)bar_p[i]).memory_bar_type == MEMORY_BAR_64BIT) ? GetMemBAR64bitAddr(bar_p[i], bar_p[i+1]) : nullptr;
+
 #define INVALID_VENDOR  0xffff
 
 typedef struct __pci_header_type {
-    uint8_t multifunction : 1;
     uint8_t type : 7;
+    uint8_t multifunction : 1;
 } packed PCIHeaderType;
+
+typedef enum __pci_bar_type {
+    BAR_MEMORY_SPACE = 0,
+    BAR_IO_SPACE = 1,
+} BarType;
+
+typedef enum __pci_memory_bar_type {
+    MEMORY_BAR_32BIT = 0,
+    MEMORY_BAR_16BIT = 1,
+    MEMORY_BAR_64BIT = 2,
+} MemoryBarType;
+
+typedef union __pci_base_addr_reg {
+    BarType bar_type : 1;
+    struct {
+        MemoryBarType memory_bar_type : 2;
+        uint8_t memory_bar_prefetchable : 1;
+        uint32_t memory_bar_address : 28;
+    };
+    struct {
+        uint8_t io_bar_reserved : 1;
+        uint32_t io_bar_address : 30;
+    };
+    struct {
+        uint32_t bar;
+    };
+} packed BaseAddrReg;
+
+typedef BaseAddrReg BAR;
 
 typedef struct __pci_config_data_common {
     uint16_t vendor, device;
@@ -28,7 +68,7 @@ typedef struct __pci_config_data_common {
 
 typedef struct __pci_config_data_general_dev {
 	PCIConfigDataCommon common;
-	uint32_t base_addr[6];
+	BaseAddrReg base_addr[6];
 	uint32_t cardbus_cis;
 	uint16_t subsys_vendor;
 	uint16_t subsys;
@@ -37,11 +77,11 @@ typedef struct __pci_config_data_general_dev {
 	uint32_t reserved1 : 24, reserved2;
 	uint8_t intr_line, intr_pin;
 	uint8_t min_grant, max_latency;
-} packed PCIConfigData_GeneralDevice;
+} packed PCIConfigGeneralDevice;
 
 typedef struct __pci_config_data_pci_bridge {
 	PCIConfigDataCommon common;
-	uint32_t base_addr[2];
+	BaseAddrReg base_addr[2];
 	uint8_t primary_bus_num, secondary_bus_num;
     uint8_t subord_bus_num, secondary_latency_timer;
     uint8_t io_base, io_limit;
@@ -56,7 +96,7 @@ typedef struct __pci_config_data_pci_bridge {
     uint32_t rom_addr;
     uint8_t intr_line, intr_pin;
     uint16_t bridge_control;
-} packed PCIConfigData_PCIBridge;
+} packed PCIConfigPCIBridge;
 
 typedef struct __pci_config_data_cardbus_bridge {
     PCIConfigDataCommon common;
@@ -76,7 +116,7 @@ typedef struct __pci_config_data_cardbus_bridge {
     uint16_t bridge_control;
     uint16_t subsys_device, subsys_vendor;
     uint32_t legacy_mode_addr;
-} packed PCIConfigData_CardBusBridge;
+} packed PCIConfigCardBusBridge;
 
 typedef enum __cmd_register_option {
     IO_SPACE = 0b1,
