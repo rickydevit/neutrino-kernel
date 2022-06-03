@@ -54,6 +54,13 @@
     - [x] **Executable loading**
     - [x] **Process scheduler** `🔗 Timers, Executable loading`
     - [x] **Virtual Filesystem (VFS)**
+    - [ ] **IPC**
+
+- [ ] ⚙ **Simple drivers**
+    - [ ] **PCI**
+        - [x] **Bus scanning and enumeration**
+        - [ ] **Device initialization**
+    - [ ] **PS/2 Keyboard**
 
 - [ ] ⚙ **Advanced drivers**
     - [x] **Video driver**
@@ -61,11 +68,14 @@
         - [ ] **Draw line**
         - [ ] **Draw complex shapes**
     - [ ] **Network driver**
+        - [ ] **Ethernet1000**
+        - [ ] **Stack TCP/IP** 
 
 - [ ] 📀 **Storage**
     - [ ] **Drives drivers**
         - [ ] **USB**
         - [ ] **AHCI**
+        - [ ] **NVMe**
     - [ ] **Filesystem drivers**
         - [x] **initrd**
         - [ ] **ext2**
@@ -73,6 +83,9 @@
 
 - [ ] 👤 **Userspace**
     - [x] **System calls**
+        - [x] `neutrino_test()` (soon to be removed)
+        - [x] `neutrino_now()` get the current timestamp
+        - [ ] `neutrino_ipc()` `🔗 IPC`
     - [ ] *And many apps*
 
 ## How to
