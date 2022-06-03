@@ -132,7 +132,7 @@ $(INITRD_SCRIPT):
 	@gcc utils/$@.c -o $@
 
 .PHONY:$(INITRD_TARGET)
-$(INITRD_TARGET): $(INITRD_SCRIPT)
+$(INITRD_TARGET): $(INITRD_SCRIPT) $(EXETARGETS)
 	@mkdir -p initrd
 	@echo "[INITRD] Adding files from ./initrd/ to $@..."
 	@./$(INITRD_SCRIPT) $(INITRDFILES)
@@ -148,6 +148,7 @@ initrd: $(INITRD_TARGET)
 $(EXETARGETS): $(EXEOBJ) $(LIBSOBJ)
 	@echo "[EXECUTABLE] (ld) $@"
 	@$(LD) $< $(LIBSOBJ) -o $@ -e main
+	@cp $@ ./initrd
 	@rm $<
 
 executables: $(EXETARGETS)
