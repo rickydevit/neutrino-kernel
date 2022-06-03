@@ -19,24 +19,18 @@ void initrd_explorer() {
     struct __dirent* node = 0;
 
     while ((node = fs_readdir(root, i)) != nullptr) {
-    ks.dbg("Found file %c", node->name);
-    FsNode* fsnode = fs_finddir(root, node->name);
+        FsNode* fsnode = fs_finddir(root, node->name);
 
-    if ((fsnode->flags & 0x7) == FS_DIRECTORY)
-        ks.dbg("\t(directory)");
-    else {
-        char* buf = (char*)kmalloc(fsnode->length);
-        size_t sz = fs_read(fsnode, 0, fsnode->length, (uint8_t*)buf);
-        const Elf64Header* header = (const Elf64Header*)buf;
+        if ((fsnode->flags & 0x7) == FS_FILE ) {
+            char* buf = (char*)kmalloc(fsnode->length);
+            fs_read(fsnode, 0, fsnode->length, (uint8_t*)buf);
+            const Elf64Header* header = (const Elf64Header*)buf;
 
-        if (elf_check(header)) {
-            ks.dbg("\t(ELF file) %u/%u", sz, fsnode->length);
-            load_binary((const uintptr_t)header, fsnode->name, true);
-        } else {
-            ks.dbg("\t(file)");
+            if (elf_check(header)) 
+                load_binary((const uintptr_t)header, fsnode->name, true);
+            
         }
-    }
-    i++;
+        i++;
     }
 }
 
