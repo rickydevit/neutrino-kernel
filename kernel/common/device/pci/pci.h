@@ -1,10 +1,12 @@
 #pragma once
+#include "../../memory/memory.h"
 #include <stdint.h>
 #include <neutrino/macros.h>
 #include <_null.h>
 
 #define CONFIG_ADDR_PORT	0xcf8
 #define CONFIG_DATA_PORT	0xcfc
+#define BAR_LIST_OFFSET     0x10
 
 #define ADDR_ENABLE		((uint32_t)1 << 31)
 #define AddrBusID(x)	(((uint32_t)(x) & 0xff) << 16)
@@ -144,5 +146,31 @@ typedef enum __status_register_option {
     SIGN_SYSTEM_ERROR = 0b100000000000000,
     DETC_PARITY_ERROR = 0b1000000000000000
 } StatusRegisterOption;
+
+typedef struct __pci_vendor_device_info {
+    uint16_t vendor_id;
+    uint16_t device_id;
+} PCIVendorDeviceInfo;
+
+typedef struct __pci_location {
+    uint8_t bus;
+    uint8_t device;
+    uint8_t function;
+} PCILocation;
+
+typedef struct __pci_bar_info {
+    BarType type;
+    MemoryRange range;
+} PCIBarInfo;
+
+typedef struct _pci_device {
+    PCIVendorDeviceInfo dev_info;
+    PCILocation location;
+    uint32_t class;
+    uint8_t subclass;
+
+    size_t bars_count;
+    PCIBarInfo* bars;
+} PCIDevice;
 
 void init_pci();

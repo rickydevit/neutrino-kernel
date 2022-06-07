@@ -2,9 +2,13 @@
 #include "class_codes.h"
 #include <size_t.h>
 #include <liballoc.h>
+#include <_null.h>
+#include <linkedlist.h>
 #include "kernel/common/memory/memory.h"
 #include "kernel/common/device/port.h"
 #include "kernel/common/kservice.h"
+
+static List* device_list = nullptr;
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -19,6 +23,12 @@ uint16_t pci_read_config(uint8_t bus, uint8_t slot, uint8_t func, size_t offset)
     //? (offset & 2) * 8) = 0 will choose the first word of the 32-bit register
     uint16_t tmp = (uint16_t)(port_dword_in(CONFIG_DATA_PORT) >> ((offset & 2) * 8) & 0xffff);
     return tmp;
+}
+
+void pci_write_config(uint8_t bus, uint8_t slot, uint8_t func, size_t offset, uint32_t data) {
+    uint32_t address = ADDR_ENABLE | AddrBusID(bus) | AddrDevID(slot) | AddrFunID(func) | (offset & 0xfc);
+    port_dword_out(CONFIG_ADDR_PORT, address);
+    port_dword_out(CONFIG_DATA_PORT, data);
 }
 
 uint16_t pci_get_vendor(uint8_t bus, uint8_t dev, uint8_t fun) {
@@ -54,22 +64,76 @@ PCIConfigDataCommon* pci_read_full_config(uint8_t bus, uint8_t dev, uint8_t fun)
     return res;
 }
 
-void pci_print_device(uint8_t bus, uint8_t dev, uint8_t fun, PCIConfigDataCommon* common) {
-    ks.dbg("PCI - (%u:%u.%u) device %x:%x class: %c - subclass: %c", bus, dev, fun, pci_get_vendor(bus, dev, fun), 
-        common->device, pci_get_class_string(common->class_code), pci_get_subclass_string(common->class_code, common->subclass));
+size_t pci_get_bar_size(uint8_t bus, uint8_t dev, uint8_t fun, BaseAddrReg bar_ptr[], size_t i) {
+    if (bar_ptr[i].bar == 0) return 0;
+    volatile uintptr_t saved_addr = GetBARAddr(bar_ptr, 0);
+    size_t offset = BAR_LIST_OFFSET + (i*4);
+    size_t size = 0;
 
-    if (common->header_type.type == 0x0) {
-        PCIConfigGeneralDevice* h = (PCIConfigGeneralDevice*)common;
+    if (bar_ptr[i].bar_type == BAR_MEMORY_SPACE /*&& 
+    bar_ptr[i].memory_bar_type == MEMORY_BAR_64BIT */) {
+        // write 1s
+        pci_write_config(bus, dev, fun, offset, 0xffffffff);
+        
+        // read size
+        port_dword_out(CONFIG_ADDR_PORT, ADDR_ENABLE | AddrBusID(bus) | AddrDevID(dev) | AddrFunID(fun) | (offset & 0xfc));
+        size = ~(port_dword_in(CONFIG_DATA_PORT) & 0xfffffff0) + 1;
 
-        size_t i = 0;
-        while (i<6) {
-            if (h->base_addr[i].bar != 0) {
-                uintptr_t addr = GetBARAddr(h->base_addr, i);
-                ks.dbg("      BAR%u: %c space at %x", i, (h->base_addr[i].bar_type == BAR_MEMORY_SPACE) ? "memory" : "io", addr); 
-            }
-            i += (h->base_addr[i].bar_type == BAR_MEMORY_SPACE && h->base_addr[i].memory_bar_type == MEMORY_BAR_64BIT) ? 2 : 1;
+        // restore
+        pci_write_config(bus, dev, fun, offset, saved_addr);
+    }
+
+    return size;
+}
+
+size_t pci_get_bar_count(BaseAddrReg bar_ptr[], PCIHeaderType hdr_type)  {
+    size_t i = 0, size = 0;
+    while (i<(hdr_type.type == 0x0 ? 6 : 2)) {
+        if (bar_ptr[i].bar == 0) break;
+        size++;
+        i += (bar_ptr[i].bar_type == BAR_MEMORY_SPACE && 
+              bar_ptr[i].memory_bar_type == MEMORY_BAR_64BIT) ? 2 : 1;
+    };
+
+    return size;
+}
+
+void pci_print_device(PCIDevice* d) {
+    ks.dbg("PCI - (%u:%u.%u) device %x:%x class: %c - subclass: %c", d->location.bus, d->location.device, d->location.function, d->dev_info.vendor_id, 
+        d->dev_info.device_id, pci_get_class_string(d->class), pci_get_subclass_string(d->class, d->subclass));
+
+    if (d->bars_count > 0 && d->bars != nullptr) {
+        for (size_t i = 0; i < d->bars_count; i++) {
+            ks.dbg("      BAR%u: %c space at %x of size %x", i, (d->bars[i].type == BAR_MEMORY_SPACE) ? "memory" : "io", 
+                    d->bars[i].range.base, d->bars[i].range.size); 
         }
     }
+}
+
+PCIDevice* pci_add_device(PCILocation loc, PCIConfigDataCommon* common) {
+    PCIDevice* ndev = (PCIDevice*)kmalloc(sizeof(PCIDevice));
+    ndev->class = common->class_code;
+    ndev->subclass = common->subclass;
+    ndev->dev_info.device_id = common->device;
+    ndev->dev_info.vendor_id = common->vendor;
+    ndev->location = loc;
+    ndev->bars_count = 0;
+    ndev->bars = nullptr;
+
+    if (common->header_type.type == 0x0 || common->header_type.type == 0x1) {
+        PCIConfigGeneralDevice* h = (PCIConfigGeneralDevice*)common;
+        ndev->bars_count = pci_get_bar_count(h->base_addr, h->common.header_type);
+        ndev->bars = (PCIBarInfo*)kmalloc(sizeof(PCIBarInfo) * ndev->bars_count);
+        
+        for (size_t i = 0; i < ndev->bars_count; i++) {
+            ndev->bars[i].type = h->base_addr[i].bar_type;
+            ndev->bars[i].range.base = GetBARAddr(h->base_addr, i);
+            ndev->bars[i].range.size = pci_get_bar_size(loc.bus, loc.device, loc.function, h->base_addr, i);
+        }
+    }
+
+    list_append(device_list, ndev);
+    return ndev;
 }
 
 void pci_check_fun(uint8_t bus, uint8_t dev, uint8_t fun) {
@@ -86,14 +150,14 @@ void pci_check_dev(uint8_t bus, uint8_t dev) {
     if (pci_get_vendor(bus, dev, 0) == INVALID_VENDOR) return;
     pci_check_fun(bus, dev, 0);
 
-    pci_print_device(bus, dev, 0, pci_read_full_config(bus, dev, 0));
+    pci_print_device(pci_add_device((PCILocation){bus, dev, 0}, pci_read_full_config(bus, dev, 0)));
 
     // device is multifunction, check other functions
     if (pci_get_header(bus, dev, 0).multifunction) 
-        for (size_t fun = 1; fun < 8; fun++) {
+        for (size_t fun = 1; fun < 4; fun++) {
             if (pci_get_vendor(bus, dev, fun) != INVALID_VENDOR) {
                 pci_check_fun(bus, dev, fun);
-                pci_print_device(bus, dev, fun, pci_read_full_config(bus, dev, fun));
+                    pci_print_device(pci_add_device((PCILocation){bus, dev, fun}, pci_read_full_config(bus, dev, fun)));
             }
         }
 }
