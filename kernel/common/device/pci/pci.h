@@ -175,3 +175,4 @@ typedef struct _pci_device {
 
 void init_pci();
 PCIDevice* pci_get_device_by_class(uint8_t class, uint8_t subclass);
+PCIDevice* pci_get_device_by_vendor(uint16_t vendor_id, uint16_t device_id);

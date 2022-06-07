@@ -132,7 +132,7 @@ PCIDevice* pci_add_device(PCILocation loc, PCIConfigDataCommon* common) {
         }
     }
 
-    list_append(device_list, ndev);
+    device_list = list_append(device_list, ndev);
     return ndev;
 }
 
@@ -157,7 +157,7 @@ void pci_check_dev(uint8_t bus, uint8_t dev) {
         for (size_t fun = 1; fun < 4; fun++) {
             if (pci_get_vendor(bus, dev, fun) != INVALID_VENDOR) {
                 pci_check_fun(bus, dev, fun);
-                    pci_print_device(pci_add_device((PCILocation){bus, dev, fun}, pci_read_full_config(bus, dev, fun)));
+                pci_print_device(pci_add_device((PCILocation){bus, dev, fun}, pci_read_full_config(bus, dev, fun)));
             }
         }
 }
@@ -187,6 +187,23 @@ PCIDevice* pci_get_device_by_class(uint8_t class, uint8_t subclass) {
         dev = list_get_value(p);
 
         if (dev->class == class && dev->subclass == subclass)
+            return dev;
+
+        p = p->next;
+    }
+
+    return nullptr;
+}
+
+PCIDevice* pci_get_device_by_vendor(uint16_t vendor_id, uint16_t device_id) {
+    List* p = device_list;
+    PCIDevice* dev = nullptr;
+
+    while (p != nullptr) {
+        dev = list_get_value(p);
+
+        if (dev->dev_info.vendor_id == vendor_id && 
+        dev->dev_info.device_id == device_id)
             return dev;
 
         p = p->next;
