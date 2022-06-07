@@ -63,7 +63,7 @@
     - [ ] **PS/2 Keyboard**
 
 - [ ] ⚙ **Advanced drivers**
-    - [x] **Video driver**
+    - [x] **Video driver (BGA)**
         - [x] **Plot pixel**
         - [ ] **Draw line**
         - [ ] **Draw complex shapes**

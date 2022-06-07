@@ -3,6 +3,7 @@
 #include "device/serial.h"
 #include "device/pci/pci.h"
 #include "video/display.h"
+#include "video/bga.h"
 #include "kservice.h"
 #include "tasks/scheduler.h"
 #include "modules.h"
@@ -44,6 +45,7 @@ void neutrino_main() {
     sched_start(test3, (uintptr_t)initrd_explorer);
 
     init_pci();
+    init_bga();
     
     arch_idle();
 }
