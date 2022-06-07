@@ -16,7 +16,7 @@ void kwarn(char* message, ...);
 void kerr(char* message, ...);
 void kpanic(Fatal fatal_error, ...);
 
-// Public functions
+// === PUBLIC FUNCTIONS =========================
 
 //* Initialize the kernel services
 void init_kservice() {
@@ -47,7 +47,7 @@ void set_kservice(enum KSERVICE_TYPE type, void (*func)) {
     }
 }
 
-// Private functions
+// === PRIVATE FUNCTIONS ========================
 
 void kput(char* message, ...) {
     va_list args; va_start(args, message);
