@@ -166,7 +166,7 @@ typedef struct __pci_bar_info {
 typedef struct _pci_device {
     PCIVendorDeviceInfo dev_info;
     PCILocation location;
-    uint32_t class;
+    uint8_t class;
     uint8_t subclass;
 
     size_t bars_count;
@@ -174,3 +174,4 @@ typedef struct _pci_device {
 } PCIDevice;
 
 void init_pci();
+PCIDevice* pci_get_device_by_class(uint8_t class, uint8_t subclass);

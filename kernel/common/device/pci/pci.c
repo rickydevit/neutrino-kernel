@@ -179,6 +179,22 @@ void pci_check_all_buses() {
     }
 }
 
+PCIDevice* pci_get_device_by_class(uint8_t class, uint8_t subclass) {
+    List* p = device_list;
+    PCIDevice* dev = nullptr;
+
+    while (p != nullptr) {
+        dev = list_get_value(p);
+
+        if (dev->class == class && dev->subclass == subclass)
+            return dev;
+
+        p = p->next;
+    }
+
+    return nullptr;
+}
+
 // ===  PUBLIC FUNCTIONS ========================
 
 void init_pci() {
