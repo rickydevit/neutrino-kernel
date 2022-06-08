@@ -163,6 +163,7 @@ List* list_delete_at(List* list, int index) {
                         if(iterator == index) {
                                 temp->next->prev = temp->prev;
                                 temp->prev->next = temp->next;
+                                kfree(temp);
                                 return list;
                         }
                         iterator++;
