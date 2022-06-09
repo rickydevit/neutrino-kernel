@@ -27,7 +27,6 @@ int liballoc_unlock() {
 void* liballoc_alloc(size_t pages) {
     SCAllocArgs alloc_args = (SCAllocArgs){.size = pages};
 #ifdef __kernel
-    // uintptr_t addr = vmm_allocate_heap(pages, false);
     alloc_args.user = false;
     sys_alloc(&alloc_args);
 #else

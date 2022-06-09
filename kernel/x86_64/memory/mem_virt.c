@@ -294,20 +294,20 @@ bool vmm_unmap_page_impl(PageTable* table_addr, uintptr_t virt_addr) {
     return true;
 }
 
-uintptr_t unoptimized vmm_find_free_heap_series(size_t size, uintptr_t heap_base) {
+uintptr_t unoptimized vmm_find_free_heap_series(size_t size, uintptr_t heap_base, PageProperties prop) {
     PageTable* pl4_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(heap_base));
     for (int dpt = 0; dpt < 512; dpt++) {
             
-        vmm_get_or_create_entry(pl4_addr, dpt, (PageProperties){true, false, true});
+        vmm_get_or_create_entry(pl4_addr, dpt, prop);
         PageTable* dpt_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(heap_base), dpt);
         for (int pd = 0; pd < 512; pd++) {
         
-            vmm_get_or_create_entry(dpt_addr, pd, (PageProperties){true, false, true});
+            vmm_get_or_create_entry(dpt_addr, pd, prop);
             PageTable* pd_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(heap_base), dpt, pd);
             for (int pt = 0; pt < 512; pt++) {
                 if (vmm_get_entry(pd_addr, pt) != 0) continue;
         
-                vmm_get_or_create_entry(pd_addr, pt, (PageProperties){true, false, true});
+                vmm_get_or_create_entry(pd_addr, pt, prop);
                 PageTable* pt_addr = GetRecursiveAddress(RECURSE_ACTIVE, GET_PL4_INDEX(heap_base), dpt, pd, pt);
                 for (int page = 0; page < 512; page++) {
                     if (vmm_get_entry(pt_addr, page) != 0) continue;
@@ -455,17 +455,23 @@ uintptr_t vmm_allocate_memory(PageTable* table, size_t blocks, PageProperties pr
 
 uintptr_t unoptimized vmm_allocate_heap(size_t blocks, bool user) {
     uintptr_t heap_base = (user ? USER_HEAP_OFFSET : HEAP_OFFSET);
+    PageProperties prop = (PageProperties) {
+        .cache_disable = true,
+        .user = user,
+        .writable = true
+    };
+
     uintptr_t phys_addr = pmm_alloc_series(blocks);
-    uintptr_t virt_addr = vmm_find_free_heap_series(blocks, heap_base);
+    uintptr_t virt_addr = vmm_find_free_heap_series(blocks, heap_base, prop);
 
     for (size_t i = 0; i < blocks; i++) 
-        vmm_map_page(0, phys_addr + (i*PHYSMEM_BLOCK_SIZE), virt_addr + (i*PHYSMEM_BLOCK_SIZE), (PageProperties){true, false, true});
+        vmm_map_page(0, phys_addr + (i*PHYSMEM_BLOCK_SIZE), virt_addr + (i*PHYSMEM_BLOCK_SIZE), prop);
     
     if (get_cpu_count() > 1) {
         for (size_t i = 0; i < get_cpu_count(); i++) {
             if (get_current_cpu()->id == i) continue;
             
-            ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = page_create((uint64_t)get_cpu(i)->page_table, (PageProperties){true, false, true});
+            ((PageTable*)vmm_get_active_recurse_link())->entries[RECURSE_OTHER] = page_create((uint64_t)get_cpu(i)->page_table, prop);
             vmm_reload_tlb(vmm_get_other_recurse_link());
 
             ((PageTable*)vmm_get_other_recurse_link())->entries[GET_PL4_INDEX(heap_base)] = ((PageTable*)vmm_get_active_recurse_link())->entries[GET_PL4_INDEX(heap_base)];
