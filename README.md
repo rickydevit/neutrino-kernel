@@ -93,6 +93,14 @@
 ## How to
 ### Build Neutrino
 WIP
+
+### Build executables for Neutrino
+>⚠ **Only supported format is ELF64**
+- Create a folder named `executables` and put your source files in there
+- While writing a program, you can only use some of the Neutrino-provided libraries. No standard libraries are supported
+- Run the `make executables` command: every source file in the `executables` folder will be compiled as well as the user libraries. 
+- To test out your executables, you can (as for now) put them in the `initrd` folder
+
 ### Make Initrd
 - Create a folder named `initrd` in the project root folder
 - Put inside the newly created folder the files you want to load. As for now only custom ELF binaries are supported in execution. Other files will simply be displayed
