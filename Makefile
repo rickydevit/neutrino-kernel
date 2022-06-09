@@ -13,6 +13,7 @@ DIRECTORY_GUARD  = mkdir -p $(@D)
 LD_SCRIPT 		:= $(ARCH).ld
 
 END_PATH 		:= libs/ kernel/common kernel/${ARCH} 
+LIBS_PATH		:= libs/liballoc libs/libc libs/linkedlist libs/neutrino libs/ringbuf
 
 # compiler and linker
 CC 				:= $(ARCH)-elf-gcc
@@ -45,7 +46,7 @@ ASMFILES		:= $(shell find $(END_PATH) -type f -name '*.asm')
 SFILES 			:= $(shell find $(END_PATH) -type f -name '*.s')
 ASMOBJ			:= $(patsubst %.asm,$(BUILD_OUT)/%.o,$(ASMFILES)) 
 SOBJ			:= $(patsubst %.s,$(BUILD_OUT)/%.o,$(SFILES))
-LIBSOBJ			:= $(patsubst %.c, $(BUILD_OUT)/%.o, $(shell find ./libs/neutrino -type f -name '*.c'))
+LIBSOBJ			:= $(patsubst %.c, $(EXES_OUT)/%.oo, $(shell find $(LIBS_PATH) -type f -name '*.c'))
 
 INITRDFILES		:= $(shell find initrd/ -type f -name '*')
 
@@ -139,11 +140,17 @@ $(INITRD_TARGET): $(INITRD_SCRIPT) $(EXETARGETS)
 
 initrd: $(INITRD_TARGET)
 
+.PHONY:$(EXES_OUT)/%.oo
+$(EXES_OUT)/%.oo: %.c
+	@$(DIRECTORY_GUARD)
+	@echo "[LIBS] (c) $<"
+	@$(CC) $< -ffreestanding -Ilibs -Ilibs/libc -s -g -fpic -c -o $@
+
 -include $(EXEDEPS)
 .PHONY:$(%.oo)
 %.oo: %.c 
 	@echo "[EXECUTABLE] (c) $<"
-	@$(CC) $< -ffreestanding -Ilibs -s -c -o $@
+	@$(CC) $< -ffreestanding -Ilibs -Ilibs/libc -s -g -fpic -c -o $@
 
 $(EXETARGETS): $(EXEOBJ) $(LIBSOBJ)
 	@echo "[EXECUTABLE] (ld) $@"
