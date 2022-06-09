@@ -3,16 +3,24 @@
 #include <stdbool.h>
 #include <size_t.h>
 #include <neutrino/time.h>
+#include <neutrino/macros.h>
+
+#define FOREACH_SYSCALL(c) \
+    c(NEUTRINO_LOG) \
+    c(NEUTRINO_KILL_TASK) \
+    c(NEUTRINO_NOW) \
+    c(NEUTRINO_ALLOC) \
+    c(NEUTRINO_FREE) \
 
 // Syscall enum
 typedef enum __neutrino_syscalls {
-    NEUTRINO_LOG,
-    NEUTRINO_KILL_TASK,
-    NEUTRINO_NOW,
-    NEUTRINO_ALLOC,
-    NEUTRINO_FREE,
+    FOREACH_SYSCALL(GenerateEnum)
     NEUTRINO_SYSCALL_COUNT
 } NeutrinoSyscall;
+
+static const char* syscall_names[] = {
+    FOREACH_SYSCALL(GenerateString)
+};
 
 typedef enum __neutrino_syscall_result {
     SYSCALL_SUCCESS,

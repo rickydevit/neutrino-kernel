@@ -2,6 +2,7 @@
 #include "arch.h"
 #include "kservice.h"
 #include "tasks/task.h"
+#include "memory/space.h"
 #include "tasks/scheduler.h"
 #include <neutrino/syscall.h>
 #include <stdint.h>
@@ -56,7 +57,7 @@ SyscallResult syscall_execute(NeutrinoSyscall syscall_id, uintptr_t* args) {
     SyscallResult result = syscalls[syscall_id](args);
 
     const Task* cur = get_current_task();
-    ks.log("Syscall: #%u in task #%u (%c)", syscall_id, cur->pid, cur->name);
+    ks.log("Syscall %c in task #%u (%c)", syscall_names[syscall_id], cur->pid, cur->name);
 
     task_end_syscall();
 
