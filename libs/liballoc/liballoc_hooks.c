@@ -38,7 +38,10 @@ void* liballoc_alloc(size_t pages) {
 }
 
 int liballoc_free(void* address, size_t pages) {
-    // if (vmm_free_memory(0, (uintptr_t)address, pages) == true) return 0;
-    return 1;
+    SCFreeArgs free_args = (SCFreeArgs){.size = pages, .pointer = (uintptr_t)address};
+#ifdef __kernel
+    return sys_free(&free_args);
+#else
+    return neutrino_free(&free_args);
+#endif
 }
-
