@@ -18,9 +18,7 @@ typedef enum __neutrino_syscalls {
     NEUTRINO_SYSCALL_COUNT
 } NeutrinoSyscall;
 
-static const char* syscall_names[] = {
-    FOREACH_SYSCALL(GenerateString)
-};
+extern const char* syscall_names[];
 
 typedef enum __neutrino_syscall_result {
     SYSCALL_SUCCESS,
@@ -52,6 +50,11 @@ typedef struct __sc_alloc_args {
     bool user;
 } SCAllocArgs;
 
+typedef struct __sc_free_args {
+    uintptr_t pointer;
+    size_t size;
+} SCFreeArgs;
+
 // === Syscall prototypes ===
 
 // Log a string message to the debug serial output
@@ -74,3 +77,9 @@ SysCall(now)(SCNowArgs* args);
 // @param pointer OUT the pointer to the allocated area
 // @return SYSCALL_SUCCESS on success; SYSCALL_INVALID if size = 0; SYSCALL_FAILURE if pointer is nullptr
 SysCall(alloc)(SCAllocArgs* args);
+
+// Free a user-heap memory area previously allocated
+// @param pointer IN the address to be freed
+// @param size IN the size of the memory area
+// @return SYSCALL_SUCCESS on success; SYSCALL_INVALID if size = 0 or pointer is nullptr; SYSCALL_FAILURE if heap manager fails
+SysCall(free)(SCFreeArgs* args);

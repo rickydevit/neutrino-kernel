@@ -37,6 +37,13 @@ SyscallResult sys_alloc(SCAllocArgs* args) {
     return SYSCALL_SUCCESS;
 }
 
+SyscallResult sys_free(SCFreeArgs* args) {
+    if (args->size == 0 || args->pointer == nullptr) return SYSCALL_INVALID;
+    if (vmm_free_memory(0, args->pointer, args->size) == true) return SYSCALL_SUCCESS;
+
+    return SYSCALL_FAILURE;
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 typedef SyscallResult SyscallFn();
@@ -45,6 +52,7 @@ SyscallFn* syscalls[NEUTRINO_SYSCALL_COUNT] = {
     [NEUTRINO_LOG] = sys_log,
     [NEUTRINO_NOW] = sys_now,
     [NEUTRINO_ALLOC] = sys_alloc,
+    [NEUTRINO_FREE] = sys_free,
     [NEUTRINO_KILL_TASK] = sys_destroy_task
 };
 

@@ -25,6 +25,10 @@ SyscallResult neutrino_syscall(NeutrinoSyscall syscall_id, uint64_t arg1, uint64
 
 // === PUBLIC FUNCTIONS =========================
 
+const char* syscall_names[] = {
+    FOREACH_SYSCALL(GenerateString)
+};
+
 SyscallResult neutrino_log(SCLogArgs* args) {
     return neutrino_syscall(NEUTRINO_LOG, (uintptr_t)args, 0, 0, 0, 0);
 }
@@ -39,4 +43,8 @@ SyscallResult neutrino_now(SCNowArgs* args) {
 
 SyscallResult neutrino_alloc(SCAllocArgs* args) {
     return neutrino_syscall(NEUTRINO_ALLOC, (uintptr_t)args, 0, 0, 0, 0);
+}
+
+SyscallResult neutrino_free(SCFreeArgs* args) {
+    return neutrino_syscall(NEUTRINO_FREE, (uintptr_t)args, 0, 0, 0, 0);
 }
