@@ -14,3 +14,6 @@ char* itoa(unsigned i, unsigned base, char* buf);
 void itoa_s(int i, unsigned base, char* buf);
 char* ltoa(uint64_t i, unsigned base, char* buf);
 void ltoa_s(int64_t i, unsigned base, char* buf);
+
+void memcpy(uint8_t *source, uint8_t *dest, int nbytes);
+void memset(uint8_t *dest, uint8_t val, uint32_t len);

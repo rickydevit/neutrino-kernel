@@ -5,7 +5,7 @@
 #include "../linkedlist.h"
 
 List* list_create_node(void* data) {
-        List* new_node = (List*)kmalloc(sizeof(List));
+        List* new_node = (List*)lmalloc(sizeof(List));
         new_node->next = nullptr;
         new_node->prev = nullptr;
         new_node->data = data;
@@ -73,11 +73,11 @@ List* list_delete_head(List* list) {
                 return nullptr;
         } else {
             if (list->next == nullptr) {
-                kfree(list);
+                lfree(list);
                 return nullptr;
             } else {
                 list = list->next;
-                kfree(list->prev);
+                lfree(list->prev);
                 list->prev = nullptr;
             }                
         }
@@ -93,7 +93,7 @@ List* list_delete_tail(List* list) {
                         temp = temp->next;
                 }
                 temp->prev->next = nullptr;
-                kfree(temp->prev->next);
+                lfree(temp->prev->next);
                 return list;
         }
 }
@@ -163,7 +163,7 @@ List* list_delete_at(List* list, int index) {
                         if(iterator == index) {
                                 temp->next->prev = temp->prev;
                                 temp->prev->next = temp->next;
-                                kfree(temp);
+                                lfree(temp);
                                 return list;
                         }
                         iterator++;

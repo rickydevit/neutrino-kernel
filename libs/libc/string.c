@@ -4,7 +4,6 @@
 #include "stdarg.h"
 #include <_null.h>
 #include <neutrino/macros.h>
-#include "kernel/common/device/serial.h"
 
 char tbuf[32] = {0};
 char bchars[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
@@ -256,4 +255,24 @@ char* unoptimized vstrf(const char* istr, char buffer[], va_list args) {
     *buffer_p = '\0';
     va_end(args);
     return buffer;
+}
+
+// *Copy [nbytes] bytes from the [source] memory pointer to the [dest] memory pointer
+// @param source the source memory pointer
+// @param dest the destination memory pointer
+// @param nbytes the number of bytes to copy
+void unoptimized memcpy(uint8_t *source, uint8_t *dest, int nbytes) {
+    int i;
+    for (i = 0; i < nbytes; i++) {
+        *(dest + i) = *(source + i);
+    }
+}
+
+// *Set [len] bytes at the [dest] memory location to the [val] value
+// @param dest the memory location to set bytes
+// @param val the value to set the bytes to
+// @param len the number of bytes to set
+void unoptimized memset(uint8_t *dest, uint8_t val, uint32_t len) {
+    uint8_t *temp = (uint8_t *)dest;
+    for ( ; len != 0; len--) *temp++ = val;
 }
