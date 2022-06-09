@@ -208,18 +208,23 @@ PageTable* unoptimized vmm_get_most_nested_table(PageTable* table_addr, uintptr_
     PagingPath path = GetPagingPath(virt_addr);
     PagingPath tpath = GetPagingPath((uintptr_t)table_addr);
     bool isRecursive = tpath.pl4 == RECURSE_ACTIVE || tpath.pl4 == RECURSE_OTHER;
+    PageProperties su_prop = (PageProperties) {
+        .cache_disable = prop.cache_disable,
+        .user = prop.user,
+        .writable = true
+    };
 
     PageTable *pdpt, *pd, *pt;
     
     if (isRecursive) {
-        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pl4, tpath.pt, 0), path.pl4, prop);
-        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, prop);
-        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, prop);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pl4, tpath.pt, 0), path.pl4, su_prop);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pl4, tpath.pt, path.pl4, 0), path.dpt, su_prop);
+        vmm_get_or_create_entry((PageTable*)GetRecursiveAddress(tpath.pl4, tpath.pt, path.pl4, path.dpt, 0), path.pd, su_prop);
         pt = (PageTable*)GetRecursiveAddress(tpath.pt, path.pl4, path.dpt, path.pd, 0);
     } else {
-        pdpt = vmm_get_or_create_entry(table_addr, path.pl4, prop);
-        pd = vmm_get_or_create_entry(pdpt, path.dpt, prop);
-        pt = vmm_get_or_create_entry(pd, path.pd, prop);
+        pdpt = vmm_get_or_create_entry(table_addr, path.pl4, su_prop);
+        pd = vmm_get_or_create_entry(pdpt, path.dpt, su_prop);
+        pt = vmm_get_or_create_entry(pd, path.pd, su_prop);
     }
 
     return pt;

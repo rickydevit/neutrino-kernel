@@ -24,21 +24,31 @@ void load_elf(const Elf64Header* header, const uintptr_t binary, Task* task) {
         
         size_t size = AlignUp(Max(prg_header->mem_size, prg_header->file_size), PAGE_SIZE);
         VirtualMapping vmap = memory_allocate(size);
+        space_map(task->space, vmap.physical.base, vmap.virtual_base, size, MAP_WRITABLE);
         
         memory_set((uint8_t*)vmap.virtual_base, 0, vmap.physical.size);
-        memory_copy((uint8_t*)(binary + prg_header->file_offset), (uint8_t*)vmap.virtual_base, prg_header->file_size);
+        memory_copy((uint8_t*)(binary + prg_header->file_offset), 
+            (uint8_t*)vmap.virtual_base + (prg_header->file_offset % PAGE_SIZE), 
+            prg_header->file_size);
 
         if (!(prg_header->flags & SEGMENT_FLAGS_WRITABLE) && prg_header->file_size == prg_header->mem_size) {
-            ks.dbg("ELF LOADING: loading program into task memory at %x (size %u, source %x, US)", 
-                prg_header->vaddr, size, (binary + prg_header->file_offset));
-            space_map(task->space, vmap.physical.base, prg_header->vaddr, size, ((task->user) ? MAP_USER : 0));
+            ks.dbg("ELF LOADING: loading program into task memory at %x (size %u, source %x, %c-RO)", 
+                (prg_header->vaddr) & ~0xfff, size, 
+                (binary + prg_header->file_offset), (task->user ? "US" : "KR"));
+            
+            space_map(task->space, vmap.physical.base, 
+                (prg_header->vaddr) & ~0xfff, 
+                size/PAGE_SIZE, ((task->user) ? MAP_USER : 0));
         } else {
-            ks.dbg("ELF LOADING: loading program into task memory at %x (size %u, source %x, US-WR)", 
-                prg_header->vaddr, size, (binary + prg_header->file_offset));
-            space_map(task->space, vmap.physical.base, prg_header->vaddr, size, ((task->user) ? MAP_USER : 0) | MAP_WRITABLE);
+            ks.dbg("ELF LOADING: loading program into task memory at %x (size %u, source %x, %c-WR)", 
+                (prg_header->vaddr) & ~0xfff, size, 
+                (binary + prg_header->file_offset), (task->user ? "US" : "KR"));
+            
+            space_map(task->space, vmap.physical.base, 
+                (prg_header->vaddr) & ~0xfff, 
+                size/PAGE_SIZE, ((task->user) ? MAP_USER : 0) | MAP_WRITABLE);
         }
 
-        memory_free(vmap);
         prg_header = (Elf64ProgramHeader*)((uintptr_t)prg_header + header->programs_size);
     }
 }

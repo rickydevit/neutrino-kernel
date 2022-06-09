@@ -51,8 +51,9 @@ typedef struct __paging_path {
     uint64_t pt;
 } PagingPath;
 
+#define SignExtend(v, sb) ((v) | (((v) & (1ul << (sb))) ? ~((1ul << (sb))-1) : 0))
 #define GetPagingPath(virt_addr) (PagingPath){GET_PL4_INDEX(virt_addr), GET_DPT_INDEX(virt_addr), GET_DIR_INDEX(virt_addr), GET_TAB_INDEX(virt_addr)}
-#define GetAddress(paging_path, page)  (uintptr_t)((0xffffUL<<48) | (paging_path.pl4<<39) | (paging_path.dpt<<30) | (paging_path.pd<<21) | (paging_path.pt<<12)) + page
+#define GetAddress(paging_path, page)  SignExtend((uintptr_t)((paging_path.pl4<<39) | (paging_path.dpt<<30) | (paging_path.pd<<21) | (paging_path.pt<<12)) + page, 47)
 
 // PageProperties
 
