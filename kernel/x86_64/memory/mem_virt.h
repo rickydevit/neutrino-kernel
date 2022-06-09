@@ -18,7 +18,7 @@ bool vmm_unmap_page(PageTable* table, uintptr_t virt_addr);
 void vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop);
 
 uintptr_t vmm_allocate_memory(PageTable* table, size_t blocks, PageProperties prop);
-uintptr_t vmm_allocate_heap(size_t blocks);
+uintptr_t vmm_allocate_heap(size_t blocks, bool user);
 uintptr_t vmm_map_mmio(uintptr_t mmio_addr, size_t blocks);
 bool vmm_free_memory(PageTable* table, uintptr_t addr, size_t blocks);
 

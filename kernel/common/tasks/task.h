@@ -26,6 +26,7 @@ typedef enum __task_exit_code {
 #define TASK_NAME_MAX 64
 #define PROCESS_STACK_SIZE  0x4000
 #define PROCESS_STACK_BASE  0x80000000000
+#define USER_HEAP_OFFSET    0xf8000000000
 
 typedef struct __task {
     uint32_t pid;

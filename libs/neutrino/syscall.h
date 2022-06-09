@@ -1,12 +1,16 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
+#include <size_t.h>
 #include <neutrino/time.h>
 
 // Syscall enum
 typedef enum __neutrino_syscalls {
-    NEUTRINO_TEST,
+    NEUTRINO_LOG,
     NEUTRINO_KILL_TASK,
     NEUTRINO_NOW,
+    NEUTRINO_ALLOC,
+    NEUTRINO_FREE,
     NEUTRINO_SYSCALL_COUNT
 } NeutrinoSyscall;
 
@@ -26,13 +30,26 @@ SysCall(syscall) (NeutrinoSyscall syscall_id, uint64_t arg1, uint64_t arg2, uint
 
 // === Syscall argument types ===
 
+typedef struct __sc_log_args {
+    char* msg;
+} SCLogArgs;
+
 typedef struct __sc_now_args {
     Timestamp timestamp;
 } SCNowArgs;
 
+typedef struct __sc_alloc_args {
+    size_t size;
+    uintptr_t pointer;
+    bool user;
+} SCAllocArgs;
+
 // === Syscall prototypes ===
 
-SysCall(test)(uintptr_t* args);
+// Log a string message to the debug serial output
+// @param msg IN the message to log
+// @return SYSCALL_SUCCESS on success; SYSCALL_INVALID if msg is nullptr
+SysCall(log)(SCLogArgs* args);
 
 // Destroy the current task. This is a TRAP syscall, control is lost and returned to kernel
 // @param args unused argument
@@ -40,6 +57,12 @@ SysCall(test)(uintptr_t* args);
 SysCall(destroy_task)(uintptr_t* args);
 
 // Return the current timestamp. Note this is not the same as UNIX timestamp
-// @param timestamp the current timestamp 
+// @param timestamp OUT the current timestamp 
 // @return SYSCALL_SUCCESS on success
 SysCall(now)(SCNowArgs* args);
+
+// Return a user-heap memory pointer of the given size
+// @param size IN the size of the memory area to allocate
+// @param pointer OUT the pointer to the allocated area
+// @return SYSCALL_SUCCESS on success; SYSCALL_INVALID if size = 0; SYSCALL_FAILURE if pointer is nullptr
+SysCall(alloc)(SCAllocArgs* args);

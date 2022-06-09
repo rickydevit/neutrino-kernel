@@ -83,8 +83,10 @@
 
 - [ ] 👤 **Userspace**
     - [x] **System calls**
-        - [x] `neutrino_test()` (soon to be removed)
+        - [x] `neutrino_log()` log a message to serial output
         - [x] `neutrino_now()` get the current timestamp
+        - [x] `neutrino_alloc()` allocate a task heap area
+        - [ ] `neutrino_free()` release a task heap area
         - [ ] `neutrino_ipc()` `🔗 IPC`
     - [ ] *And many apps*
 

@@ -25,8 +25,8 @@ SyscallResult neutrino_syscall(NeutrinoSyscall syscall_id, uint64_t arg1, uint64
 
 // === PUBLIC FUNCTIONS =========================
 
-SyscallResult neutrino_test(uintptr_t* args) {
-    return neutrino_syscall(NEUTRINO_TEST, (uintptr_t)args, 0, 0, 0, 0);
+SyscallResult neutrino_log(SCLogArgs* args) {
+    return neutrino_syscall(NEUTRINO_LOG, (uintptr_t)args, 0, 0, 0, 0);
 }
 
 SyscallResult neutrino_destroy_task(uintptr_t* args) {
@@ -35,4 +35,8 @@ SyscallResult neutrino_destroy_task(uintptr_t* args) {
 
 SyscallResult neutrino_now(SCNowArgs* args) {
     return neutrino_syscall(NEUTRINO_NOW, (uintptr_t)args, 0, 0, 0, 0);
+}
+
+SyscallResult neutrino_alloc(SCAllocArgs* args) {
+    return neutrino_syscall(NEUTRINO_ALLOC, (uintptr_t)args, 0, 0, 0, 0);
 }

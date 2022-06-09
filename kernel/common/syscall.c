@@ -8,8 +8,10 @@
 
 // === PRIVATE FUNCTIONS ========================
 
-SyscallResult sys_test(uintptr_t* args) {
-    ks.dbg("Hello syscall world!");
+SyscallResult sys_log(SCLogArgs* args) {
+    if (args->msg == nullptr) return SYSCALL_INVALID;
+
+    ks.log(args->msg);
     return SYSCALL_SUCCESS;
 }
 
@@ -26,13 +28,22 @@ SyscallResult sys_now(SCNowArgs* args) {
     return SYSCALL_SUCCESS;
 }
 
+SyscallResult sys_alloc(SCAllocArgs* args) {
+    if (args->size == 0) return SYSCALL_INVALID;
+    args->pointer = vmm_allocate_heap(args->size, args->user);
+
+    if (args->pointer == nullptr) return SYSCALL_FAILURE;
+    return SYSCALL_SUCCESS;
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 typedef SyscallResult SyscallFn();
 
 SyscallFn* syscalls[NEUTRINO_SYSCALL_COUNT] = {
-    [NEUTRINO_TEST] = sys_test,
+    [NEUTRINO_LOG] = sys_log,
     [NEUTRINO_NOW] = sys_now,
+    [NEUTRINO_ALLOC] = sys_alloc,
     [NEUTRINO_KILL_TASK] = sys_destroy_task
 };
 

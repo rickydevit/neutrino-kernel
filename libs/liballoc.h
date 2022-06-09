@@ -16,8 +16,12 @@
 //#define _HAVE_UINTPTR_T
 //typedef	unsigned long	uintptr_t;
 
+#ifdef __kernel
 //This lets you prefix malloc and friends
 #define PREFIX(func)		k ## func
+#else
+#define PREFIX(func)        func
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,6 +70,38 @@ extern void    *PREFIX(realloc)(void *, size_t);		///< The standard function.
 extern void    *PREFIX(calloc)(size_t, size_t);		///< The standard function.
 extern void     PREFIX(free)(void *);					///< The standard function.
 
+static inline void* lmalloc(size_t s) {
+#ifdef __kernel
+    return kmalloc(s);
+#else
+    return malloc(s);
+#endif
+}
+
+static inline void lfree(void* p) {
+#ifdef __kernel
+    kfree(p);
+#else
+    free(p);
+#endif
+}
+
+static inline void* lrealloc(void* p, size_t s) {
+#ifdef __kernel
+    return krealloc(p, s);
+#else
+    return realloc(p, s);
+#endif
+}
+
+static inline void* lcalloc(size_t s, size_t n) {
+#ifdef __kernel
+    return kcalloc(s, n);
+#else
+    return calloc(s, n);
+#endif
+}
+
 
 #ifdef __cplusplus
 }
@@ -75,4 +111,3 @@ extern void     PREFIX(free)(void *);					///< The standard function.
 /** @} */
 
 #endif
-
