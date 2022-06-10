@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include "display.h"
 
 typedef enum __bga_io_port {
     VBE_DISPI_IOPORT_INDEX = 0x01ce,
@@ -38,3 +39,4 @@ typedef enum __bga_enable_settings {
 } BGAEnableSettings;
 
 bool init_bga();
+DisplayInfo bga_get_display_info();

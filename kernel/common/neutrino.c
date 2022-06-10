@@ -36,6 +36,18 @@ void initrd_explorer() {
     }
 }
 
+void display() {
+    ks.dbg("Initializing video driver...");
+    
+    if (init_bga()) {
+        DisplayInfo info = bga_get_display_info();
+        ks.dbg("BGA driver initialized. Framebuffer at %x", info.lbf);
+        
+        init_video_driver(info.lbf, info.width, info.height, info.pitch, info.bpp);
+        put_pixel(info.width/2, info.height/2, (Color){255,0,0});
+    }
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 void neutrino_main() {
@@ -46,7 +58,7 @@ void neutrino_main() {
     sched_start(test3, (uintptr_t)initrd_explorer);
 
     init_pci();
-    init_bga();
+    display();
     
     arch_idle();
 }

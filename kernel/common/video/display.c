@@ -1,9 +1,16 @@
 #include "display.h"
-#include "stdbool.h"
-#include "stdint.h"
-#include "libs/_null.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <_null.h>
+#include <neutrino-gfx/color.h>
 
-DisplayInfo info;
+static DisplayInfo info;
+static const MaskShift mask_shift[] = {
+    [DISPLAY_BPP_15] = {(0x1f << 10), (0x1f << 5), (0x1f << 0), 10, 5, 0},
+    [DISPLAY_BPP_16] = {(0x1f << 11), (0x3f << 5), (0x1f << 0), 11, 5, 0},
+    [DISPLAY_BPP_24] = {(0xff << 16), (0xff << 8), (0xff << 0), 16, 8, 0},
+    [DISPLAY_BPP_32] = {(0xff << 16), (0xff << 8), (0xff << 0), 16, 8, 0}
+};
 
 // === PUBLIC FUNCTIONS =================================
 
@@ -13,41 +20,25 @@ DisplayInfo info;
 // @param height the height of the display
 // @param pitch the bytes to move one pixel downwards
 // @param bpp the bits per pixel, how many bits does each pixel use
-// @param blue_mask_size the size of the blue channel mask
-// @param red_mask_size the size of the red channel mask
-// @param green_mask_size the size of the green channel mask
-// @param blue_mask_shift the shift in bits of the blue channel mask
-// @param green_mask_shift the shift in bits of the green channel mask
-// @param red_mask_shift the shift in bits of the red channel mask
 // @return true if the driver is initialized correctly, false otherwise
-bool init_video_driver(uint64_t* addr, uint16_t width, uint16_t height, uint16_t pitch, uint16_t bpp, 
-                       uint8_t red_mask_size, uint8_t green_mask_size, uint8_t blue_mask_size, 
-                       uint8_t red_mask_shift, uint8_t green_mask_shift, uint8_t blue_mask_shift) {
-   
-    if (width <= 0 || height <= 0 || pitch <= 0 || bpp <= 0) return false;
+bool init_video_driver(uintptr_t lbf, uint32_t width, uint32_t height, uint16_t pitch, DisplayDepth bpp) {
+    if (width <= 0 || height <= 0 || bpp <= 0) return false;
 
-    info.addr = (uint64_t)addr;
+    info.lbf = lbf;
     info.width = width;
     info.height = height;
     info.pitch = pitch;
     info.bpp = bpp;
-    info.blue_mask_size = blue_mask_size;
-    info.green_mask_size = green_mask_size;
-    info.red_mask_size = red_mask_size;
-    info.blue_mask_shift = blue_mask_shift;
-    info.green_mask_shift = green_mask_shift;
-    info.red_mask_shift = red_mask_shift;
 
     return true;
 }
 
 // === PRIVATE FUNCTIONS ================================
 
-void put_pixel(uint32_t pos_x, uint32_t pos_y, uint32_t color) {
-    uint32_t* pixel = (uint32_t*)(info.addr + pos_y*info.pitch + pos_x*(info.bpp/8));
-    *(pixel) = ((color >> 16 & 0xff) << info.red_mask_shift) | 
-               ((color >> 8 & 0xff) << info.green_mask_shift) | 
-               ((color & 0xff) << info.blue_mask_shift);
+void put_pixel(uint32_t pos_x, uint32_t pos_y, Color color) {
+    uintptr_t pixel = (uintptr_t)(info.lbf + pos_y*info.width + pos_x)*(info.bpp/8);
+
+    *(uint32_t*)(pixel) = ((color.red & mask_shift[info.bpp].red_mask) << mask_shift[info.bpp].red_shift) | 
+               ((color.green & mask_shift[info.bpp].green_mask) << mask_shift[info.bpp].green_shift) | 
+               ((color.blue & mask_shift[info.bpp].blue_mask) << mask_shift[info.bpp].blue_shift);
 }
-
-

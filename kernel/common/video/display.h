@@ -1,22 +1,30 @@
 #pragma once
-#include "stdint.h"
-#include "stdbool.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <neutrino/macros.h>
+#include <neutrino-gfx/color.h>
+
+typedef struct __mask_shift {
+    uint32_t red_mask, green_mask, blue_mask;
+    uint8_t red_shift, green_shift, blue_shift;
+} packed MaskShift;
+
+typedef enum __display_depth {
+    DISPLAY_BPP_4 = 0x04,
+    DISPLAY_BPP_8 = 0x08,
+    DISPLAY_BPP_15 = 0x0F,
+    DISPLAY_BPP_16 = 0x10,
+    DISPLAY_BPP_24 = 0x18,
+    DISPLAY_BPP_32 = 0x20,
+} DisplayDepth;
 
 typedef struct __display_info {
-    uint64_t addr;
-    uint16_t width;
-    uint16_t height;
+    uintptr_t lbf;
+    uint32_t width;
+    uint32_t height;
     uint16_t pitch;
-    uint16_t bpp;
-    uint8_t  red_mask_size;
-    uint8_t  red_mask_shift;
-    uint8_t  green_mask_size;
-    uint8_t  green_mask_shift;
-    uint8_t  blue_mask_size;
-    uint8_t  blue_mask_shift;
+    DisplayDepth bpp;
 } DisplayInfo;
 
-bool init_video_driver(uint64_t* addr, uint16_t width, uint16_t height, uint16_t pitch, uint16_t bpp, 
-                       uint8_t blue_mask_size, uint8_t red_mask_size, uint8_t green_mask_size,
-                       uint8_t blue_mask_shift, uint8_t green_mask_shift, uint8_t red_mask_shift);
-                       
+bool init_video_driver(uintptr_t lbf, uint32_t width, uint32_t height, uint16_t pitch, DisplayDepth bpp);
+void put_pixel(uint32_t pos_x, uint32_t pos_y, Color color);
