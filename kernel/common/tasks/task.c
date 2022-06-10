@@ -1,5 +1,6 @@
 #include "task.h"
 #include "context.h"
+#include "channel.h"
 #include "cpu.h"
 #include "../kservice.h"
 #include "../memory/memory.h"
@@ -38,6 +39,7 @@ Task* unoptimized NewTask(char* name, bool user) {
     task->lock = NewLock;
     task->space = NewSpace();
     task->context = NewContext();
+    task->channel = NewChannel(CHANNEL_CAN_RECEIVE | CHANNEL_CAN_SEND, name);
 
     task->in_io = false;
     task->in_syscall = false;
@@ -58,6 +60,7 @@ Task* unoptimized NewIdleTask(uintptr_t entry_point) {
 void DestroyTask(Task* task) {
     DestroySpace(task->space);
     DestroyContext(task->context);
+    DestroyChannel(task->channel);
     kfree(task);
 }
 

@@ -6,6 +6,7 @@
 #include <neutrino/macros.h>
 #include <_null.h>
 #include "context.h"
+#include "channel.h"
 #include "../memory/space.h"
 
 typedef enum __task_status {
@@ -46,6 +47,7 @@ typedef struct __task {
 
     Context* context;       // ! must SAVE before every scheduler cycle and RESTORE thereafter
     Space* space;           // ! must SWITCH after every scheduler cycle
+    Channel* channel;
 
     uintptr_t stack_base;
 } Task;
