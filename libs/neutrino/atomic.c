@@ -42,7 +42,7 @@ uint8_t unoptimized atomic_get_byte(uintptr_t ptr) {
 // --- ATOMIC LOCK ------------------------------
 
 bool unoptimized atomic_test_and_set(uint8_t* ptr) {
-    return __atomic_test_and_set((volatile uint8_t*)ptr, __ATOMIC_ACQUIRE);
+    return __atomic_test_and_set((volatile uint8_t*)ptr, __ATOMIC_SEQ_CST);
 }
 
 void unoptimized atomic_release(uint8_t* ptr) {
