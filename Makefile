@@ -154,8 +154,8 @@ $(EXES_OUT)/%.oo: %.c
 
 $(EXETARGETS): $(EXEOBJ) $(LIBSOBJ)
 	@echo "[EXECUTABLE] (ld) $@"
-	@$(LD) $< $(LIBSOBJ) -o $@ -e main
+	@$(LD) $@.oo $(LIBSOBJ) -o $@ -e main
 	@cp $@ ./initrd
-	@rm $<
+	@rm $@.oo
 
 executables: $(EXETARGETS)
