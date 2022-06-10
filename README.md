@@ -2,9 +2,9 @@
 *Neutrino* is a project that aims to understand and implement a 64 bit kernel written in modern C and Assembly. The kernel will have basic drivers and functionality, but other features may be added in the future. The currently implemented features are listed [here](#Features). 
 
 ## Milestones
-- [ ] **0 ー Reaching Userspace** ⬅  
+- [x] 0 ー Reaching Userspace  
     *Implement everything needed for reaching a simple userspace*
-- [ ] 1 ー Storage land   
+- [ ] 1 ー **Storage land** ⬅  
     *Implement a VFS to access installed drives, writing and reading files*
 - [ ] 2 ー Network stack   
     *Add a network stack to ping, send and receive packets*
