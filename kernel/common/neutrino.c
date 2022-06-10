@@ -30,6 +30,7 @@ void initrd_explorer() {
             if (elf_check(header)) 
                 load_binary((const uintptr_t)header, fsnode->name, true);
             
+            kfree(buf);
         }
         i++;
     }
