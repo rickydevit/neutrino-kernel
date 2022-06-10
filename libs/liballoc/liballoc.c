@@ -1,6 +1,7 @@
 #include <liballoc.h>
 #include <_null.h>
 #include <stdint.h>
+#include <neutrino/lock.h>
 
 /**  Durand's Amazing Super Duper Memory functions.  */
 
@@ -100,7 +101,7 @@ static long long l_warningCount = 0;		///< Number of warnings encountered
 static long long l_errorCount = 0;			///< Number of actual errors
 static long long l_possibleOverruns = 0;	///< Number of possible overruns
 
-
+static Lock liballoc_lock = NewLock;
 
 
 
@@ -259,7 +260,7 @@ void *PREFIX(malloc)(size_t req_size)
 				// So, ideally, we really want an alignment of 0 or 1 in order
 				// to save space.
 	
-	liballoc_lock();
+	LockRetain(liballoc_lock);
 
 	if ( size == 0 )
 	{
@@ -269,7 +270,7 @@ void *PREFIX(malloc)(size_t req_size)
 							__builtin_return_address(0) );
 		FLUSH();
 		#endif
-		liballoc_unlock();
+		
 		return PREFIX(malloc)(1);
 	}
 	
@@ -288,7 +289,7 @@ void *PREFIX(malloc)(size_t req_size)
 		l_memRoot = allocate_new_page( size );
 		if ( l_memRoot == NULL )
 		{
-		  liballoc_unlock();
+		  
 		  #ifdef DEBUG
 		  printf( "liballoc: initial l_memRoot initialization failed\n", p); 
 		  FLUSH();
@@ -403,7 +404,7 @@ void *PREFIX(malloc)(size_t req_size)
 			printf( "CASE 2: returning %x\n", p); 
 			FLUSH();
 			#endif
-			liballoc_unlock();		// release the lock
+					// release the lock
 			return p;
 		}
 
@@ -439,7 +440,7 @@ void *PREFIX(malloc)(size_t req_size)
 			printf( "CASE 3: returning %x\n", p); 
 			FLUSH();
 			#endif
-			liballoc_unlock();		// release the lock
+					// release the lock
 			return p;
 		}
 		
@@ -486,7 +487,7 @@ void *PREFIX(malloc)(size_t req_size)
 						printf( "CASE 4.1: returning %x\n", p); 
 						FLUSH();
 						#endif
-						liballoc_unlock();		// release the lock
+								// release the lock
 						return p;
 					}
 				}
@@ -529,7 +530,7 @@ void *PREFIX(malloc)(size_t req_size)
 						FLUSH();
 						#endif
 						
-						liballoc_unlock();		// release the lock
+								// release the lock
 						return p;
 					}
 				}	// min->next != NULL
@@ -571,7 +572,7 @@ void *PREFIX(malloc)(size_t req_size)
 
 
 	
-	liballoc_unlock();		// release the lock
+			// release the lock
 
 	#ifdef DEBUG
 	printf( "All cases exhausted. No memory available.\n");
@@ -611,7 +612,7 @@ void PREFIX(free)(void *ptr)
 
 	UNALIGN( ptr );
 
-	liballoc_lock();		// lockit
+	LockRetain(liballoc_lock);		// lockit
 
 
 	min = (struct liballoc_minor*)((uintptr_t)ptr - sizeof( struct liballoc_minor ));
@@ -658,7 +659,7 @@ void PREFIX(free)(void *ptr)
 		}
 			
 		// being lied to...
-		liballoc_unlock();		// release the lock
+				// release the lock
 		return;
 	}
 
@@ -715,7 +716,7 @@ void PREFIX(free)(void *ptr)
 	FLUSH();
 	#endif
 	
-	liballoc_unlock();		// release the lock
+			// release the lock
 }
 
 
@@ -758,7 +759,7 @@ void*   PREFIX(realloc)(void *p, size_t size)
 	ptr = p;
 	UNALIGN(ptr);
 
-	liballoc_lock();		// lockit
+	LockRetain(liballoc_lock);		// lockit
 
 		min = (struct liballoc_minor*)((uintptr_t)ptr - sizeof( struct liballoc_minor ));
 
@@ -803,8 +804,6 @@ void*   PREFIX(realloc)(void *p, size_t size)
 				#endif
 			}
 			
-			// being lied to...
-			liballoc_unlock();		// release the lock
 			return NULL;
 		}	
 		
@@ -815,11 +814,11 @@ void*   PREFIX(realloc)(void *p, size_t size)
 		if ( real_size >= size ) 
 		{
 			min->req_size = size;
-			liballoc_unlock();
+			
 			return p;
 		}
 
-	liballoc_unlock();
+	
 
 	// If we got here then we're reallocating to a block bigger than us.
 	ptr = PREFIX(malloc)( size );					// We need to allocate new memory

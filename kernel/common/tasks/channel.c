@@ -13,7 +13,7 @@ static List* agent_channel_map = nullptr;
 // === PRIVATE FUNCTIONS ========================
 
 bool channel_agent_remove(Channel* channel) {
-    lock(&agent_channel_lock);
+    LockRetain(agent_channel_lock);
     List* p = agent_channel_map;
     size_t i = 0;
 
@@ -22,7 +22,6 @@ bool channel_agent_remove(Channel* channel) {
         
         if (data->channel == channel) {
             agent_channel_map = list_delete_at(agent_channel_map, i);
-            unlock(&agent_channel_lock);
             return true;
         }
 
@@ -30,7 +29,6 @@ bool channel_agent_remove(Channel* channel) {
         i++;
     }
 
-    unlock(&agent_channel_lock);
     return false;
 }
 
@@ -118,10 +116,9 @@ ChannelTransmitResult channel_transmit(Channel* self, Channel* dest, Package* ms
     if (!(dest->flags & CHANNEL_CAN_RECEIVE)) return CHANNEL_TRANSMIT_UNAUTHORIZED_RECIPIENT;
     if (!msg) return CHANNEL_TRANSMIT_BAD_PACKAGE;
 
-    lock(&dest->ring_lock);
+    LockRetain(dest->ring_lock);
     if (rb_is_full(dest->ring)) return CHANNEL_TRANSMIT_BUFFER_FULL;
     rb_put(dest->ring, (uintptr_t)msg);
-    unlock(&dest->ring_lock);
 
     return CHANNEL_TRANSMIT_SUCCESS;
 }
@@ -130,10 +127,9 @@ ChannelReceiveResult channel_receive(Channel* self, Package** msg) {
     if (!(self && channel_exists(self))) return CHANNEL_RECEIVE_BAD_RECEIVER;
     if (!(self->flags & CHANNEL_CAN_RECEIVE)) return CHANNEL_RECEIVE_UNAUTHORIZED_RECEIVER;
 
-    lock(&self->ring_lock);
+    LockRetain(self->ring_lock);
     if (rb_is_empty(self->ring)) return CHANNEL_RECEIVE_BUFFER_EMPTY;
     rb_get(self->ring, (uintptr_t*)msg);
-    unlock(&self->ring_lock);
 
     return CHANNEL_RECEIVE_SUCCESS;
 }
@@ -142,10 +138,9 @@ ChannelPeekResult channel_peek(Channel* self, Package** msg) {
     if (!(self && channel_exists(self))) return CHANNEL_PEEK_BAD_RECEIVER;
     if (!(self->flags & CHANNEL_CAN_RECEIVE)) return CHANNEL_PEEK_UNAUTHORIZED_RECEIVER;
 
-    lock(&self->ring_lock);
+    LockRetain(self->ring_lock);
     if (rb_is_empty(self->ring)) return CHANNEL_PEEK_BUFFER_EMPTY;
     rb_peek(self->ring, (uintptr_t*)msg);
-    unlock(&self->ring_lock);
 
     return CHANNEL_PEEK_SUCCESS;
 }

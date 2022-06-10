@@ -68,7 +68,7 @@ bool queue_is_empty() {
 }
 
 Task* unoptimized queue_assign(Task* task_slot, bool ignore_affinity, uint16_t cpu_id) {
-    lock(&(scheduler.gtq_lock));
+    LockRetain((scheduler.gtq_lock));
 
     List* p = scheduler.gtq;
     Task* t = nullptr;
@@ -78,7 +78,7 @@ Task* unoptimized queue_assign(Task* task_slot, bool ignore_affinity, uint16_t c
         t = list_get_value(p);
         // check if task is unlocked, and acquire lock if so
         if (t->lock.flag == UNLOCKED) {
-            lock(&(t->lock));
+            LockRetain((t->lock));
 
             // if task is runnable check for assignable
             if (IsTaskRunnable(t)) {
@@ -94,8 +94,6 @@ Task* unoptimized queue_assign(Task* task_slot, bool ignore_affinity, uint16_t c
 
                 break;      // affinity is unnecessary, p is the task to be assigned
             }
-
-            unlock(&(t->lock));
         }
         
         t = nullptr;
@@ -113,25 +111,17 @@ Task* unoptimized queue_assign(Task* task_slot, bool ignore_affinity, uint16_t c
 
     // remove from gtq
     scheduler.gtq = list_delete_at(scheduler.gtq, t_index);
-    unlock(&(scheduler.gtq_lock));
-
-    // ! unacquire the task lock
-    unlock(&task_slot->lock);
 
     return task_slot;
 }
 
 void queue_put(Task* task) {
-    lock(&(scheduler.gtq_lock));
-    lock(&(task->lock));
+    LockRetain((scheduler.gtq_lock));
 
     if (task->status == TASK_RUNNING)
         task->status = TASK_READY;
 
     scheduler.gtq = list_append(scheduler.gtq, task);
-
-    unlock(&(task->lock));
-    unlock(&(scheduler.gtq_lock));
 }
 
 // --- Scheduler default tasks ------------------
@@ -160,11 +150,10 @@ void unoptimized init_scheduler() {
 }
 
 void sched_start(Task* task, uintptr_t entry_point) {
-    lock(&task->lock);
+    LockRetain(task->lock);
     context_init(task->context, entry_point, PROCESS_STACK_BASE + PROCESS_STACK_SIZE - sizeof(uintptr_t), 
                 PROCESS_STACK_BASE + PROCESS_STACK_SIZE - sizeof(uintptr_t), (ContextFlags){.user = task->user});
     task->status = TASK_NEW;
-    unlock(&task->lock);
 
     queue_put(task);
 }

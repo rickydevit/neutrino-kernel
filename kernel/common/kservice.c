@@ -56,43 +56,39 @@ void kput(char* message, ...) {
 }
 
 void unoptimized klog(char* message, ...) {
-    lock(&ks.lock);
+    LockRetain(ks.lock); 
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[LOG] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&ks.lock);
 }
 
 void unoptimized kdbg(char* message, ...) {
-    lock(&ks.lock);
+    LockRetain(ks.lock); 
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[DEBUG] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&ks.lock);
 }
 
 void unoptimized kwarn(char* message, ...) {
-    lock(&ks.lock);
+    LockRetain(ks.lock); 
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[WARN] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&ks.lock);
 }
 
 void unoptimized kerr(char* message, ...) {
-    lock(&ks.lock);
+    LockRetain(ks.lock); 
     va_list args; va_start(args, message);
     char buf[2048] = {0};
     ks._helper("[ERR] ");
     ks._helper(vstrf(message, buf, args));
     ks._helper("\n");
-    unlock(&ks.lock);
 }
 
 void unoptimized kpanic(Fatal fatal_error, ...) {

@@ -1,5 +1,7 @@
 #pragma once
 #include <stdint.h>
+#include <neutrino/macros.h>
+#include <_null.h>
 
 #define LOCKED      1
 #define UNLOCKED    0
@@ -9,10 +11,24 @@ typedef struct __lock {
 } Lock;
 
 #define NewLock         (Lock){UNLOCKED}
-#define LockOperation(l, operation)         lock(&l);           \
-                                            operation;          \
-                                            unlock(&l);
 
 void lock_init(Lock *lock);
 void lock(Lock* lock);
 void unlock(Lock* lock);
+
+static inline void retainer_release(Lock** l) {
+    if (l != nullptr) {
+        unlock(*l);
+        *l = nullptr;
+    }
+}
+
+#define _LockRetain(ret, l)    \
+    Lock* ret cleanup(retainer_release) = l;    \
+    lock(ret);
+
+#define LockRetain(l)    \
+    _LockRetain(Concat(retainer, __COUNTER__), &l)
+    
+#define LockOperation(l, operation)         LockRetain(l);           \
+                                            operation; 
