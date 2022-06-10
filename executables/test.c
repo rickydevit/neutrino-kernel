@@ -14,5 +14,13 @@ int main() {
     free(test);
     strf("free() called for %x", buf, test);
     neutrino_log(&(SCLogArgs){.msg = buf});
+
+    const char* ipc_payload = "hello world";
+    neutrino_ipc(&(SCIpcArgs){
+        .agent_name = "test2",
+        .payload = (uintptr_t)ipc_payload,
+        .size = strlen(ipc_payload),
+        .type = IPC_SEND
+        });
     return 0;
 }
