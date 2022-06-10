@@ -161,8 +161,8 @@ List* list_delete_at(List* list, int index) {
                 }
                 while (list_is_not_null(temp)) {
                         if(iterator == index) {
-                                temp->next->prev = temp->prev;
-                                temp->prev->next = temp->next;
+                                if (list_has_next(temp)) temp->next->prev = temp->prev;
+                                if (list_has_prev(temp)) temp->prev->next = temp->next;
                                 lfree(temp);
                                 return list;
                         }
