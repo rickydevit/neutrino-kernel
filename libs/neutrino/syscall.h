@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <size_t.h>
+#include <ipc/ipc.h>
 #include <neutrino/time.h>
 #include <neutrino/macros.h>
 
@@ -11,6 +12,7 @@
     c(NEUTRINO_NOW) \
     c(NEUTRINO_ALLOC) \
     c(NEUTRINO_FREE) \
+    c(NEUTRINO_IPC) \
 
 // Syscall enum
 typedef enum __neutrino_syscalls {
@@ -23,7 +25,8 @@ extern const char* syscall_names[];
 typedef enum __neutrino_syscall_result {
     SYSCALL_SUCCESS,
     SYSCALL_INVALID,
-    SYSCALL_FAILURE
+    SYSCALL_FAILURE,
+    SYSCALL_UNAUTHORIZED
 } SyscallResult;
 
 #ifdef __kernel
@@ -55,6 +58,13 @@ typedef struct __sc_free_args {
     size_t size;
 } SCFreeArgs;
 
+typedef struct __sc_ipc_args {
+    const char* agent_name;
+    IpcType type;
+    uintptr_t payload;
+    size_t size;
+} SCIpcArgs;
+
 // === Syscall prototypes ===
 
 // Log a string message to the debug serial output
@@ -83,3 +93,10 @@ SysCall(alloc)(SCAllocArgs* args);
 // @param size IN the size of the memory area
 // @return SYSCALL_SUCCESS on success; SYSCALL_INVALID if size = 0 or pointer is nullptr; SYSCALL_FAILURE if heap manager fails
 SysCall(free)(SCFreeArgs* args);
+
+// Send an IPC message (between different processes)
+// @param type IN the type of the IPC call (SEND, RECEIVE, BROADCAST)
+// @param data IN/OUT the data to be sent/received. This is an output field when type is RECEIVE, input otherwise
+// @param size IN/OUT the size of the sent/received data. This is an output field when type is RECEIVE, input otherwise 
+// @return SYSCALL_SUCCESS on success; SYSCALL_UNAUTHORIZED if task channel does not allow IPCs; SYSCALL_FAILURE if IPC fails
+SysCall(ipc)(SCIpcArgs* args);

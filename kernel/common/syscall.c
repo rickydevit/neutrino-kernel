@@ -2,9 +2,11 @@
 #include "arch.h"
 #include "kservice.h"
 #include "tasks/task.h"
+#include "tasks/channel.h"
 #include "memory/space.h"
 #include "tasks/scheduler.h"
 #include <neutrino/syscall.h>
+#include <ipc/ipc.h>
 #include <stdint.h>
 
 // === PRIVATE FUNCTIONS ========================
@@ -44,16 +46,85 @@ SyscallResult sys_free(SCFreeArgs* args) {
     return SYSCALL_FAILURE;
 }
 
+SyscallResult sys_ipc(SCIpcArgs* args) {
+    if (args->type > IPC_BROADCAST) return SYSCALL_INVALID;
+
+    if (args->type == IPC_SEND || args->type == IPC_BROADCAST) {
+        if (args->payload == nullptr || args->size == 0) return SYSCALL_INVALID;
+
+        Channel* sender = get_current_task()->channel;
+        Channel* dest = channel_find_by_agent_name(args->agent_name);
+        if (!sender || !dest) return SYSCALL_FAILURE;
+
+        Package* pack = NewPackage(&sender->agent, args->payload, args->size);
+
+        switch (channel_transmit(sender, dest, pack)) {
+            case CHANNEL_TRANSMIT_UNAUTHORIZED_SENDER:
+            case CHANNEL_TRANSMIT_UNAUTHORIZED_RECIPIENT:
+                return SYSCALL_UNAUTHORIZED;
+            case CHANNEL_TRANSMIT_SUCCESS:
+                return SYSCALL_SUCCESS;
+            default:
+                return SYSCALL_FAILURE;
+        }
+    }
+
+    if (args->type == IPC_RECEIVE || args->type == IPC_PEEK) {
+        Channel* recv = get_current_task()->channel;
+        Package* pack = nullptr;
+
+        if (!recv) return SYSCALL_FAILURE;
+
+        if (args->type == IPC_RECEIVE) {
+            ChannelReceiveResult res = channel_receive(recv, &pack);
+            if (pack && res == CHANNEL_RECEIVE_SUCCESS) {
+                memory_copy((uint8_t*)pack->buffer, (uint8_t*)args->payload, pack->size);
+                args->size = pack->size;
+                kfree(pack);
+            }
+
+            switch (res) {
+                case CHANNEL_RECEIVE_UNAUTHORIZED_RECEIVER:
+                    return SYSCALL_UNAUTHORIZED;
+                case CHANNEL_RECEIVE_BUFFER_EMPTY:
+                case CHANNEL_RECEIVE_SUCCESS:
+                    return SYSCALL_SUCCESS;
+                default:
+                    return SYSCALL_FAILURE;
+            }
+        } else {
+            ChannelPeekResult res = channel_peek(recv, &pack);
+            if (pack && res == CHANNEL_PEEK_SUCCESS) {
+                args->size = pack->size;
+            }
+
+            switch (res) {
+                case CHANNEL_PEEK_UNAUTHORIZED_RECEIVER:
+                    return SYSCALL_UNAUTHORIZED;
+                case CHANNEL_PEEK_BUFFER_EMPTY:
+                case CHANNEL_PEEK_SUCCESS:
+                    return SYSCALL_SUCCESS;
+                default:
+                    return SYSCALL_FAILURE;
+            }
+        }
+        
+    }
+
+    return SYSCALL_FAILURE;
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 typedef SyscallResult SyscallFn();
 
 SyscallFn* syscalls[NEUTRINO_SYSCALL_COUNT] = {
     [NEUTRINO_LOG] = sys_log,
+    [NEUTRINO_KILL_TASK] = sys_destroy_task,
     [NEUTRINO_NOW] = sys_now,
     [NEUTRINO_ALLOC] = sys_alloc,
     [NEUTRINO_FREE] = sys_free,
-    [NEUTRINO_KILL_TASK] = sys_destroy_task
+    [NEUTRINO_IPC] = sys_ipc
 };
 
 SyscallResult syscall_execute(NeutrinoSyscall syscall_id, uintptr_t* args) {

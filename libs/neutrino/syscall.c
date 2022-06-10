@@ -48,3 +48,7 @@ SyscallResult neutrino_alloc(SCAllocArgs* args) {
 SyscallResult neutrino_free(SCFreeArgs* args) {
     return neutrino_syscall(NEUTRINO_FREE, (uintptr_t)args, 0, 0, 0, 0);
 }
+
+SyscallResult neutrino_ipc(SCIpcArgs* args) {
+    return neutrino_syscall(NEUTRINO_IPC, (uintptr_t)args, 0, 0, 0, 0);
+}

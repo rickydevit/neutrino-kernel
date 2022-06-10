@@ -54,7 +54,7 @@
     - [x] **Executable loading**
     - [x] **Process scheduler** `🔗 Timers, Executable loading`
     - [x] **Virtual Filesystem (VFS)**
-    - [ ] **IPC**
+    - [x] **IPC**
 
 - [ ] ⚙ **Simple drivers**
     - [ ] **PCI**
@@ -87,7 +87,7 @@
         - [x] `neutrino_now()` get the current timestamp
         - [x] `neutrino_alloc()` allocate a task heap area
         - [x] `neutrino_free()` release a task heap area
-        - [ ] `neutrino_ipc()` `🔗 IPC`
+        - [x] `neutrino_ipc()` allows different processes to exchange messages
     - [ ] *And many apps*
 
 ## How to
