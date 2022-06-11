@@ -1,5 +1,6 @@
 #include "bga.h"
 #include "display.h"
+#include "../memory/memory.h"
 #include "../device/pci/pci.h"
 #include "../device/port.h"
 #include <stdint.h>
@@ -45,6 +46,8 @@ bool init_bga() {
     bga_info.pci_bga = pci_get_device_by_vendor(0x1234, 0x1111);
     if (bga_info.pci_bga == nullptr) return false;
 
+    memory_map(bga_info.pci_bga->bars[0].range.base, bga_info.pci_bga->bars[0].range.base, bga_info.pci_bga->bars[0].range.size);
+
     // get max capabilities
     bga_write(VBE_DISPI_INDEX_ENABLE, bga_read(VBE_DISPI_INDEX_ENABLE) | VBE_DISPI_GETCAPS);
     bga_info.max_width = bga_read(VBE_DISPI_INDEX_XRES);
@@ -65,6 +68,7 @@ DisplayInfo bga_get_display_info() {
     return (DisplayInfo){
         .lbf = bga_info.pci_bga->bars[0].range.base, 
         .bpp = bga_info.cur_depth, 
+        .pitch = bga_info.cur_width*(bga_info.cur_depth/8), 
         .height = bga_info.cur_height,
         .width = bga_info.cur_width
     };

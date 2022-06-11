@@ -36,9 +36,9 @@ bool init_video_driver(uintptr_t lbf, uint32_t width, uint32_t height, uint16_t 
 // === PRIVATE FUNCTIONS ================================
 
 void put_pixel(uint32_t pos_x, uint32_t pos_y, Color color) {
-    uintptr_t pixel = (uintptr_t)(info.lbf + pos_y*info.width + pos_x)*(info.bpp/8);
+    uintptr_t pixel = (uintptr_t)(info.lbf + pos_y*info.pitch + pos_x*(info.bpp/8));
 
-    *(uint32_t*)(pixel) = ((color.red & mask_shift[info.bpp].red_mask) << mask_shift[info.bpp].red_shift) | 
-               ((color.green & mask_shift[info.bpp].green_mask) << mask_shift[info.bpp].green_shift) | 
-               ((color.blue & mask_shift[info.bpp].blue_mask) << mask_shift[info.bpp].blue_shift);
+    *(uint32_t*)(pixel) = ((color.red << mask_shift[info.bpp].red_shift) & mask_shift[info.bpp].red_mask) | 
+               ((color.green << mask_shift[info.bpp].green_shift) & mask_shift[info.bpp].green_mask) | 
+               ((color.blue << mask_shift[info.bpp].blue_shift) & mask_shift[info.bpp].blue_mask);
 }
