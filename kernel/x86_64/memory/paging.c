@@ -34,7 +34,8 @@ void write_cr3(uint64_t value) {
 }
 
 PageTableEntry page_create(uint64_t addr, PageProperties prop) {
-    PageTableEntry pt = addr & ADDRESS_MASK;
+    PageTableEntry pt = 0;
+    pt |= addr & ADDRESS_MASK;
 
     if (prop.writable) page_set_bit(&pt, WRITABLE_BIT_OFFSET);
     if (prop.user) page_set_bit(&pt, USERSPACE_BIT_OFFSET);
