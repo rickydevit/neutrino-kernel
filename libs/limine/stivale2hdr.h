@@ -23,21 +23,21 @@ static struct stivale2_tag unmap_null_hdr_tag = {
     .next = (uint64_t)&smp_hdr_tag,
 };
 
-static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
-    // Same as above.
-    .tag = {
-        .identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
-        // Instead of 0, we now point to the previous header tag. The order in
-        // which header tags are linked does not matter.
-        // .next = (uint64_t)&terminal_hdr_tag
-        .next = (uint64_t)&unmap_null_hdr_tag
-    },
-    // We set all the framebuffer specifics to 0 as we want the bootloader
-    // to pick the best it can.
-    .framebuffer_width  = 0,
-    .framebuffer_height = 0,
-    .framebuffer_bpp    = 0
-};
+// static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
+//     // Same as above.
+//     .tag = {
+//         .identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
+//         // Instead of 0, we now point to the previous header tag. The order in
+//         // which header tags are linked does not matter.
+//         // .next = (uint64_t)&terminal_hdr_tag
+//         .next = (uint64_t)&unmap_null_hdr_tag
+//     },
+//     // We set all the framebuffer specifics to 0 as we want the bootloader
+//     // to pick the best it can.
+//     .framebuffer_width  = 0,
+//     .framebuffer_height = 0,
+//     .framebuffer_bpp    = 0
+// };
 
 static struct stivale2_header_tag_any_video any_video_hdr_tag = {
         // Same as above.
@@ -45,7 +45,7 @@ static struct stivale2_header_tag_any_video any_video_hdr_tag = {
         .identifier = STIVALE2_HEADER_TAG_ANY_VIDEO_ID,
         // Instead of 0, we now point to the previous header tag. The order in
         // which header tags are linked does not matter.
-        .next = (uint64_t)&framebuffer_hdr_tag
+        .next = (uint64_t)&unmap_null_hdr_tag
     },
     .preference = 0
 };
