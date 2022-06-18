@@ -8,6 +8,7 @@
 #include "kernel/common/kservice.h"
 #include <liballoc.h>
 #include <neutrino/macros.h>
+#include <align.h>
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -15,7 +16,10 @@
 
 // *Create a new Context
 Context* unoptimized NewContext() {
-    Context* context = (Context*)kmalloc(sizeof(Context) + get_sse_context_size());
+    Context* context = (Context*)kmalloc(sizeof(Context) + get_sse_context_size() + SIMD_ALIGN);
+    context->simd = align(SIMD_ALIGN, get_sse_context_size(), 
+        ((void*)context + sizeof(Context)), get_sse_context_size() + SIMD_ALIGN);
+    
     set_initial_sse_context(context->simd);
     return context;
 }
