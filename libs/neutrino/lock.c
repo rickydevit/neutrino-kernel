@@ -15,12 +15,12 @@ void lock_init(Lock *lock) {
 // *Lock a spinlock, avoiding other threads accessing it
 // @param lock the lock to be locked
 void unoptimized lock(Lock* lock) {
-    while (atomic_test_and_set(&(lock->flag)))
+    while (atomic_test_and_set((volatile uint8_t*)&(lock->flag)))
         asm volatile ("pause");
 }
 
 // *Unlock a spinlock and make it available to other threads
 // @param lock the lock to be unlocked
 void unoptimized unlock(Lock* lock) {
-    atomic_release(&(lock->flag));
+    atomic_release((volatile uint8_t*)&(lock->flag));
 }
