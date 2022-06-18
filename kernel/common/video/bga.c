@@ -55,7 +55,7 @@ bool init_bga() {
     bga_info.max_depth = bga_read(VBE_DISPI_INDEX_BPP);
     bga_write(VBE_DISPI_INDEX_ENABLE, bga_read(VBE_DISPI_INDEX_ENABLE) & ~VBE_DISPI_GETCAPS);
     
-    bga_change_res(1280, 720, VBE_DISPI_BPP_24);
+    bga_change_res(1280, 720, VBE_DISPI_BPP_32);
 
     ks.log("BGA - Max settings: %ux%ux%u Current settings: %ux%ux%u", 
         bga_info.max_width, bga_info.max_height, bga_info.max_depth, 
