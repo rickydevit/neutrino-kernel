@@ -8,6 +8,7 @@ typedef int                  int32_t;
 typedef unsigned int         uint32_t;
 typedef long                 int64_t;
 typedef unsigned long        uint64_t;
+typedef long                 intptr_t;
 typedef unsigned long        uintptr_t;
 
 #define INT_MAX 2147483647
