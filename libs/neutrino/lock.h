@@ -30,5 +30,6 @@ static inline void retainer_release(Lock** l) {
 #define LockRetain(l)    \
     _LockRetain(Concat(retainer, __COUNTER__), &l)
     
-#define LockOperation(l, operation)         LockRetain(l);           \
-                                            operation; 
+#define LockOperation(l, operation)         lock(&l);           \
+                                            operation;          \
+                                            unlock(&l);
