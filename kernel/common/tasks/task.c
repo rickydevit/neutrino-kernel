@@ -58,9 +58,9 @@ Task* unoptimized NewIdleTask(uintptr_t entry_point) {
 }
 
 void DestroyTask(Task* task) {
-    DestroySpace(task->space);
-    DestroyContext(task->context);
     DestroyChannel(task->channel);
+    DestroyContext(task->context);
+    DestroySpace(task->space);
     kfree(task);
 }
 
