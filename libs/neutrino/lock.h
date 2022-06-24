@@ -7,7 +7,7 @@
 #define UNLOCKED    0
 
 typedef struct __lock {
-    uint8_t flag;
+    volatile uint8_t flag;
 } Lock;
 
 #define NewLock         (Lock){UNLOCKED}
