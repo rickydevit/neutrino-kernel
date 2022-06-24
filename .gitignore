@@ -1,5 +1,6 @@
 iso/
 build/
+releases/
 .vscode/
 initrd/
 executables/*
