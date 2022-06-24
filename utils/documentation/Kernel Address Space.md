@@ -8,7 +8,7 @@
 160 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   191
 192 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   223
 224 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   255
-256 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜   287
+256 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 🔲⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   287
 288 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   319
 320 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   351
 352 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛   383
@@ -23,7 +23,8 @@
 | 🟪 Process space | Process | `0xffff080000000000` - `0xffff08ffffffffff` | *Undefined* | Everything reserved for userspace and process related data and code
 | Available low half | | `0x0000000000000000` - `0xffff7fffffffffff` | *A lot* | Low memory area available for future use
 | **System reserved** 
-| ⬜ Physical memory mirror | System | `0xffff800000000000` - `0xfff8fffffffffff` | Same as physical memory. Potentially ≃1,152PB | Load point of the kernel. Functions and local variables should all have this base address
+| ⬜ Physical memory map | System | `0xffff800000000000` - `0xfff87ffffffffff` | Same as physical memory. Potentially ≃1,152PB | Load point of the kernel. Functions and local variables should all have this base address
+| 🔲 Physical memory mirror | System | `0xffff880000000000` - `0xffff887fffffffff` | Mirror mapping of physical memory, used for direct memory writing and clearing
 | RSDP probing area | System | `0xffff800000080000` - `0xffff800000100000` | 524,288kB | Area where the RSDP could be located according to its specification
 | **Kernel reserved** 
 | 🟦 MMIO devices | MMIO | `0xfffff00000000000` - `0xfffff1ffffffffff` | *Undefined* | MMIO mapped devices
