@@ -59,11 +59,11 @@ Channel* NewChannel(ChannelFlag flags, const char* agent_name) {
     channel->ring = rb_init(channel->_buffer, CHANNEL_BUFFER_SIZE);
     agent_init(&channel->agent, agent_name);
 
+    LockRetain(agent_channel_lock);
     ChannelAgentData* data = (ChannelAgentData*)kmalloc(sizeof(ChannelAgentData));
     data->agent = &channel->agent;
     data->channel = channel;
-    LockOperation(agent_channel_lock, 
-        agent_channel_map = list_append(agent_channel_map, data));
+    agent_channel_map = list_append(agent_channel_map, data);
 
     return channel;
 }

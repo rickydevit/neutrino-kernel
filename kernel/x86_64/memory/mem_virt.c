@@ -10,10 +10,14 @@
 #include <libs/limine/stivale2.h>
 #include <size_t.h>
 #include <liballoc.h>
+#include <neutrino/lock.h>
 
 // === PRIVATE FUNCTIONS ========================
 
 void vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop);
+
+Lock vmm_lock = NewLock;
+Lock vmm_heap_lock = NewLock;
 
 // -- Utilities ---------------------------------
 
@@ -183,8 +187,9 @@ PageTable* unoptimized vmm_get_table_address(PageTable* table_addr, uintptr_t vi
 // @param parent_index the index of [table] in the [parent] page
 void vmm_free_if_necessary_table(PageTable* table, PageTable* parent, uint64_t parent_index) {
     if (vmm_is_table_free(table)) {
+        memory_set((uint8_t*)table, 0, PAGE_SIZE);
         pmm_free(GET_PHYSICAL_ADDRESS(parent->entries[parent_index]));
-        page_clear_bit((PageTableEntry*)vmm_get_entry(table, parent_index), PRESENT_BIT_OFFSET);
+        page_clear_bit(&(parent->entries[parent_index]), PRESENT_BIT_OFFSET);
     }
 }
 
@@ -284,10 +289,8 @@ void unoptimized vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, u
 bool vmm_unmap_page_impl(PageTable* table_addr, uintptr_t virt_addr) {
     PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr, PageKernelWrite);
 
-    // PageTable* to_free = vmm_get_entry(pt, path.pt);
     if (pt == nullptr) return false;
-
-    page_clear_bit((PageTableEntry*)pt, PRESENT_BIT_OFFSET);
+    page_clear_bit(&(pt->entries[GetPagingPath(virt_addr).pt]), PRESENT_BIT_OFFSET);
 
     vmm_free_if_necessary_tables(table_addr, virt_addr); // todo: reimplement this
     vmm_reload_tlb(virt_addr);
@@ -401,6 +404,8 @@ void unoptimized init_vmm_on_ap(struct stivale2_smp_info* info) {
 // @param virt_addr the virtual address to map the physical address to
 // @param prop the properties of the page entry
 void unoptimized vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
+    LockRetain(vmm_lock);
+    
     if (read_cr3() == (uintptr_t)table || table == 0) {               //  cr3 is the given table physical address
         vmm_map_page_impl((PageTable*)vmm_get_active_recurse_link(), phys_addr, virt_addr, prop);
     
@@ -421,6 +426,7 @@ void unoptimized vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t v
 // @param virt_addr the virtual address in the page
 // @return true if the page was successfully unmapped, false otherwise
 bool vmm_unmap_page(PageTable* table, uintptr_t virt_addr) {
+    LockRetain(vmm_lock);
     bool res = false;
     
     if (read_cr3() == (uintptr_t)table || table == 0) {   // if cr3 is the given table physical address
@@ -454,6 +460,7 @@ uintptr_t vmm_allocate_memory(PageTable* table, size_t blocks, PageProperties pr
 }
 
 uintptr_t unoptimized vmm_allocate_heap(size_t blocks, bool user) {
+    LockRetain(vmm_heap_lock);
     uintptr_t heap_base = (user ? USER_HEAP_OFFSET : HEAP_OFFSET);
     PageProperties prop = (PageProperties) {
         .cache_disable = true,
@@ -489,6 +496,7 @@ uintptr_t unoptimized vmm_allocate_heap(size_t blocks, bool user) {
 // @param addr the virtual address to unmap
 // @param blocks the number of blocks to be unmapped
 bool vmm_free_memory(PageTable* table, uintptr_t addr, size_t blocks) {
+    LockRetain(vmm_heap_lock);
     uintptr_t phys_addr = vmm_virt_to_phys(table, addr);
     for (size_t i = 0; i < blocks; i++) vmm_unmap_page(table, addr + (i*PHYSMEM_BLOCK_SIZE));
 

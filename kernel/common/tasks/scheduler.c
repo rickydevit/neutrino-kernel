@@ -34,8 +34,8 @@ bool cpu_peek_other(volatile Cpu* cpu) {
 }
 
 void cpu_swap_task(volatile Cpu* cpu) {
-    lock((Lock*)&(cpu->tasks.current->lock));
-    lock((Lock*)&(cpu->tasks.next->lock));
+    LockRetain(cpu->tasks.current->lock);
+    LockRetain(cpu->tasks.next->lock);
 
     if (cpu->tasks.current->status == TASK_RUNNING)
         cpu->tasks.current->status = TASK_READY;
@@ -45,16 +45,15 @@ void cpu_swap_task(volatile Cpu* cpu) {
     cpu->tasks.current = cpu->tasks.next;
     cpu->tasks.next = temp;
 
-    unlock((Lock*)&(cpu->tasks.next->lock));
-    unlock((Lock*)&(cpu->tasks.current->lock));
     return;
 }
 
 void cpu_next(volatile Cpu* cpu) {
-    lock((Lock*)&(cpu->tasks.next->lock));
+    LockRetain(cpu->tasks.next->lock);
+
     cpu->tasks.current = cpu->tasks.next;
     cpu->tasks.next = nullptr;
-    unlock((Lock*)&(cpu->tasks.current->lock));
+
     return;
 }
 
@@ -63,8 +62,8 @@ void cpu_next(volatile Cpu* cpu) {
 // *Get if the GTQ is empty
 // @return true if the GTQ is empty, false otherwise
 bool queue_is_empty() {
-    LockOperation(scheduler.gtq_lock, bool empty = list_is_empty(scheduler.gtq));
-    return empty;
+    LockRetain(scheduler.gtq_lock) 
+    return scheduler.gtq == nullptr;
 }
 
 Task* unoptimized queue_assign(Task* task_slot, bool ignore_affinity, uint16_t cpu_id) {
@@ -116,7 +115,7 @@ Task* unoptimized queue_assign(Task* task_slot, bool ignore_affinity, uint16_t c
 }
 
 void queue_put(Task* task) {
-    LockRetain((scheduler.gtq_lock));
+    LockRetain(scheduler.gtq_lock);
 
     if (task->status == TASK_RUNNING)
         task->status = TASK_READY;

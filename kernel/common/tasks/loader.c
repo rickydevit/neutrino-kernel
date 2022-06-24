@@ -10,6 +10,9 @@
 #include <stdbool.h>
 #include <size_t.h>
 #include <neutrino/macros.h>
+#include <neutrino/lock.h>
+
+Lock loader_lock = NewLock;
 
 // === PRIVATE FUNCTIONS ========================
 
@@ -56,6 +59,7 @@ void load_elf(const Elf64Header* header, const uintptr_t binary, Task* task) {
 // === PUBLIC FUNCTIONS =========================
 
 void unoptimized load_binary(const uintptr_t binary, char* binary_name, bool user) {
+    LockRetain(loader_lock);
     // check for ELF and validate
     if (elf_check((const Elf64Header*)binary)) {
         Elf64Header* h = (Elf64Header*)binary;
