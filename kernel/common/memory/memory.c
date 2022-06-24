@@ -31,6 +31,8 @@ void unoptimized memory_set(uint8_t *dest, uint8_t val, uint32_t len) {
 VirtualMapping memory_allocate(size_t size) {
     uintptr_t vaddr = vmm_allocate_memory(0, (size / PAGE_SIZE)+1, PageKernelWrite);
     
+    memory_set((uint8_t*)vaddr, 0, size);
+
     return (VirtualMapping) {
         .physical = {
             .base = get_rmem_address(vaddr),
