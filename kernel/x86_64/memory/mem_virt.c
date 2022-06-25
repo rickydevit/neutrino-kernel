@@ -17,7 +17,6 @@
 void vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop);
 
 Lock vmm_lock = NewLock;
-Lock vmm_heap_lock = NewLock;
 
 // -- Utilities ---------------------------------
 
@@ -62,8 +61,9 @@ PageTable* vmm_get_entry(PageTable* table, uint64_t entry) {
 PageTable* unoptimized vmm_create_entry(PageTable* table, uint64_t entry, PageProperties prop) {
     PageTable* pt = (PageTable*)get_mem_address(pmm_alloc());
     table->entries[entry] = page_create(get_rmem_address((uintptr_t)pt), prop);
+    if (vmm.initialized) memory_set((uint8_t*)get_perm_address(get_rmem_address((uintptr_t)pt)), 0, PAGE_SIZE);
+    
     vmm_reload_cr3();
-
     return pt;
 }
 
@@ -187,7 +187,7 @@ PageTable* unoptimized vmm_get_table_address(PageTable* table_addr, uintptr_t vi
 // @param parent_index the index of [table] in the [parent] page
 void vmm_free_if_necessary_table(PageTable* table, PageTable* parent, uint64_t parent_index) {
     if (vmm_is_table_free(table)) {
-        memory_set((uint8_t*)table, 0, PAGE_SIZE);
+        // memory_set((uint8_t*)table, 0, PAGE_SIZE);
         pmm_free(GET_PHYSICAL_ADDRESS(parent->entries[parent_index]));
         page_clear_bit(&(parent->entries[parent_index]), PRESENT_BIT_OFFSET);
     }
@@ -262,6 +262,18 @@ void vmm_map_physical_regions(PageTable* page) {
     }
 }
 
+void vmm_mirror_physical_memory(PageTable* table) {
+    PageTable* permpage = (PageTable*)get_mem_address(pmm_alloc());
+    table->entries[GET_PL4_INDEX(PERM_OFFSET)] = page_create(get_rmem_address((uintptr_t)permpage), PageKernelWrite);
+    
+    size_t i = 0;
+    for (uintptr_t addr = nullptr; addr < pmm.total_memory; addr+=HUGE_PAGE_SIZE, i++) {
+
+        ks.dbg("mapping huge memory mirror {%x-%x}...", addr, addr+HUGE_PAGE_SIZE-1);
+        permpage->entries[i] = page_pdpt_huge(addr, PageKernelWrite);
+    }
+}
+
 void unoptimized vmm_map_kernel_region(struct memory_physical* phys, PageTable* page) {
     for (int ind = 0; ind < phys->regions_count; ind++) {
         if (phys->regions[ind].type != MEMORY_REGION_KERNEL) continue;
@@ -280,6 +292,7 @@ void unoptimized vmm_map_kernel_region(struct memory_physical* phys, PageTable* 
 // --- Mapping and unmapping --------------------
 
 void unoptimized vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
+    LockRetain(vmm_lock);
     PagingPath path = GetPagingPath(virt_addr);
     PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr, prop);
 
@@ -287,6 +300,7 @@ void unoptimized vmm_map_page_impl(PageTable* table_addr, uintptr_t phys_addr, u
 }
 
 bool vmm_unmap_page_impl(PageTable* table_addr, uintptr_t virt_addr) {
+    LockRetain(vmm_lock);
     PageTable* pt = vmm_get_most_nested_table(table_addr, virt_addr, PageKernelWrite);
 
     if (pt == nullptr) return false;
@@ -338,6 +352,7 @@ void init_vmm() {
     ks.log("Initializing VMM...");
     
     vmm.address_size = get_physical_address_length();
+    vmm.initialized = false;
 
     // prepare a pml4 table for the kernel address space
     PageTable* kernel_pml4 = vmm_new_table();
@@ -348,6 +363,7 @@ void init_vmm() {
     kernel_pml4->entries[RECURSE_ACTIVE] = page_self(kernel_pml4);
 
     // map physical regions in the page
+    vmm_mirror_physical_memory(kernel_pml4);
     vmm_map_physical_regions(kernel_pml4);
 
     // map the physical memory bitmap 
@@ -359,6 +375,7 @@ void init_vmm() {
     get_bootstrap_cpu()->page_table = (PageTable*)get_rmem_address((uintptr_t)kernel_pml4);
     write_cr3(get_rmem_address((uintptr_t)kernel_pml4));
 
+    vmm.initialized = true;
     ks.log("VMM has been initialized.");
 }
 
@@ -403,9 +420,7 @@ void unoptimized init_vmm_on_ap(struct stivale2_smp_info* info) {
 // @param phys_addr the physical address to map the virtual address to
 // @param virt_addr the virtual address to map the physical address to
 // @param prop the properties of the page entry
-void unoptimized vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {
-    LockRetain(vmm_lock);
-    
+void unoptimized vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t virt_addr, PageProperties prop) {  
     if (read_cr3() == (uintptr_t)table || table == 0) {               //  cr3 is the given table physical address
         vmm_map_page_impl((PageTable*)vmm_get_active_recurse_link(), phys_addr, virt_addr, prop);
     
@@ -426,7 +441,6 @@ void unoptimized vmm_map_page(PageTable* table, uintptr_t phys_addr, uintptr_t v
 // @param virt_addr the virtual address in the page
 // @return true if the page was successfully unmapped, false otherwise
 bool vmm_unmap_page(PageTable* table, uintptr_t virt_addr) {
-    LockRetain(vmm_lock);
     bool res = false;
     
     if (read_cr3() == (uintptr_t)table || table == 0) {   // if cr3 is the given table physical address
@@ -460,7 +474,6 @@ uintptr_t vmm_allocate_memory(PageTable* table, size_t blocks, PageProperties pr
 }
 
 uintptr_t unoptimized vmm_allocate_heap(size_t blocks, bool user) {
-    LockRetain(vmm_heap_lock);
     uintptr_t heap_base = (user ? USER_HEAP_OFFSET : HEAP_OFFSET);
     PageProperties prop = (PageProperties) {
         .cache_disable = true,
@@ -496,7 +509,6 @@ uintptr_t unoptimized vmm_allocate_heap(size_t blocks, bool user) {
 // @param addr the virtual address to unmap
 // @param blocks the number of blocks to be unmapped
 bool vmm_free_memory(PageTable* table, uintptr_t addr, size_t blocks) {
-    LockRetain(vmm_heap_lock);
     uintptr_t phys_addr = vmm_virt_to_phys(table, addr);
     for (size_t i = 0; i < blocks; i++) vmm_unmap_page(table, addr + (i*PHYSMEM_BLOCK_SIZE));
 

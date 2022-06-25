@@ -7,6 +7,7 @@
 
 struct memory_virtual {
     uint8_t address_size; 
+    bool initialized;
 };
 
 struct memory_virtual vmm;

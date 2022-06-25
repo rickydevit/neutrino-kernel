@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #define PAGE_SIZE       0x1000
+#define HUGE_PAGE_SIZE  0x40000000
 #define RECURSE_ACTIVE  510UL
 #define RECURSE_OTHER   509UL
 #define RECURSE_PML4        (0xffffff0000000000UL)
@@ -75,4 +76,5 @@ inline void page_set_bit(PageTableEntry* page, uint64_t offset) { *page |= (offs
 inline void page_clear_bit(PageTableEntry* page, uint64_t offset) { *page &= ~(offset); }
 
 PageTableEntry page_create(uint64_t addr, PageProperties prop);
+PageTableEntry page_pdpt_huge(uintptr_t addr, PageProperties prop);
 PageTableEntry page_self(PageTable* table);

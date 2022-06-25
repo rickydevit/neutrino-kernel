@@ -46,6 +46,20 @@ PageTableEntry page_create(uint64_t addr, PageProperties prop) {
     return pt;
 }
 
+PageTableEntry page_pdpt_huge(uintptr_t addr, PageProperties prop) {
+    PageTableEntry pt = 0;
+    pt |= addr & 0xffffffffc0000000;
+    
+    if (prop.writable) page_set_bit(&pt, WRITABLE_BIT_OFFSET);
+    if (prop.user) page_set_bit(&pt, USERSPACE_BIT_OFFSET);    
+    if (prop.cache_disable) page_set_bit(&pt, CACHE_DISABLE_BIT_OFFSET);
+    page_set_bit(&pt, HUGE_BIT_OFFSET);
+    page_clear_bit(&pt, NO_EXECUTE_BIT_OFFSET);
+    page_set_bit(&pt, PRESENT_BIT_OFFSET);
+
+    return pt;
+}
+
 PageTableEntry page_self(PageTable* table) {
     return page_create(get_rmem_address((uintptr_t)table), PageKernelWrite);
 }
