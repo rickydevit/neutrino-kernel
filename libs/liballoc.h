@@ -1,75 +1,57 @@
-#ifndef _LIBALLOC_H
-#define _LIBALLOC_H
+#pragma once
 
 #include <size_t.h>
 #include <stdbool.h>
-
-/** \defgroup ALLOCHOOKS liballoc hooks 
- *
- * These are the OS specific functions which need to 
- * be implemented on any platform that the library
- * is expected to work on.
- */
-
-/** @{ */
-
-// If we are told to not define our own size_t, then we skip the define.
-//#define _HAVE_UINTPTR_T
-//typedef	unsigned long	uintptr_t;
+#include <stdint.h>
 
 #ifdef __kernel
-//This lets you prefix malloc and friends
-#define PREFIX(func)		k ## func
+    #define Prefix(func)		k ## func
 #else
-#define PREFIX(func)        func
+    #define Prefix(func)        func
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define ALLOC_MARKER_MAGIC	0xc001c0de
+#define ALLOC_MARKER_DEAD	0xdeaddead
 
-/** This function is supposed to lock the memory data structures. It
- * could be as simple as disabling interrupts or acquiring a spinlock.
- * It's up to you to decide. 
- *
- * \return 0 if the lock was acquired successfully. Anything else is
- * failure.
- */
+#define ALLOC_PAGE_SIZE 0x1000			// The size of an individual page. Set up in liballoc_init.
+#define ALLOC_PAGE_COUNT 16			    // The number of pages to request per chunk. Set up in liballoc_init.
+
+typedef struct __alloc_major AllocMajor;
+typedef struct __alloc_minor AllocMinor;
+
+// *A structure found at the top of all system allocated 
+// *memory blocks. It details the usage of the memory block.
+struct __alloc_major {
+	uint32_t pages;			// The number of pages in the block.
+	uint32_t size;			// The number of pages in the block.
+	uint32_t usage;			// The number of bytes used in the block.
+	AllocMajor* prev;		// Linked list information.
+	AllocMajor* next;		// Linked list information.
+	AllocMinor* first;		// A pointer to the first allocated memory in the block.	
+};
+
+// *This is a structure found at the beginning of all
+// *sections in a major block which were allocated by a
+// *malloc, calloc, realloc call.
+struct __alloc_minor {
+	uint32_t magic;			// A magic number to idenfity correctness.
+	uint32_t size; 			// The size of the memory allocated. Could be 1 byte or more.
+	uint32_t req_size;		// The size of memory requested.
+	AllocMinor* prev;		// Linked list information.
+	AllocMinor* next;		// Linked list information.
+	AllocMajor* block;		// The owning block. A pointer to the major structure.
+};
+
 extern int liballoc_lock();
-
-/** This function unlocks what was previously locked by the liballoc_lock
- * function.  If it disabled interrupts, it enables interrupts. If it
- * had acquiried a spinlock, it releases the spinlock. etc.
- *
- * \return 0 if the lock was successfully released.
- */
 extern int liballoc_unlock();
-
-/** This is the hook into the local system which allocates pages. It
- * accepts an integer parameter which is the number of pages
- * required.  The page size was set up in the liballoc_init function.
- *
- * \return NULL if the pages were not allocated.
- * \return A pointer to the allocated memory.
- */
 extern void* liballoc_alloc(size_t);
-
-/** This frees previously allocated memory. The void* parameter passed
- * to the function is the exact same value returned from a previous
- * liballoc_alloc call.
- *
- * The integer value is the number of pages to free.
- *
- * \return 0 if the memory was successfully freed.
- */
 extern int liballoc_free(void*,size_t);
-
 extern bool liballoc_try_lock();
     
-extern void    *PREFIX(malloc)(size_t);				///< The standard function.
-extern void    *PREFIX(realloc)(void *, size_t);		///< The standard function.
-extern void    *PREFIX(calloc)(size_t, size_t);		///< The standard function.
-extern void     PREFIX(free)(void *);					///< The standard function.
+extern void* Prefix(malloc)(size_t);
+extern void* Prefix(realloc)(void*, size_t);
+extern void* Prefix(calloc)(size_t, size_t);
+extern void Prefix(free)(void*);
 
 static inline void* lmalloc(size_t s) {
 #ifdef __kernel
@@ -102,13 +84,3 @@ static inline void* lcalloc(size_t s, size_t n) {
     return calloc(s, n);
 #endif
 }
-
-
-#ifdef __cplusplus
-}
-#endif
-
-
-/** @} */
-
-#endif
