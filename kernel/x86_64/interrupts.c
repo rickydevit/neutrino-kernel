@@ -151,17 +151,21 @@ InterruptStack* unoptimized interrupt_handler(InterruptStack* stack) {
     if (stack->irq == APIC_TIMER_IRQ) {     // timer interrupt, do task switch
         if (scheduler.ready) {
             volatile Cpu* cpu = get_current_cpu();
-            if (atomic_get_byte((uintptr_t)&(cpu->tasks.is_switching.flag)) == UNLOCKED) {
+            if (try_lock(&cpu->tasks.is_switching)) {
                 lock((Lock*)&(cpu->tasks.is_switching));
                 
-                if (cpu->tasks.current != nullptr && !IsTaskNeverRun(cpu->tasks.current))
-                    context_save(cpu->tasks.current->context, stack);     // save context to task
-                sched_cycle(cpu);
-                context_load(cpu->tasks.current->context, stack);     // load context from task
+                if (liballoc_try_lock()) {
+                    if (cpu->tasks.current != nullptr && !IsTaskNeverRun(cpu->tasks.current))
+                        context_save(cpu->tasks.current->context, stack);     // save context to task
+                    
+                    sched_cycle(cpu);
+                    context_load(cpu->tasks.current->context, stack);     // load context from task
 
-                space_switch(cpu->tasks.current->space);              // switch space
+                    space_switch(cpu->tasks.current->space);              // switch space
+                    
+                    unlock((Lock*)&(cpu->tasks.is_switching));
+                }
                 
-                unlock((Lock*)&(cpu->tasks.is_switching));
             }
         }
     }
