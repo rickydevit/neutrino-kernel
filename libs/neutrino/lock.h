@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 #include <neutrino/macros.h>
 #include <_null.h>
 
@@ -15,6 +16,7 @@ typedef struct __lock {
 void lock_init(Lock *lock);
 void lock(Lock* lock);
 void unlock(Lock* lock);
+bool try_lock(Lock *lock);
 
 static inline void retainer_release(Lock** l) {
     if (l != nullptr) {
