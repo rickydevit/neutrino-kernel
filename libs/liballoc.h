@@ -2,6 +2,7 @@
 #define _LIBALLOC_H
 
 #include <size_t.h>
+#include <stdbool.h>
 
 /** \defgroup ALLOCHOOKS liballoc hooks 
  *
@@ -63,7 +64,7 @@ extern void* liballoc_alloc(size_t);
  */
 extern int liballoc_free(void*,size_t);
 
-
+extern bool liballoc_try_lock();
     
 extern void    *PREFIX(malloc)(size_t);				///< The standard function.
 extern void    *PREFIX(realloc)(void *, size_t);		///< The standard function.
