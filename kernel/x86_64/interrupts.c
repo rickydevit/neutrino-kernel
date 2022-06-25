@@ -151,7 +151,7 @@ InterruptStack* unoptimized interrupt_handler(InterruptStack* stack) {
     if (stack->irq == APIC_TIMER_IRQ) {     // timer interrupt, do task switch
         if (scheduler.ready) {
             volatile Cpu* cpu = get_current_cpu();
-            if (try_lock(&cpu->tasks.is_switching)) {
+            if (try_lock((Lock*)&cpu->tasks.is_switching)) {
                 lock((Lock*)&(cpu->tasks.is_switching));
                 
                 if (liballoc_try_lock()) {

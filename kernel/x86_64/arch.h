@@ -4,16 +4,19 @@
 #include <neutrino/time.h>
 
 #define MEMV_OFFSET 0xffff800000000000
+#define PERM_OFFSET 0xffff880000000000
 #define MMIO_OFFSET 0xfffff00000000000
 #define HEAP_OFFSET 0xfffffe0000000000
 #define KERN_OFFSET 0xffffffff80000000
 
-static inline uintptr_t get_mem_address(uintptr_t addr) { return (uintptr_t)addr + MEMV_OFFSET; }
-static inline uintptr_t get_rmem_address(uintptr_t addr) { return (uintptr_t)addr - MEMV_OFFSET; }
-static inline uintptr_t get_kern_address(uintptr_t addr) { return (uintptr_t)addr + KERN_OFFSET; }
-static inline uintptr_t get_rkern_address(uintptr_t addr) { return (uintptr_t)addr - KERN_OFFSET; }
-static inline uintptr_t get_mmio_address(uintptr_t addr) { return (uintptr_t)addr + MMIO_OFFSET; }
-static inline uintptr_t get_rmmio_address(uintptr_t addr) { return (uintptr_t)addr - MMIO_OFFSET; }
+#define MemoryFunctions(name, offset) \
+    static inline uintptr_t get_##name##_address(uintptr_t address) { return (uintptr_t)address + offset; }  \
+    static inline uintptr_t get_r##name##_address(uintptr_t address) { return (uintptr_t)address - offset; }
+
+MemoryFunctions(mem, MEMV_OFFSET)
+MemoryFunctions(perm, PERM_OFFSET)
+MemoryFunctions(mmio, MMIO_OFFSET)
+MemoryFunctions(kern, KERN_OFFSET)
 
 enum MSR_REGISTERS {
     APIC =              0x1B,
