@@ -313,30 +313,30 @@ bool vmm_unmap_page_impl(PageTable* table_addr, uintptr_t virt_addr) {
 
 uintptr_t unoptimized vmm_find_free_heap_series(size_t size, uintptr_t heap_base, PageProperties prop) {
     PageTable* pl4_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(heap_base));
+    
     for (int dpt = 0; dpt < 512; dpt++) {
-            
-        vmm_get_or_create_entry(pl4_addr, dpt, prop);
+        if (vmm_get_entry(pl4_addr, dpt) == 0) vmm_create_entry(pl4_addr, dpt, prop);
         PageTable* dpt_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(heap_base), dpt);
+
         for (int pd = 0; pd < 512; pd++) {
-        
-            vmm_get_or_create_entry(dpt_addr, pd, prop);
+            if (vmm_get_entry(dpt_addr, pd) == 0) vmm_create_entry(dpt_addr, pd, prop);
             PageTable* pd_addr = GetRecursiveAddress(RECURSE_ACTIVE, RECURSE_ACTIVE, GET_PL4_INDEX(heap_base), dpt, pd);
+            
             for (int pt = 0; pt < 512; pt++) {
-                if (vmm_get_entry(pd_addr, pt) != 0) continue;
-        
                 vmm_get_or_create_entry(pd_addr, pt, prop);
+
                 PageTable* pt_addr = GetRecursiveAddress(RECURSE_ACTIVE, GET_PL4_INDEX(heap_base), dpt, pd, pt);
                 for (int page = 0; page < 512; page++) {
                     if (vmm_get_entry(pt_addr, page) != 0) continue;
 
                     bool bad = false;
-                    for (int j = page+1; j < size; j++) {
-                        if (vmm_get_entry(pd_addr, j) != 0) bad = true;
+                    for (int j = 0; j < size; j++) {
+                        if (vmm_get_entry(pt_addr, page+j) != 0) bad = true;
                     }
 
                     if (bad) continue;
-                    PagingPath path = (PagingPath){GET_PL4_INDEX(heap_base), dpt, pd, page};
-                    return GetAddress(path, page);
+                    PagingPath path = (PagingPath){GET_PL4_INDEX(heap_base), pd, pt, page};
+                    return GetAddress(path, 0);
                 }
             }
         }
@@ -481,8 +481,10 @@ uintptr_t unoptimized vmm_allocate_heap(size_t blocks, bool user) {
         .writable = true
     };
 
+    lock(&vmm_lock);
     uintptr_t phys_addr = pmm_alloc_series(blocks);
     uintptr_t virt_addr = vmm_find_free_heap_series(blocks, heap_base, prop);
+    unlock(&vmm_lock);
 
     for (size_t i = 0; i < blocks; i++) 
         vmm_map_page(0, phys_addr + (i*PHYSMEM_BLOCK_SIZE), virt_addr + (i*PHYSMEM_BLOCK_SIZE), prop);
