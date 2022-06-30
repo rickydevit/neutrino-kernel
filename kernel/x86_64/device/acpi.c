@@ -60,12 +60,14 @@ void init_acpi() {
             ks.warn("Error while validating the RSDP. It may be corrupted");
 
         acpi.rsdt = (struct RSDT*)get_mem_address(descriptor->firstPart.RsdtAddress);
+        ks.log("RSDT at %x", descriptor->firstPart.RsdtAddress);
     } else {
         if (!do_checksum((uint8_t*)descriptor, sizeof(struct RSDP_descriptor)) || 
             !do_checksum(((uint8_t*)descriptor + sizeof(struct RSDP_descriptor)), sizeof(struct RSDP_descriptor2) - sizeof(struct RSDP_descriptor))) 
             ks.warn("Error while validating the RSDP. It may be corrupted");
 
         acpi.xsdt = (struct XSDT*)get_mem_address(descriptor->XsdtAddress);
+        ks.log("XSDT at %x", descriptor->XsdtAddress);
     }
 }
 
@@ -95,7 +97,7 @@ void *find_sdt_entry(const char* entry_sign) {
             ks.warn("Error while validating the XSDT. It may be corrupted");
         
         for (int i = 0; i < entries; i++) {
-            struct SDT_header *h = (struct SDT_header *) acpi.xsdt->PointerToOtherSDT[i];
+            struct SDT_header *h = (struct SDT_header *) get_mem_address(acpi.xsdt->PointerToOtherSDT[i]);
             if (!strncmp(h->Signature, entry_sign, 4))
                 return (void *) h;
         }
