@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <neutrino/lock.h>
 #include <neutrino/macros.h>
+#include <linkedlist.h>
 #include <_null.h>
 #include "context.h"
 #include "channel.h"
@@ -48,6 +49,7 @@ typedef struct __task {
     Context* context;       // ! must SAVE before every scheduler cycle and RESTORE thereafter
     Space* space;           // ! must SWITCH after every scheduler cycle
     Channel* channel;
+    List* handles;
 
     uintptr_t stack_base;
 } Task;
