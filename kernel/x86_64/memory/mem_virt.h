@@ -12,6 +12,8 @@ struct memory_virtual {
 
 struct memory_virtual vmm;
 
+extern Lock vmm_lock;
+
 void init_vmm();
 void init_vmm_on_ap(struct stivale2_smp_info* info);
 
