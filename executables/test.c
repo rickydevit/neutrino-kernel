@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 
-int main() {
+void main() {
     char buf[128];
     uint32_t* test = (uint32_t*)malloc(sizeof(uint32_t));
 
@@ -22,5 +22,4 @@ int main() {
         .size = strlen(ipc_payload),
         .type = IPC_SEND
         });
-    return 0;
 }

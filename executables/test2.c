@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 
-int main() {
+void main() {
     neutrino_log(&(SCLogArgs){.msg = "IPC test started"});
 
     SCIpcArgs a = (SCIpcArgs){
@@ -17,13 +17,11 @@ int main() {
         a.type = IPC_RECEIVE;
         a.payload = ptr;
         neutrino_ipc(&a);
-        char buf[128];
+        char buf[128] = {0};
         strf("IPC returned payload at %x size %u. Payload is %c", buf, a.payload, a.size, (char*)a.payload);
         neutrino_log(&(SCLogArgs){.msg = buf});
         free((void*)ptr);
     } else {
         neutrino_log(&(SCLogArgs){.msg = "No payload from IPC"});
     }
-
-    return 0;
 }
