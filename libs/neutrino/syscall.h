@@ -5,6 +5,7 @@
 #include <ipc/ipc.h>
 #include <neutrino/time.h>
 #include <neutrino/macros.h>
+#include <neutrino/file/file.h>
 
 #define FOREACH_SYSCALL(c) \
     c(NEUTRINO_LOG) \
@@ -13,6 +14,7 @@
     c(NEUTRINO_ALLOC) \
     c(NEUTRINO_FREE) \
     c(NEUTRINO_IPC) \
+    c(NEUTRINO_FILE) \
 
 // Syscall enum
 typedef enum __neutrino_syscalls {
@@ -65,6 +67,12 @@ typedef struct __sc_ipc_args {
     size_t size;
 } SCIpcArgs;
 
+typedef struct __sc_file_args {
+    int64_t id;
+    const char* file_path;
+    FileOperation operation;
+} SCFileArgs;
+
 // === Syscall prototypes ===
 
 // Log a string message to the debug serial output
@@ -100,3 +108,10 @@ SysCall(free)(SCFreeArgs* args);
 // @param size IN/OUT the size of the sent/received data. This is an output field when type is RECEIVE, input otherwise 
 // @return SYSCALL_SUCCESS on success; SYSCALL_UNAUTHORIZED if task channel does not allow IPCs; SYSCALL_FAILURE if IPC fails
 SysCall(ipc)(SCIpcArgs* args);
+
+// Request a file descriptor for a given path
+// @param path IN the path of the file to request
+// @param operation IN the operation to be performed on the file 
+// @param descriptor IN/OUT the file descriptor; -1 if invalid
+// @return SYSCALL_SUCCESS on success; SYSCALL_INVALID if the file does not exist; SYSCALL_FAILURE if the file cannot be opened
+SysCall(file)(SCFileArgs* args);

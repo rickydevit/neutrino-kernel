@@ -5,7 +5,9 @@
 #include "tasks/channel.h"
 #include "memory/space.h"
 #include "tasks/scheduler.h"
+#include "handle/handle.h"
 #include <neutrino/syscall.h>
+#include <linkedlist.h>
 #include <ipc/ipc.h>
 #include <stdint.h>
 
@@ -114,6 +116,29 @@ SyscallResult sys_ipc(SCIpcArgs* args) {
     return SYSCALL_FAILURE;
 }
 
+SyscallResult sys_file(SCFileArgs* args) {
+    if (args->operation > FILE_OPEN) return SYSCALL_FAILURE;
+    if (args->file_path == nullptr) return SYSCALL_INVALID;
+
+    args->id = -1;
+
+    Task* task = get_current_task();
+    HandleRequest request = {.type = HANDLE_TYPE_FILE, .path = args->file_path};
+
+    switch (args->operation) {
+        case FILE_OPEN:
+            if (handle_acquire(task, request) == HANDLE_RESULT_SUCCESS) {
+                args->id = list_get_size(task->handles)-1;
+                return SYSCALL_SUCCESS;
+            } else {
+                return SYSCALL_FAILURE;
+            }
+            
+        default:
+            return SYSCALL_INVALID;
+    }
+}
+
 // === PUBLIC FUNCTIONS =========================
 
 typedef SyscallResult SyscallFn();
@@ -124,7 +149,8 @@ SyscallFn* syscalls[NEUTRINO_SYSCALL_COUNT] = {
     [NEUTRINO_NOW] = sys_now,
     [NEUTRINO_ALLOC] = sys_alloc,
     [NEUTRINO_FREE] = sys_free,
-    [NEUTRINO_IPC] = sys_ipc
+    [NEUTRINO_IPC] = sys_ipc,
+    [NEUTRINO_FILE] = sys_file,
 };
 
 SyscallResult syscall_execute(NeutrinoSyscall syscall_id, uintptr_t* args) {
@@ -136,7 +162,7 @@ SyscallResult syscall_execute(NeutrinoSyscall syscall_id, uintptr_t* args) {
     SyscallResult result = syscalls[syscall_id](args);
 
     const Task* cur = get_current_task();
-    ks.log("Syscall %c in task #%u (%c)", syscall_names[syscall_id], cur->pid, cur->name);
+    ks.log("Syscall %c in task #%u (%c) with result %u", syscall_names[syscall_id], cur->pid, cur->name, result);
 
     task_end_syscall();
 

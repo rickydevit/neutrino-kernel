@@ -39,6 +39,7 @@ typedef struct __fs_node {
 } FsNode;
 
 #define IsDirectory(node) ((node->flags & 0x7) == FS_DIRECTORY)
+#define IsFile(node) ((node->flags & 0x7) == FS_FILE)
 
 extern FsNode* root;
 

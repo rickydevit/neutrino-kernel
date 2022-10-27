@@ -52,3 +52,7 @@ SyscallResult neutrino_free(SCFreeArgs* args) {
 SyscallResult neutrino_ipc(SCIpcArgs* args) {
     return neutrino_syscall(NEUTRINO_IPC, (uintptr_t)args, 0, 0, 0, 0);
 }
+
+SyscallResult neutrino_file(SCFileArgs* args) {
+    return neutrino_syscall(NEUTRINO_FILE, (uintptr_t)args, 0, 0, 0, 0);
+}
