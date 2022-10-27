@@ -27,7 +27,6 @@ void load_elf(const Elf64Header* header, const uintptr_t binary, Task* task) {
         
         size_t size = AlignUp(Max(prg_header->mem_size, prg_header->file_size), PAGE_SIZE);
         VirtualMapping vmap = memory_allocate(size);
-        space_map(task->space, vmap.physical.base, vmap.virtual_base, size, MAP_WRITABLE);
         
         memory_set((uint8_t*)vmap.virtual_base, 0, vmap.physical.size);
         memory_copy((uint8_t*)(binary + prg_header->file_offset), 
@@ -52,6 +51,7 @@ void load_elf(const Elf64Header* header, const uintptr_t binary, Task* task) {
                 size/PAGE_SIZE, ((task->user) ? MAP_USER : 0) | MAP_WRITABLE);
         }
 
+        space_map(task->space, vmap.physical.base, vmap.virtual_base, size/PAGE_SIZE, MAP_WRITABLE);
         prg_header = (Elf64ProgramHeader*)((uintptr_t)prg_header + header->programs_size);
     }
 }
