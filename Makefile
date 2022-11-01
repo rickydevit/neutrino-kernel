@@ -52,8 +52,6 @@ ASMOBJ			:= $(patsubst %.asm,$(BUILD_OUT)/%.o,$(ASMFILES))
 SOBJ			:= $(patsubst %.s,$(BUILD_OUT)/%.o,$(SFILES))
 LIBSOBJ			:= $(patsubst %.c, $(EXES_OUT)/%.oo, $(shell find $(LIBS_PATH) -type f -name '*.c'))
 
-INITRDFILES		:= $(shell find initrd/ -type f -name '*')
-
 EXEFILES		:= $(shell find executables/ -type f -name '*.c')
 EXEOBJ			:= $(patsubst %.c,%.oo,$(EXEFILES))
 EXETARGETS		:= $(patsubst %.c,%,$(EXEFILES))
@@ -138,7 +136,8 @@ $(INITRD_SCRIPT):
 
 .PHONY:$(INITRD_TARGET)
 $(INITRD_TARGET): $(INITRD_SCRIPT) $(EXETARGETS)
-	@mkdir -p initrd
+	@$(DIRECTORY_GUARD)
+	$(eval INITRDFILES	:= $(shell find initrd/ -type f -name '*'))
 	@echo "[INITRD] Adding files from ./initrd/ to $@..."
 	@./$(INITRD_SCRIPT) $(INITRDFILES)
 
