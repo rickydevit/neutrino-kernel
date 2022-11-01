@@ -4,6 +4,7 @@
 #include <size_t.h>
 #include <stdbool.h>
 #include <libs/limine/stivale2.h>
+#include <libs/neutrino/lock.h>
 
 struct memory_virtual {
     uint8_t address_size; 
