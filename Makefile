@@ -6,9 +6,6 @@ BUILD_OUT 		:= ./build
 ISO_OUT 		:= ./iso
 EXES_OUT		:= ./executables
 RELEASE_OUT 	:= ./releases
-RELEASE_DATE 	:= $(shell date +%Y%m.%d)
-RELEASE_COUNT   := $(shell find $(RELEASE_OUT)/$(RELEASE_DATE)* | wc -l)
-RELEASE_NAME 	:= $(RELEASE_DATE).$(shell printf '%03d' "$(RELEASE_COUNT)")
 ELF_TARGET 		:= neutrino.sys
 ISO_TARGET 		:= neutrino.iso
 INITRD_SCRIPT	:= make-initrd
@@ -164,6 +161,9 @@ $(EXETARGETS): $(EXEOBJ) $(LIBSOBJ)
 executables: $(EXETARGETS)
 
 release: $(ISO_TARGET)	
+	$(eval RELEASE_DATE 	:= $(shell date +%Y%m.%d))
+	$(eval RELEASE_COUNT   	:= $(shell find $(RELEASE_OUT)/$(RELEASE_DATE)* | wc -l))
+	$(eval RELEASE_NAME 	:= $(RELEASE_DATE).$(shell printf '%03d' "$(RELEASE_COUNT)"))
 	@echo "[RELEASE] Creating release folder for $(RELEASE_NAME)..."
 	@mkdir -p $(RELEASE_OUT)/$(RELEASE_NAME) && cp $(ISO_TARGET) $(RELEASE_OUT)/$(RELEASE_NAME)/neutrino-$(RELEASE_NAME).iso
 	@cp $(BUILD_OUT)/$(ELF_TARGET) $(RELEASE_OUT)/$(RELEASE_NAME)/neutrino-$(RELEASE_NAME).sys
