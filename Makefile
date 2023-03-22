@@ -10,7 +10,7 @@ ELF_TARGET 		:= neutrino.sys
 ISO_TARGET 		:= neutrino.iso
 INITRD_SCRIPT	:= make-initrd
 INITRD_TARGET	:= initrd.img
-DIRECTORY_GUARD  = mkdir -p $(@D)
+DIRECTORY_GUARD  = mkdir -p $(@D)/
 LD_SCRIPT 		:= $(ARCH).ld
 
 END_PATH 		:= libs/ kernel/common kernel/${ARCH} 
