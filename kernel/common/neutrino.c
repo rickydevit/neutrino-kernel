@@ -85,7 +85,7 @@ void neutrino_main() {
     if (initrd != nullptr) root = init_initrd(initrd);
 
     init_pci();
-    // display();
+    display();
     
     Task* initrd_task = NewTask("initrd_explorer", false);
     sched_start(initrd_task, (uintptr_t)initrd_explorer);

@@ -14,6 +14,7 @@
 #include <neutrino/atomic.h>
 
 struct IDT_entry IDT[IDT_SIZE];
+static size_t nested_exc = 0;
 
 const char *interrupt_exception_name[] = {
     "Division By 0",
@@ -72,8 +73,9 @@ void unoptimized set_idt_entry(uint32_t irq, int(*isr)(), uint16_t ist, uint8_t 
 // *Log the interrupt stack passed to the function. Useful for debugging interrupts stack frames
 // @param stack the pointer to the interrupt stack to be logged
 void unoptimized log_interrupt(InterruptStack* stack) {
+    Cpu* curr = get_current_cpu();
     ks.dbg(" ========== INTERRUPT FRAME LOG ==========\n\
-            Got interrupt %u with error_code %x on cpu #%d \n\
+            Got interrupt %u with error_code %x on cpu #%d\n\
             Previous stack frame was %x \n\
             rax: %x | rbx: %x | rcx: %x | rdx: %x \n\
             rsi: %x | rdi: %x | rbp: %x \n\
@@ -82,8 +84,9 @@ void unoptimized log_interrupt(InterruptStack* stack) {
             r14: %x | r15: %x \n\
             rflags: %x | rsp: %x \n\
             cs: %x | ss: %x | rip: %x\n\
+            There have been %u unmanaged exceptions before this interrupt. \n\
          ====== END OF INTERRUPT FRAME LOG =======", 
-            stack->irq, stack->error_code, get_current_cpu()->id, 
+            stack->irq, stack->error_code, curr->id, 
             stack->rsp,
             stack->rax, stack->rbx, stack->rcx, stack->rdx, 
             stack->rsi, stack->rdi, stack->rbp,
@@ -91,7 +94,7 @@ void unoptimized log_interrupt(InterruptStack* stack) {
             stack->r11, stack->r12, stack->r13,
             stack->r14, stack->r15, 
             stack->rflags, stack->rsp, 
-            stack->cs, stack->ss, stack->rip);
+            stack->cs, stack->ss, stack->rip, nested_exc-1);
 }
 
 // === PUBLIC FUNCTIONS =========================
@@ -116,6 +119,8 @@ void init_idt() {
 }
 
 InterruptStack* exception_handler(InterruptStack* stack) {
+    nested_exc++;
+
     switch (stack->irq) {
         case 8:     // DF
         case 10:    // TS
@@ -123,7 +128,7 @@ InterruptStack* exception_handler(InterruptStack* stack) {
         case 12:    // SS
         case 13:    // GP
             log_interrupt(stack);
-            ks.err("General Protection Fault detected.");
+            ks.fatal(FatalError(GENERIC_EXCEPTION, "General Protection Fault detected."));
             break;
         case 17:    // AC
         case 18:    // MC
@@ -143,6 +148,7 @@ InterruptStack* exception_handler(InterruptStack* stack) {
     }
     
     apic_eoi();
+    nested_exc--;
     return stack;
 }
 
