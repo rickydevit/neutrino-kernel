@@ -14,6 +14,7 @@ Space* NewSpace() {
     Space* space = (Space*)kmalloc(sizeof(Space));
     space->lock = NewLock;
     space->page_table = NewPageTable();
+    space->memory_ranges = nullptr;
     return space;
 }
 
