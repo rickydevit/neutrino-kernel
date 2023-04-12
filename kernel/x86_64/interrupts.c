@@ -190,6 +190,13 @@ void pagefault_handler(InterruptStack* stack) {
         sched_terminate();
     }
 
+    if (us && !present){
+        Cpu* cpu = get_current_cpu();
+        ks.log("Page fault on task #%u", cpu->tasks.current->pid);
+        cpu->tasks.current->status = TASK_ZOMBIE;
+        return;
+    }
+    
     log_interrupt(stack);
 	ks.err("Page fault at address %x. %c, %c, %c, Reserved bits %c", faulting_address, (present) ? "Present" : "Non-present", 
            (rw) ? "Write" : "Read", (us) ? "User" : "Supervisor", (reserved) ? "set" : "untoched"); 
